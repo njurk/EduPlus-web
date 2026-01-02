@@ -1,20 +1,17 @@
-import { Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import Layout from "./components/Layout";
+import { Routes, Route } from 'react-router-dom';
+import { Dashboard } from './pages/admin/Dashboard';
+import { AdminLayout } from './layouts/AdminLayout';
+import { Users } from './pages/admin/Users';
+import { Classrooms } from './pages/admin/Classrooms';
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/login" element={<Login />} />
-
-      <Route element={<Layout />}>
-        <Route path="/dashboard" element={<Dashboard />} />
+      <Route element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="classrooms" element={<Classrooms />} />
+        <Route path="users" element={<Users />} />
       </Route>
-
-      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
