@@ -37,5 +37,46 @@ export interface Announcement extends BaseEntity {
 export interface SchoolClass extends BaseEntity {
   name: string;
   schoolYearId: number;
-  studentsCount?: number; 
+  studentsCount?: number;
+}
+
+export interface DashboardStats {
+  totalUsers: number;
+  totalStudents: number;
+  totalTeachers: number;
+  totalClasses: number;
+}
+
+export interface DashboardStatus {
+  schoolYear: string;
+  semester: string;
+  avgGrade: string;
+}
+
+export interface DashboardAnnouncement {
+  id: number;
+  title: string;
+  date: string;
+  author: string;
+}
+
+export interface DashboardSummary {
+  stats: DashboardStats;
+  status: DashboardStatus;
+  announcements: DashboardAnnouncement[];
+}
+
+export interface AttendanceChartData {
+  date: string;
+  dayName: string;
+  attendancePercentage: number;
+}
+
+export interface ParentStudentRelation {
+  id: number;
+  parentId: number;
+  parentName: string;
+  parentEmail: string;
+  studentId: number;
+  studentName: string;
 }

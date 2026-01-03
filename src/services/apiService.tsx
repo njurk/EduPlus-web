@@ -1,4 +1,4 @@
-import type { User, UserRole, Announcement, SchoolClass } from '../types';
+import type { User, UserRole, Announcement, SchoolClass, DashboardSummary, AttendanceChartData, ParentStudentRelation } from '../types';
 
 const API_URL = 'https://localhost:7252/api';
 
@@ -89,5 +89,27 @@ export const api = {
             const response = await fetch(`${API_URL}/announcement`);
             return handleResponse(response);
         }
+    },
+
+    dashboard: {
+        getSummary: async (): Promise<DashboardSummary> => {
+            const response = await fetch(`${API_URL}/dashboard/summary`);
+            return await response.json();
+        },
+        getAttendanceChart: async (): Promise<AttendanceChartData[]> => {
+            const response = await fetch(`${API_URL}/dashboard/attendance-chart`);
+            if (!response.ok) throw new Error('Błąd pobierania wykresu');
+            return await response.json();
+        }
+    },
+
+    parentStudents: {
+    getAll: async (): Promise<ParentStudentRelation[]> => {
+        const response = await fetch(`${API_URL}/ParentStudent`);
+        return await response.json();
+    },
+    delete: async (id: number) => {
+        await fetch(`${API_URL}/ParentStudent/${id}`, { method: 'DELETE' });
     }
+},
 };
