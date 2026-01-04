@@ -1,5 +1,5 @@
 import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { Input } from '../ui/Input';
+import { Input } from './Input';
 import { clsx } from 'clsx';
 
 interface SortOption {
@@ -16,17 +16,20 @@ interface SortFilterToolbarProps {
   sortDesc: boolean;
   onSortChange: (field: string) => void;
   sortOptions: SortOption[];
+  hideCreate?: boolean;
+  className?: string;
 }
 
 export const SortFilterToolbar = ({
   search, onSearchChange,
   showInactive, onToggleInactive,
   sortBy, sortDesc, onSortChange,
-  sortOptions
+  sortOptions,
+  className
 }: SortFilterToolbarProps) => {
 
   return (
-    <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div className={clsx("px-4 py-3 border-b border-neutral-200 bg-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-4", className)}>
       <div className="flex items-center gap-4 flex-1 w-full sm:w-auto">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-2.5 top-2.5 text-neutral-300" size={18} />
@@ -64,7 +67,7 @@ export const SortFilterToolbar = ({
               onChange={onToggleInactive}
               className="mr-2 rounded text-primary focus:ring-primary border-neutral-300"
             />
-            Pokaż nieaktywne
+            Kosz
           </label>
         )}
       </div>

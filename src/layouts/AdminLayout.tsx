@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Menu, X, Users, BookOpen, Calendar, Settings, Home, GraduationCap, Layout as LayoutIcon, AppWindowIcon, LogOut } from 'lucide-react';
+import { Menu, X, Users, Settings, Home, GraduationCap, LogOut, FilePenIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const Clock = () => {
@@ -27,11 +27,7 @@ export const AdminLayout = () => {
   const navItems = [
     { label: 'Pulpit', path: '/', icon: Home },
     { label: 'Użytkownicy', path: '/users', icon: Users },
-    { label: 'Rok Szkolny', path: '/school-years', icon: Calendar },
-    { label: 'Przedmioty', path: '/subjects', icon: BookOpen },
-    { label: 'Sale lekcyjne', path: '/classrooms', icon: AppWindowIcon },
-    { label: 'Lekcje & Oceny', path: '/grades', icon: GraduationCap },
-    { label: 'Plany Lekcji', path: '/schedules', icon: LayoutIcon },
+    { label: 'Konfiguracja systemu', path: '/system-config', icon: FilePenIcon },
     { label: 'CMS', path: '/cms', icon: Settings },
   ];
 

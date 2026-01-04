@@ -79,4 +79,6 @@ export interface ParentStudentRelation {
   parentEmail: string;
   studentId: number;
   studentName: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

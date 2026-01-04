@@ -1,33 +1,39 @@
-import type { User, UserRole, Announcement, SchoolClass, DashboardSummary, AttendanceChartData, ParentStudentRelation } from '../types';
+import type { 
+    User, UserRole, Announcement, SchoolClass, DashboardSummary, 
+    AttendanceChartData, ParentStudentRelation, Role
+} from '../types';
 
 const API_URL = 'https://localhost:7252/api';
 
 const handleResponse = async (response: Response) => {
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error("API Error:", response.status, errorBody);
-    throw new Error(errorBody || `HTTP error! status: ${response.status}`);
-  }
-
-  if (response.status === 204) return null;
-  return await response.json();
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(errorBody || `HTTP error! status: ${response.status}`);
+    }
+    if (response.status === 204) return null;
+    return await response.json();
 };
 
-export const api = {
-    users: {
-        getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean }) => {
-            const query = new URLSearchParams();
-            if (params?.search) query.append('search', params.search);
-            if (params?.sortBy) query.append('sortBy', params.sortBy);
-            if (params?.sortDesc) query.append('sortDesc', 'true');
-            if (params?.showInactive) query.append('showInactive', 'true');
+function createCrudResource<T>(endpoint: string) {
+    return {
+        getAll: async (params?: Record<string, any>): Promise<T[]> => {
+            const url = new URL(`${API_URL}/${endpoint}`);
+            
+            if (params) {
+                Object.keys(params).forEach(key => {
+                    const value = params[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        url.searchParams.append(key, value.toString());
+                    }
+                });
+            }
 
-            const response = await fetch(`${API_URL}/user?${query.toString()}`);
+            const response = await fetch(url.toString());
             return handleResponse(response);
         },
 
-        create: async (data: Partial<User>) => {
-            const response = await fetch(`${API_URL}/user`, {
+        create: async (data: Partial<T>): Promise<T> => {
+            const response = await fetch(`${API_URL}/${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -35,8 +41,8 @@ export const api = {
             return handleResponse(response);
         },
 
-        update: async (id: number, data: Partial<User>) => {
-            const response = await fetch(`${API_URL}/user/${id}`, {
+        update: async (id: number, data: Partial<T>): Promise<T> => {
+            const response = await fetch(`${API_URL}/${endpoint}/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -44,52 +50,43 @@ export const api = {
             return handleResponse(response);
         },
 
-        delete: async (id: number) => {
-            const response = await fetch(`${API_URL}/user/${id}`, {
+        delete: async (id: number): Promise<void> => {
+            const response = await fetch(`${API_URL}/${endpoint}/${id}`, {
                 method: 'DELETE'
             });
             return handleResponse(response);
-        },
-    },
+        }
+    };
+}
 
-    roles: {
-        getAll: async () => {
-            const response = await fetch(`${API_URL}/role`);
-            return handleResponse(response);
-        },
-    },
+export const api = {
+    users: {
+        ...createCrudResource<User>('user'),
 
-    userRoles: {
-        create: async (data: Partial<UserRole>) => {
-            const response = await fetch(`${API_URL}/userrole`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            return handleResponse(response);
-        },
+        getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, onlyUnassignedParents?: boolean }) => {
+            const query = new URLSearchParams();
+            if (params?.search) query.append('search', params.search);
+            if (params?.sortBy) query.append('sortBy', params.sortBy);
+            if (params?.sortDesc) query.append('sortDesc', 'true');
+            if (params?.showInactive) query.append('showInactive', 'true');
+            if (params?.onlyUnassignedParents) query.append('onlyUnassignedParents', 'true');
 
-        delete: async (id: number) => {
-            const response = await fetch(`${API_URL}/userrole/${id}`, {
-                method: 'DELETE'
-            });
-            return handleResponse(response);
-        },
-    },
-
-    classes: {
-        getAll: async (): Promise<SchoolClass[]> => {
-            const response = await fetch(`${API_URL}/class`);
+            const response = await fetch(`${API_URL}/user?${query.toString()}`);
             return handleResponse(response);
         }
     },
 
-    announcements: {
-        getAll: async (): Promise<Announcement[]> => {
-            const response = await fetch(`${API_URL}/announcement`);
-            return handleResponse(response);
-        }
-    },
+    roles: createCrudResource<Role>('role'),
+    userRoles: createCrudResource<UserRole>('userrole'),
+    classes: createCrudResource<SchoolClass>('class'),
+    announcements: createCrudResource<Announcement>('announcement'),
+    parentStudents: createCrudResource<ParentStudentRelation>('ParentStudent'),
+    classrooms: createCrudResource<any>('classroom'), 
+    lessonHours: createCrudResource<any>('LessonHour'),
+    lessonStatuses: createCrudResource<any>('LessonStatus'),
+    gradeTypes: createCrudResource<any>('GradeType'),
+    attendanceTypes: createCrudResource<any>('AttendanceType'),
+    subjects: createCrudResource<any>('subject'),
 
     dashboard: {
         getSummary: async (): Promise<DashboardSummary> => {
@@ -98,18 +95,7 @@ export const api = {
         },
         getAttendanceChart: async (): Promise<AttendanceChartData[]> => {
             const response = await fetch(`${API_URL}/dashboard/attendance-chart`);
-            if (!response.ok) throw new Error('Błąd pobierania wykresu');
             return await response.json();
         }
     },
-
-    parentStudents: {
-    getAll: async (): Promise<ParentStudentRelation[]> => {
-        const response = await fetch(`${API_URL}/ParentStudent`);
-        return await response.json();
-    },
-    delete: async (id: number) => {
-        await fetch(`${API_URL}/ParentStudent/${id}`, { method: 'DELETE' });
-    }
-},
 };
