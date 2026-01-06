@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { TrashButton } from '../components/ui/TrashButton';
-import { SearchBar } from '../components/ui/SearchBar';
-import { api } from '../services/apiService'; 
-import { Edit2, Trash2, Plus, School, Clock, GraduationCap, CalendarCheck, BookOpen, RefreshCcw, RotateCcw, Tag } from 'lucide-react';
+import { api } from '../services/apiService';
+import { Edit2, Trash2, Plus, School, Clock, GraduationCap, CalendarCheck, BookOpen, RefreshCcw, RotateCcw, List, ListOrdered } from 'lucide-react';
 import { clsx } from 'clsx';
+import { SortFilterToolbar } from '../components/ui/SortFilterToolbar';
+import { validateSystemConfig } from '../utils/validation';
 
-type BaseEntity = { id: number; isActive: boolean; createdAt: string; updatedAt: string; [key: string]: any };
+type BaseEntity = { id: number; isActive: boolean; createdAt: string; updatedAt: string;[key: string]: any };
 
 interface GradeType extends BaseEntity { numeric: string; value: number; name: string; }
 interface GradeCategory extends BaseEntity { name: string; weight: number; }
@@ -16,51 +17,98 @@ interface AttendanceType extends BaseEntity { shortCode: string; }
 
 const TABS = [
     { id: 'classrooms', label: 'Sale', icon: School },
-    { id: 'time', label: 'Lekcje', icon: Clock },
-    { id: 'gradeTypes', label: 'Skala Ocen', icon: GraduationCap },
-    { id: 'gradeCategories', label: 'Kategorie Ocen', icon: Tag },
-    { id: 'attendance', label: 'Frekwencja', icon: CalendarCheck },
     { id: 'subjects', label: 'Przedmioty', icon: BookOpen },
+    { id: 'lessonHours', label: 'Godziny lekcyjne', icon: Clock },
+    { id: 'lessonStatuses', label: 'Statusy lekcji', icon: List },
+    { id: 'gradeTypes', label: 'Skala ocen', icon: GraduationCap },
+    { id: 'gradeCategories', label: 'Kategorie ocen', icon: ListOrdered },
+    { id: 'attendance', label: 'Frekwencja', icon: CalendarCheck },
 ] as const;
+
+const formatDate = (date?: string) => date ? new Date(date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
 export const SystemConfig = () => {
     const [activeTab, setActiveTab] = useState<typeof TABS[number]['id']>('classrooms');
-    const [timeSubTab, setTimeSubTab] = useState<'hours' | 'statuses'>('hours');
+
+    const [filters, setFilters] = useState({
+        search: '',
+        sortBy: 'updated',
+        sortDesc: true,
+        showInactive: false
+    });
+
+    useEffect(() => {
+        let defaultSort = 'updated';
+        let defaultDesc = true;
+
+        if (activeTab === 'lessonHours') {
+            defaultSort = 'orderNumber';
+            defaultDesc = false;
+        } else if (activeTab === 'gradeTypes') {
+            defaultSort = 'value';
+            defaultDesc = true;
+        }
+
+        setFilters(prev => ({
+            ...prev,
+            search: '',
+            showInactive: false,
+            sortBy: defaultSort,
+            sortDesc: defaultDesc
+        }));
+    }, [activeTab]);
+
     const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
-    const [showTrash, setShowTrash] = useState(false);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<any[]>([]);
     const [formData, setFormData] = useState<Partial<BaseEntity>>({});
     const [errors, setErrors] = useState<Record<string, string | null>>({});
-    const [search, setSearch] = useState('');
 
     const getCurrentApi = useCallback(() => {
         switch (activeTab) {
             case 'classrooms': return api.classrooms;
+            case 'subjects': return api.subjects;
+            case 'lessonHours': return api.lessonHours;
+            case 'lessonStatuses': return api.lessonStatuses;
             case 'gradeTypes': return api.gradeTypes;
             case 'gradeCategories': return api.gradeCategories;
             case 'attendance': return api.attendanceTypes;
-            case 'subjects': return api.subjects;
-            case 'time': return timeSubTab === 'hours' ? api.lessonHours : api.lessonStatuses;
             default: return api.classrooms;
         }
-    }, [activeTab, timeSubTab]);
+    }, [activeTab]);
 
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await getCurrentApi().getAll();
+            const apiResource = getCurrentApi();
+            const result = await apiResource.getAll(filters);
             setData(result || []);
-        } catch (err) { console.error(err); } 
+        } catch (err) { console.error(err); }
         finally { setLoading(false); }
-    }, [getCurrentApi]);
+    }, [getCurrentApi, filters]);
 
     useEffect(() => {
-        loadData();
+        const timer = setTimeout(loadData, 300);
+        return () => clearTimeout(timer);
+    }, [loadData]);
+
+    useEffect(() => {
         setViewMode('list');
-        setSearch('');
-        setShowTrash(false);
-    }, [loadData, activeTab]);
+    }, [activeTab]);
+
+    const getSortOptions = () => {
+        const common = [
+            { field: 'updated', label: 'Edytowano' },
+            { field: 'created', label: 'Utworzono' }
+        ];
+
+        if (activeTab === 'lessonHours') return [{ field: 'orderNumber', label: 'Nr lekcji' }, ...common];
+        if (activeTab === 'gradeTypes') return [{ field: 'value', label: 'Wartość' }, { field: 'name', label: 'Nazwa' }, ...common];
+        if (activeTab === 'gradeCategories') return [{ field: 'weight', label: 'Waga' }, { field: 'name', label: 'Nazwa' }, ...common];
+        if (activeTab === 'attendance') return [{ field: 'name', label: 'Nazwa' }, ...common];
+
+        return [{ field: 'name', label: 'Nazwa' }, ...common];
+    };
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -68,35 +116,13 @@ export const SystemConfig = () => {
         if (value && errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
     };
 
-    const validate = () => {
-        const newErrors: Record<string, string> = {};
-        const isHour = activeTab === 'time' && timeSubTab === 'hours';
-        
-        if (!isHour && !formData.name) newErrors.name = "Nazwa jest wymagana";
-        
-        if (activeTab === 'gradeTypes') {
-            if (!(formData as GradeType).numeric) newErrors.numeric = "Symbol jest wymagany";
-            if (!(formData as GradeType).value) newErrors.value = "Wartość jest wymagana";
-        }
-
-        if (activeTab === 'gradeCategories') {
-             if (!(formData as GradeCategory).weight) newErrors.weight = "Waga jest wymagana";
-        }
-
-        if (activeTab === 'attendance' && !(formData as AttendanceType).shortCode) newErrors.shortCode = "Skrót jest wymagany";
-        
-        if (isHour) {
-            const h = formData as LessonHour;
-            if (!h.startTime) newErrors.startTime = "Start jest wymagany";
-            if (!h.endTime) newErrors.endTime = "Koniec jest wymagany";
-            if (!h.orderNumber) newErrors.orderNumber = "Numer jest wymagany";
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
     const handleSave = async () => {
-        if (!validate()) return;
+        const newErrors = validateSystemConfig(activeTab, formData);
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
         try {
             const resource = getCurrentApi();
             formData.id ? await resource.update(formData.id, formData) : await resource.create(formData);
@@ -120,39 +146,33 @@ export const SystemConfig = () => {
 
     const openForm = (item?: any) => {
         setErrors({});
-        setFormData(item ? { ...item } : { 
-            isActive: true, 
-            orderNumber: (activeTab === 'time' && timeSubTab === 'hours') ? (data.length + 1) : undefined 
+        setFormData(item ? { ...item } : {
+            isActive: true,
+            orderNumber: (activeTab === 'lessonHours') ? (data.length + 1) : undefined
         });
         setViewMode('form');
     };
-
-    const filteredData = useMemo(() => data.filter(item => {
-        if (item.isActive !== !showTrash) return false;
-        const s = search.toLowerCase();
-        return !s || [item.name, item.shortCode, item.numeric].some(val => val?.toString().toLowerCase().includes(s));
-    }), [data, search, showTrash]);
 
     const renderForm = () => (
         <div className="bg-white border border-neutral-200 max-w-2xl mx-auto shadow-sm flex flex-col font-sans mt-6 rounded-lg overflow-hidden">
             <div className="px-6 py-4 border-b bg-neutral-50 font-bold text-neutral-800">{formData.id ? 'Edycja' : 'Nowy'} element</div>
             <div className="p-6 space-y-4">
-                
-                {!(activeTab === 'time' && timeSubTab === 'hours') && (
+
+                {activeTab !== 'lessonHours' && (
                     <div>
                         <label className="label-text">
                             {activeTab === 'gradeTypes' ? 'Nazwa opisowa' : 'Nazwa'} <span className="text-danger">*</span>
                         </label>
                         <Input name="name" value={formData.name || ''} onChange={handleInput} className={errors.name ? "!border-danger" : ""} />
-                        
+
                         <span className="text-xs text-neutral-500 block mt-1">
                             {activeTab === 'gradeTypes' && 'np. Dobry plus'}
                             {activeTab === 'gradeCategories' && 'np. Sprawdzian'}
                             {activeTab === 'classrooms' && 'np. 102'}
                             {activeTab === 'subjects' && 'np. Matematyka'}
-                            {activeTab === 'time' && timeSubTab === 'statuses' && 'np. Odwołana'}
+                            {activeTab === 'lessonStatuses' && 'np. Odwołana'}
                         </span>
-                        
+
                         {errors.name && <span className="text-xs text-danger">{errors.name}</span>}
                     </div>
                 )}
@@ -192,7 +212,7 @@ export const SystemConfig = () => {
                     </div>
                 )}
 
-                {activeTab === 'time' && timeSubTab === 'hours' && (
+                {activeTab === 'lessonHours' && (
                     <div className="space-y-4">
                         <div>
                             <label className="label-text">Numer lekcji <span className="text-danger">*</span></label>
@@ -227,7 +247,7 @@ export const SystemConfig = () => {
                     return (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={clsx("py-4 px-4 text-sm font-bold uppercase border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap",
-                            activeTab === tab.id ? "border-primary text-primary bg-white" : "border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100/50")}>
+                                activeTab === tab.id ? "border-primary text-primary bg-white" : "border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100/50")}>
                             <Icon size={18} /> {tab.label}
                         </button>
                     )
@@ -237,18 +257,25 @@ export const SystemConfig = () => {
             {viewMode === 'list' && (
                 <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
                     <div className="flex-1 flex items-center gap-4">
-                        <SearchBar value={search} onChange={setSearch} className="w-64" />
-                        
-                        {activeTab === 'time' && (
-                            <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
-                                <button onClick={() => setTimeSubTab('hours')} className={clsx("px-3 py-1 text-xs font-medium rounded-md transition-all", timeSubTab === 'hours' ? "bg-white shadow text-neutral-900" : "text-neutral-500 hover:text-neutral-700")}>Godziny</button>
-                                <button onClick={() => setTimeSubTab('statuses')} className={clsx("px-3 py-1 text-xs font-medium rounded-md transition-all", timeSubTab === 'statuses' ? "bg-white shadow text-neutral-900" : "text-neutral-500 hover:text-neutral-700")}>Statusy</button>
-                            </div>
-                        )}
+                        <SortFilterToolbar
+                            className="flex-1"
+                            search={filters.search}
+                            onSearchChange={v => setFilters(p => ({ ...p, search: v }))}
+                            sortBy={filters.sortBy}
+                            sortDesc={filters.sortDesc}
+                            onSortChange={f => setFilters(p => ({ ...p, sortBy: f, sortDesc: p.sortBy === f ? !p.sortDesc : true }))}
+                            sortOptions={getSortOptions()}
+                            hideCreate={true}
+                        />
                     </div>
+
                     <div className="flex gap-2">
-                        <TrashButton isTrashActive={showTrash} onToggle={() => setShowTrash(!showTrash)} />
-                        {!showTrash && <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> Dodaj</Button>}
+                        <TrashButton isTrashActive={filters.showInactive} onToggle={() => {
+                            setLoading(true);
+                            setData([]);
+                            setFilters(p => ({ ...p, showInactive: !p.showInactive }));
+                        }} />
+                        {!filters.showInactive && <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> Dodaj</Button>}
                     </div>
                 </div>
             )}
@@ -261,35 +288,40 @@ export const SystemConfig = () => {
                         <table className="w-full text-left border-collapse font-sans">
                             <thead>
                                 <tr className="text-xs text-neutral-500 border-b bg-neutral-50 uppercase">
-                                    {activeTab === 'time' && timeSubTab === 'hours' ? <><th className="px-4 py-3 w-16 text-center">Nr</th><th className="px-4 py-3">Godziny</th></> : 
-                                     activeTab === 'gradeTypes' ? <><th className="px-4 py-3">Symbol</th><th className="px-4 py-3">Nazwa</th></> :
-                                     <th className="px-4 py-3 w-1/3">Nazwa</th>}
-                                    
+                                    {activeTab === 'lessonHours' ? <><th className="px-4 py-3 w-16 text-center">Nr</th><th className="px-4 py-3">Godziny</th></> :
+                                        activeTab === 'gradeTypes' ? <><th className="px-4 py-3">Symbol</th><th className="px-4 py-3">Nazwa</th></> :
+                                            <th className="px-4 py-3 w-1/3">Nazwa</th>}
+
                                     {activeTab === 'gradeTypes' && <th className="px-4 py-3">Wartość</th>}
                                     {activeTab === 'gradeCategories' && <th className="px-4 py-3">Waga</th>}
                                     {activeTab === 'attendance' && <th className="px-4 py-3">Skrót</th>}
-                                    
+
+                                    <th className="px-4 py-3">Utworzono</th>
+                                    <th className="px-4 py-3">Edytowano</th>
                                     <th className="px-4 py-3 text-right">Akcje</th>
                                 </tr>
                             </thead>
                             <tbody className="text-sm divide-y divide-neutral-100">
-                                {!filteredData.length ? <tr><td colSpan={6} className="p-8 text-center text-neutral-400">Brak danych</td></tr> : filteredData.map(item => (
+                                {!data.length ? <tr><td colSpan={6} className="p-8 text-center text-neutral-400">Brak danych</td></tr> : data.map(item => (
                                     <tr key={item.id} className="hover:bg-neutral-50 transition-colors">
-                                        
-                                        {activeTab === 'time' && timeSubTab === 'hours' ? 
-                                            <><td className="px-4 py-3 text-center text-neutral-900">{item.orderNumber}</td><td className="px-4 py-3 text-neutral-900">{item.startTime?.slice(0, 5)} - {item.endTime?.slice(0, 5)}</td></> : 
-                                            activeTab === 'gradeTypes' ? 
-                                            <><td className="px-4 py-3 text-neutral-900">{item.numeric}</td><td className="px-4 py-3 text-neutral-900">{item.name}</td></> :
-                                            <td className="px-4 py-3 text-neutral-900">{item.name}</td>
+
+                                        {activeTab === 'lessonHours' ?
+                                            <><td className="px-4 py-3 text-center text-neutral-900">{item.orderNumber}</td><td className="px-4 py-3 text-neutral-900">{item.startTime?.slice(0, 5)} - {item.endTime?.slice(0, 5)}</td></> :
+                                            activeTab === 'gradeTypes' ?
+                                                <><td className="px-4 py-3 text-neutral-900">{item.numeric}</td><td className="px-4 py-3 text-neutral-900">{item.name}</td></> :
+                                                <td className="px-4 py-3 text-neutral-900">{item.name}</td>
                                         }
 
                                         {activeTab === 'gradeTypes' && <td className="px-4 py-3 text-neutral-900">{Number(item.value || 0).toFixed(2)}</td>}
                                         {activeTab === 'gradeCategories' && <td className="px-4 py-3 text-neutral-900">{item.weight}</td>}
                                         {activeTab === 'attendance' && <td className="px-4 py-3 text-neutral-900 font-mono">{item.shortCode}</td>}
-                                        
+
+                                        <td className="px-4 py-3 text-neutral-500 text-xs">{formatDate(item.createdAt)}</td>
+                                        <td className="px-4 py-3 text-neutral-500 text-xs">{formatDate(item.updatedAt)}</td>
+
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex justify-end gap-1">
-                                                {showTrash ? (
+                                                {filters.showInactive ? (
                                                     <>
                                                         <button onClick={() => handleStatusChange(item, true)} title="Przywróć" className="p-1.5 text-success hover:bg-success-light rounded transition-colors"><RotateCcw size={16} /></button>
                                                         <button onClick={() => handleHardDelete(item.id)} title="Usuń trwale" className="p-1.5 text-danger hover:bg-danger-light rounded transition-colors"><Trash2 size={16} /></button>

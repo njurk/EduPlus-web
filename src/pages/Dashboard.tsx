@@ -43,7 +43,7 @@ export const Dashboard = () => {
         <div>
           <h1 className="text-2xl font-bold text-neutral-800">Pulpit administratora</h1>
           <p className="text-neutral-500 text-sm mt-1">
-            Rok szkolny: <span className="font-semibold text-neutral-700">{data?.status.schoolYear ?? '-'}</span>, 
+            Rok szkolny: <span className="font-semibold text-neutral-700">{data?.status.schoolYear ?? '-'}</span>,
             <span className="font-semibold text-neutral-700">{data?.status.semester ?? '-'}</span>
           </p>
         </div>

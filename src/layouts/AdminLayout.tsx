@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -21,8 +21,22 @@ const Clock = () => {
 
 export const AdminLayout = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const [user] = useState<{ name: string } | null>(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
   const handleNavClick = () => setSidebarOpen(false);
-  const user = { firstName: "Jan", lastName: "Kowalski" };
+
+  const handleLogout = () => {
+    if (window.confirm("Czy na pewno chcesz się wylogować?")) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
+  };
 
   const navItems = [
     { label: 'Pulpit', path: '/', icon: Home },
@@ -33,7 +47,7 @@ export const AdminLayout = () => {
 
   return (
     <div className="flex h-screen bg-neutral-50 font-sans overflow-hidden">
-      <div 
+      <div
         className={clsx(
           "fixed inset-0 bg-neutral-900/50 z-40 lg:hidden transition-opacity duration-300",
           isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -51,7 +65,7 @@ export const AdminLayout = () => {
             <X size={20} />
           </button>
         </div>
-        
+
         <nav className="p-2 space-y-1">
           {navItems.map((item) => (
             <NavLink
@@ -60,8 +74,8 @@ export const AdminLayout = () => {
               onClick={handleNavClick}
               className={({ isActive }) => clsx(
                 "flex items-center px-3 py-2 text-sm transition-all duration-200 rounded-md font-medium group",
-                isActive 
-                  ? "bg-primary text-white shadow-md" 
+                isActive
+                  ? "bg-primary text-white shadow-md"
                   : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
               )}
             >
@@ -70,40 +84,40 @@ export const AdminLayout = () => {
             </NavLink>
           ))}
         </nav>
-        
+
         <div className="absolute bottom-0 w-full p-4 bg-neutral-950 border-t border-neutral-800">
           <p className="text-xs text-neutral-500 font-mono">v1.0.0 EduPlus</p>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
         <header className="h-14 bg-white border-b border-neutral-200 flex items-center justify-between px-4 lg:px-8 shadow-sm z-10">
           <div className="flex items-center">
-            <button 
-              onClick={() => setSidebarOpen(true)} 
+            <button
+              onClick={() => setSidebarOpen(true)}
               className="lg:hidden text-neutral-500 hover:text-neutral-700 p-1 mr-4 transition-colors"
             >
               <Menu size={24} />
             </button>
           </div>
-
           <div className="flex items-center gap-6">
             <Clock />
-            
             <div className="flex items-center gap-4 pl-6 border-l border-neutral-200 h-8">
               <span className="text-sm font-medium text-neutral-600 hidden md:block">
-                Witaj, <span className="text-neutral-900 font-semibold">{user.firstName} {user.lastName}</span>!
+                Witaj, <span className="text-neutral-900 font-semibold">
+                  {user?.name || "Użytkownik"}
+                </span>!
               </span>
-              
               <div className="flex items-center gap-2">
-                <button 
+                <button
+                  onClick={() => navigate('/settings')}
                   className="p-2 text-neutral-500 hover:text-primary hover:bg-neutral-50 transition-all rounded-full"
                   title="Ustawienia"
                 >
                   <Settings size={20} />
                 </button>
-                <button 
+                <button
+                  onClick={handleLogout}
                   className="p-2 text-neutral-500 hover:text-danger hover:bg-neutral-50 transition-all rounded-full"
                   title="Wyloguj"
                 >

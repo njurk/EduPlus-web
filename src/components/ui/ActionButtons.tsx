@@ -1,4 +1,4 @@
-import { Edit2, Trash2, RefreshCcw, RotateCcw } from 'lucide-react';
+import { Edit2, Trash2, RefreshCcw } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface ActionButtonsProps {
@@ -9,20 +9,20 @@ interface ActionButtonsProps {
   className?: string;
 }
 
-export const ActionButtons = ({ 
-  isActive = true, 
-  onEdit, 
-  onDelete, 
-  onRestore, 
-  className 
+export const ActionButtons = ({
+  isActive = true,
+  onEdit,
+  onDelete,
+  onRestore,
+  className
 }: ActionButtonsProps) => {
-  
+
   if (!isActive) {
     return (
       <div className={clsx("flex justify-end gap-1", className)}>
         {onRestore && (
-          <button 
-            onClick={onRestore} 
+          <button
+            onClick={onRestore}
             title="Przywróć"
             className="p-1.5 text-success hover:bg-success-light rounded transition-colors"
           >
@@ -30,13 +30,13 @@ export const ActionButtons = ({
           </button>
         )}
         {onDelete && (
-           <button 
-             onClick={onDelete} 
-             title="Usuń trwale"
-             className="p-1.5 text-danger hover:bg-danger-light rounded transition-colors"
-           >
-             <Trash2 size={16} />
-           </button>
+          <button
+            onClick={onDelete}
+            title="Usuń trwale"
+            className="p-1.5 text-danger hover:bg-danger-light rounded transition-colors"
+          >
+            <Trash2 size={16} />
+          </button>
         )}
       </div>
     );
@@ -45,8 +45,8 @@ export const ActionButtons = ({
   return (
     <div className={clsx("flex justify-end gap-1", className)}>
       {onEdit && (
-        <button 
-          onClick={onEdit} 
+        <button
+          onClick={onEdit}
           title="Edytuj"
           className="p-1.5 text-primary hover:bg-neutral-100 rounded transition-colors"
         >
@@ -54,8 +54,8 @@ export const ActionButtons = ({
         </button>
       )}
       {onDelete && (
-        <button 
-          onClick={onDelete} 
+        <button
+          onClick={onDelete}
           title="Usuń"
           className="p-1.5 text-danger hover:bg-neutral-100 rounded transition-colors"
         >

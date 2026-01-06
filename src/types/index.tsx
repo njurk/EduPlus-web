@@ -25,6 +25,8 @@ export interface User extends BaseEntity {
 
 export interface Role extends BaseEntity {
   name: string;
+  description: string;
+  level: number;
 }
 
 export interface Announcement extends BaseEntity {
@@ -115,4 +117,23 @@ export interface GradeCategory extends BaseEntity {
 export interface AttendanceType extends BaseEntity {
   name: string;
   shortCode: string;
+}
+
+export interface ChangePasswordDto {
+    currentPassword: string;
+    newPassword: string;
+}
+
+export interface UserUpdateDto {
+    firstName: string;
+    lastName: string;
+    email: string; 
+    phone?: string;
+    street?: string;
+    city?: string;
+    postalCode?: string;
+    isActive: boolean;
+    roleIds: number[];
+    childIds?: number[]; 
+    password?: string;
 }
