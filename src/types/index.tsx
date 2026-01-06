@@ -82,3 +82,37 @@ export interface ParentStudentRelation {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface Classroom extends BaseEntity {
+  name: string;
+}
+
+export interface Subject extends BaseEntity {
+  name: string;
+}
+
+export interface LessonStatus extends BaseEntity {
+  name: string;
+}
+
+export interface LessonHour extends BaseEntity {
+  orderNumber: number;
+  startTime: string;
+  endTime: string;
+}
+
+export interface GradeType extends BaseEntity {
+  name: string;
+  numeric: string;
+  value: number;
+}
+
+export interface GradeCategory extends BaseEntity {
+  name: string;
+  weight: number;
+}
+
+export interface AttendanceType extends BaseEntity {
+  name: string;
+  shortCode: string;
+}

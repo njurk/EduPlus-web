@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Menu, X, Users, Settings, Home, GraduationCap, LogOut, FilePenIcon } from 'lucide-react';
+import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const Clock = () => {
@@ -26,7 +26,7 @@ export const AdminLayout = () => {
 
   const navItems = [
     { label: 'Pulpit', path: '/', icon: Home },
-    { label: 'Użytkownicy', path: '/users', icon: Users },
+    { label: 'Użytkownicy i role', path: '/users', icon: Users },
     { label: 'Konfiguracja systemu', path: '/system-config', icon: FilePenIcon },
     { label: 'CMS', path: '/cms', icon: Settings },
   ];
@@ -46,7 +46,7 @@ export const AdminLayout = () => {
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex items-center justify-between h-14 px-4 bg-primary border-b border-primary-hover">
-          <span className="font-bold text-lg tracking-tight text-white">EduPlus - Admin</span>
+          <span className="font-bold text-lg tracking-tight text-white">EduPlus Admin</span>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white hover:text-neutral-200 transition-colors">
             <X size={20} />
           </button>

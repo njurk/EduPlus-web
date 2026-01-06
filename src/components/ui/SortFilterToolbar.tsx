@@ -1,5 +1,5 @@
-import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { Input } from './Input';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { SearchBar } from './SearchBar'; // <--- ZMIANA IMPORTU
 import { clsx } from 'clsx';
 
 interface SortOption {
@@ -29,19 +29,10 @@ export const SortFilterToolbar = ({
 }: SortFilterToolbarProps) => {
 
   return (
-    <div className={clsx("px-4 py-3 border-b border-neutral-200 bg-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-4", className)}>
+    <div className={clsx("px-4 py-3 border-b flex flex-col sm:flex-row justify-between items-center gap-4", className)}>
       <div className="flex items-center gap-4 flex-1 w-full sm:w-auto">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-2.5 top-2.5 text-neutral-300" size={18} />
-          <Input
-            placeholder="Szukaj..."
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 bg-white"
-          />
-        </div>
-
-        <div className="flex gap-4 border-l pl-4 border-neutral-300 overflow-x-auto">
+        <SearchBar value={search} onChange={onSearchChange} className="w-full sm:max-w-xs bg-white" />
+        <div className="flex gap-4 border-l pl-4  overflow-x-auto">
           {sortOptions.map((option) => (
             <button
               key={option.field}
