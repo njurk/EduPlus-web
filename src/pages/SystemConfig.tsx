@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { TrashButton } from '../components/ui/TrashButton';
 import { api } from '../services/apiService';
-import { Edit2, Trash2, Plus, School, Clock, GraduationCap, CalendarCheck, BookOpen, RefreshCcw, RotateCcw, List, ListOrdered } from 'lucide-react';
+import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus } from 'lucide-react';
 import { clsx } from 'clsx';
 import { SortFilterToolbar } from '../components/ui/SortFilterToolbar';
 import { validateSystemConfig } from '../utils/validation';
+import { DataTable, type Column } from '../components/ui/DataTable';
+import { ActionButtons } from '../components/ui/ActionButtons';
 
 type BaseEntity = { id: number; isActive: boolean; createdAt: string; updatedAt: string;[key: string]: any };
 
@@ -29,7 +31,12 @@ const formatDate = (date?: string) => date ? new Date(date).toLocaleString('pl-P
 
 export const SystemConfig = () => {
     const [activeTab, setActiveTab] = useState<typeof TABS[number]['id']>('classrooms');
-
+    const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
+    const [loading, setLoading] = useState(false);
+    const [data, setData] = useState<any[]>([]);
+    const [formData, setFormData] = useState<Partial<BaseEntity>>({});
+    const [errors, setErrors] = useState<Record<string, string | null>>({});
+    
     const [filters, setFilters] = useState({
         search: '',
         sortBy: 'updated',
@@ -38,31 +45,18 @@ export const SystemConfig = () => {
     });
 
     useEffect(() => {
+        setLoading(true);
+        setData([]);
+        setViewMode('list');
+
         let defaultSort = 'updated';
         let defaultDesc = true;
 
-        if (activeTab === 'lessonHours') {
-            defaultSort = 'orderNumber';
-            defaultDesc = false;
-        } else if (activeTab === 'gradeTypes') {
-            defaultSort = 'value';
-            defaultDesc = true;
-        }
+        if (activeTab === 'lessonHours') { defaultSort = 'orderNumber'; defaultDesc = false; }
+        else if (activeTab === 'gradeTypes') { defaultSort = 'value'; defaultDesc = true; }
 
-        setFilters(prev => ({
-            ...prev,
-            search: '',
-            showInactive: false,
-            sortBy: defaultSort,
-            sortDesc: defaultDesc
-        }));
+        setFilters(prev => ({ ...prev, search: '', showInactive: false, sortBy: defaultSort, sortDesc: defaultDesc }));
     }, [activeTab]);
-
-    const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
-    const [loading, setLoading] = useState(false);
-    const [data, setData] = useState<any[]>([]);
-    const [formData, setFormData] = useState<Partial<BaseEntity>>({});
-    const [errors, setErrors] = useState<Record<string, string | null>>({});
 
     const getCurrentApi = useCallback(() => {
         switch (activeTab) {
@@ -80,8 +74,7 @@ export const SystemConfig = () => {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const apiResource = getCurrentApi();
-            const result = await apiResource.getAll(filters);
+            const result = await getCurrentApi().getAll(filters);
             setData(result || []);
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
@@ -92,21 +85,12 @@ export const SystemConfig = () => {
         return () => clearTimeout(timer);
     }, [loadData]);
 
-    useEffect(() => {
-        setViewMode('list');
-    }, [activeTab]);
-
     const getSortOptions = () => {
-        const common = [
-            { field: 'updated', label: 'Edytowano' },
-            { field: 'created', label: 'Utworzono' }
-        ];
-
+        const common = [{ field: 'updated', label: 'Edytowano' }, { field: 'created', label: 'Utworzono' }];
         if (activeTab === 'lessonHours') return [{ field: 'orderNumber', label: 'Nr lekcji' }, ...common];
         if (activeTab === 'gradeTypes') return [{ field: 'value', label: 'Wartość' }, { field: 'name', label: 'Nazwa' }, ...common];
         if (activeTab === 'gradeCategories') return [{ field: 'weight', label: 'Waga' }, { field: 'name', label: 'Nazwa' }, ...common];
         if (activeTab === 'attendance') return [{ field: 'name', label: 'Nazwa' }, ...common];
-
         return [{ field: 'name', label: 'Nazwa' }, ...common];
     };
 
@@ -118,10 +102,7 @@ export const SystemConfig = () => {
 
     const handleSave = async () => {
         const newErrors = validateSystemConfig(activeTab, formData);
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            return;
-        }
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
         try {
             const resource = getCurrentApi();
@@ -133,10 +114,7 @@ export const SystemConfig = () => {
 
     const handleStatusChange = async (item: BaseEntity, isActive: boolean) => {
         if (!window.confirm(isActive ? "Przywrócić element?" : "Przenieść do kosza?")) return;
-        try {
-            await getCurrentApi().update(item.id, { ...item, isActive });
-            loadData();
-        } catch { alert("Błąd zmiany statusu"); }
+        try { await getCurrentApi().update(item.id, { ...item, isActive }); loadData(); } catch { alert("Błąd zmiany statusu"); }
     };
 
     const handleHardDelete = async (id: number) => {
@@ -146,25 +124,57 @@ export const SystemConfig = () => {
 
     const openForm = (item?: any) => {
         setErrors({});
-        setFormData(item ? { ...item } : {
-            isActive: true,
-            orderNumber: (activeTab === 'lessonHours') ? (data.length + 1) : undefined
-        });
+        setFormData(item ? { ...item } : { isActive: true, orderNumber: (activeTab === 'lessonHours') ? (data.length + 1) : undefined });
         setViewMode('form');
     };
+
+    const columns = useMemo(() => {
+        const cols: Column<any>[] = [];
+
+        if (activeTab === 'lessonHours') {
+            cols.push({ header: 'Nr', accessor: 'orderNumber', className: 'text-center w-16' });
+            cols.push({ header: 'Godziny', render: (row) => `${row.startTime?.slice(0, 5)} - ${row.endTime?.slice(0, 5)}` });
+        } else if (activeTab === 'gradeTypes') {
+            cols.push({ header: 'Symbol', accessor: 'numeric' });
+            cols.push({ header: 'Nazwa', accessor: 'name' });
+            cols.push({ header: 'Wartość', render: (row) => Number(row.value).toFixed(2) });
+        } else if (activeTab === 'gradeCategories') {
+            cols.push({ header: 'Nazwa', accessor: 'name' });
+            cols.push({ header: 'Waga', accessor: 'weight' });
+        } else if (activeTab === 'attendance') {
+            cols.push({ header: 'Nazwa', accessor: 'name' });
+            cols.push({ header: 'Skrót', accessor: 'shortCode', className: 'font-mono' });
+        } else {
+            cols.push({ header: 'Nazwa', accessor: 'name', className: 'w-1/3' });
+        }
+
+        cols.push({ header: 'Utworzono', render: (row) => formatDate(row.createdAt), className: 'text-neutral-500 text-xs' });
+        cols.push({ header: 'Edytowano', render: (row) => formatDate(row.updatedAt), className: 'text-neutral-500 text-xs' });
+        
+        cols.push({
+            header: 'Akcje',
+            className: 'text-right',
+            render: (row) => (
+                <ActionButtons 
+                    isActive={!filters.showInactive}
+                    onEdit={() => openForm(row)}
+                    onDelete={() => filters.showInactive ? handleHardDelete(row.id) : handleStatusChange(row, false)}
+                    onRestore={() => handleStatusChange(row, true)}
+                />
+            )
+        });
+
+        return cols;
+    }, [activeTab, filters.showInactive]);
 
     const renderForm = () => (
         <div className="bg-white border border-neutral-200 max-w-2xl mx-auto shadow-sm flex flex-col font-sans mt-6 rounded-lg overflow-hidden">
             <div className="px-6 py-4 border-b bg-neutral-50 font-bold text-neutral-800">{formData.id ? 'Edycja' : 'Nowy'} element</div>
             <div className="p-6 space-y-4">
-
                 {activeTab !== 'lessonHours' && (
                     <div>
-                        <label className="label-text">
-                            {activeTab === 'gradeTypes' ? 'Nazwa opisowa' : 'Nazwa'} <span className="text-danger">*</span>
-                        </label>
+                        <label className="label-text">{activeTab === 'gradeTypes' ? 'Nazwa opisowa' : 'Nazwa'} <span className="text-danger">*</span></label>
                         <Input name="name" value={formData.name || ''} onChange={handleInput} className={errors.name ? "!border-danger" : ""} />
-
                         <span className="text-xs text-neutral-500 block mt-1">
                             {activeTab === 'gradeTypes' && 'np. Dobry plus'}
                             {activeTab === 'gradeCategories' && 'np. Sprawdzian'}
@@ -172,7 +182,6 @@ export const SystemConfig = () => {
                             {activeTab === 'subjects' && 'np. Matematyka'}
                             {activeTab === 'lessonStatuses' && 'np. Odwołana'}
                         </span>
-
                         {errors.name && <span className="text-xs text-danger">{errors.name}</span>}
                     </div>
                 )}
@@ -220,14 +229,8 @@ export const SystemConfig = () => {
                             <span className="text-xs text-neutral-500 block mt-1">Kolejność w planie</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="label-text">Start <span className="text-danger">*</span></label>
-                                <Input type="time" name="startTime" value={(formData as LessonHour).startTime || ''} onChange={handleInput} />
-                            </div>
-                            <div>
-                                <label className="label-text">Koniec <span className="text-danger">*</span></label>
-                                <Input type="time" name="endTime" value={(formData as LessonHour).endTime || ''} onChange={handleInput} />
-                            </div>
+                            <div><label className="label-text">Start <span className="text-danger">*</span></label><Input type="time" name="startTime" value={(formData as LessonHour).startTime || ''} onChange={handleInput} /></div>
+                            <div><label className="label-text">Koniec <span className="text-danger">*</span></label><Input type="time" name="endTime" value={(formData as LessonHour).endTime || ''} onChange={handleInput} /></div>
                         </div>
                     </div>
                 )}
@@ -268,7 +271,6 @@ export const SystemConfig = () => {
                             hideCreate={true}
                         />
                     </div>
-
                     <div className="flex gap-2">
                         <TrashButton isTrashActive={filters.showInactive} onToggle={() => {
                             setLoading(true);
@@ -281,64 +283,13 @@ export const SystemConfig = () => {
             )}
 
             <div className="flex-1 bg-white">
-                {loading ? (
-                    <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2"><RefreshCcw className="animate-spin" size={24} /> Ładowanie...</div>
-                ) : viewMode === 'form' ? renderForm() : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse font-sans">
-                            <thead>
-                                <tr className="text-xs text-neutral-500 border-b bg-neutral-50 uppercase">
-                                    {activeTab === 'lessonHours' ? <><th className="px-4 py-3 w-16 text-center">Nr</th><th className="px-4 py-3">Godziny</th></> :
-                                        activeTab === 'gradeTypes' ? <><th className="px-4 py-3">Symbol</th><th className="px-4 py-3">Nazwa</th></> :
-                                            <th className="px-4 py-3 w-1/3">Nazwa</th>}
-
-                                    {activeTab === 'gradeTypes' && <th className="px-4 py-3">Wartość</th>}
-                                    {activeTab === 'gradeCategories' && <th className="px-4 py-3">Waga</th>}
-                                    {activeTab === 'attendance' && <th className="px-4 py-3">Skrót</th>}
-
-                                    <th className="px-4 py-3">Utworzono</th>
-                                    <th className="px-4 py-3">Edytowano</th>
-                                    <th className="px-4 py-3 text-right">Akcje</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm divide-y divide-neutral-100">
-                                {!data.length ? <tr><td colSpan={6} className="p-8 text-center text-neutral-400">Brak danych</td></tr> : data.map(item => (
-                                    <tr key={item.id} className="hover:bg-neutral-50 transition-colors">
-
-                                        {activeTab === 'lessonHours' ?
-                                            <><td className="px-4 py-3 text-center text-neutral-900">{item.orderNumber}</td><td className="px-4 py-3 text-neutral-900">{item.startTime?.slice(0, 5)} - {item.endTime?.slice(0, 5)}</td></> :
-                                            activeTab === 'gradeTypes' ?
-                                                <><td className="px-4 py-3 text-neutral-900">{item.numeric}</td><td className="px-4 py-3 text-neutral-900">{item.name}</td></> :
-                                                <td className="px-4 py-3 text-neutral-900">{item.name}</td>
-                                        }
-
-                                        {activeTab === 'gradeTypes' && <td className="px-4 py-3 text-neutral-900">{Number(item.value || 0).toFixed(2)}</td>}
-                                        {activeTab === 'gradeCategories' && <td className="px-4 py-3 text-neutral-900">{item.weight}</td>}
-                                        {activeTab === 'attendance' && <td className="px-4 py-3 text-neutral-900 font-mono">{item.shortCode}</td>}
-
-                                        <td className="px-4 py-3 text-neutral-500 text-xs">{formatDate(item.createdAt)}</td>
-                                        <td className="px-4 py-3 text-neutral-500 text-xs">{formatDate(item.updatedAt)}</td>
-
-                                        <td className="px-4 py-3 text-right">
-                                            <div className="flex justify-end gap-1">
-                                                {filters.showInactive ? (
-                                                    <>
-                                                        <button onClick={() => handleStatusChange(item, true)} title="Przywróć" className="p-1.5 text-success hover:bg-success-light rounded transition-colors"><RotateCcw size={16} /></button>
-                                                        <button onClick={() => handleHardDelete(item.id)} title="Usuń trwale" className="p-1.5 text-danger hover:bg-danger-light rounded transition-colors"><Trash2 size={16} /></button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <button onClick={() => openForm(item)} className="p-1.5 text-primary hover:bg-primary-light rounded transition-colors"><Edit2 size={16} /></button>
-                                                        <button onClick={() => handleStatusChange(item, false)} title="Przenieś do kosza" className="p-1.5 text-neutral-400 hover:text-danger hover:bg-danger-light rounded transition-colors"><Trash2 size={16} /></button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                {viewMode === 'form' ? renderForm() : (
+                    <DataTable 
+                        data={data}
+                        columns={columns}
+                        isLoading={loading}
+                        emptyMessage="Brak danych w wybranej kategorii"
+                    />
                 )}
             </div>
         </div>

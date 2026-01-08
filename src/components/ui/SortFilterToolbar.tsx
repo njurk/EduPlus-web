@@ -1,5 +1,5 @@
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { SearchBar } from './SearchBar'; // <--- ZMIANA IMPORTU
+import { SearchBar } from './SearchBar';
 import { clsx } from 'clsx';
 
 interface SortOption {

@@ -1,10 +1,11 @@
-import type { ChangePasswordDto, UserUpdateDto } from "../types";
+import type { ChangePasswordDto, GradeDto, UserUpdateDto } from "../types";
 
-const REGEX = {
+export const REGEX = {
     EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     POSTAL_CODE: /^\d{2}-\d{3}$/,
     PHONE: /^[0-9+\- ]*$/,
-    PHONE_LENGTH: 9
+    PHONE_LENGTH: 9,
+    CLASS_LETTER: /^[A-Z]$/
 };
 
 export const PASSWORD_RULES = [
@@ -110,4 +111,40 @@ export const validatePasswordChange = (data: ChangePasswordDto & { confirmPasswo
     if (!isPasswordValid(data.newPassword)) return "Nowe hasło nie spełnia wymagań bezpieczeństwa.";
 
     return null;
+};
+
+export const validateClassForm = (data: any) => {
+    const errors: Record<string, string> = {};
+
+    if (!data.level) {
+        errors.level = "Poziom jest wymagany";
+    } else if (data.level < 1 || data.level > 8) {
+        errors.level = "Poziom musi być cyfrą od 1 do 8";
+    }
+
+    if (!data.letter) {
+        errors.letter = "Oddział jest wymagany";
+    } else if (!REGEX.CLASS_LETTER.test(data.letter)) {
+        errors.letter = "Oddział musi być literą A-Z";
+    }
+
+    return errors;
+};
+
+export const validateGradeForm = (data: Partial<GradeDto>): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    if (!data.gradeTypeId) {
+        errors.gradeTypeId = "Wybierz ocenę";
+    }
+
+    if (!data.gradeCategoryId) {
+        errors.gradeCategoryId = "Wybierz kategorię oceny";
+    }
+
+    if (data.comment && data.comment.length > 255) {
+        errors.comment = "Komentarz za długi (max 255 znaków)";
+    }
+
+    return errors;
 };

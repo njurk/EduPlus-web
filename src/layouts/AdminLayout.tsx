@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon } from 'lucide-react';
+import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, BookMarked } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const Clock = () => {
@@ -40,9 +40,11 @@ export const AdminLayout = () => {
 
   const navItems = [
     { label: 'Pulpit', path: '/', icon: Home },
-    { label: 'Użytkownicy i role', path: '/users', icon: Users },
+    { label: 'Użytkownicy i powiązania', path: '/users', icon: Users },
+    { label: 'Zarządzanie klasami', path: '/class-management', icon: Folder },
+    { label : 'Zarządzanie ocenami', path: '/class-grades', icon: BookMarked },
     { label: 'Konfiguracja systemu', path: '/system-config', icon: FilePenIcon },
-    { label: 'CMS', path: '/cms', icon: Settings },
+    { label: 'CMS', path: '/cms', icon: Layout },
   ];
 
   return (

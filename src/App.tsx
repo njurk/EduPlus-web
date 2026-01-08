@@ -6,6 +6,8 @@ import { SystemConfig } from './pages/SystemConfig';
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Settings } from './pages/Settings';
+import { ClassManagement } from './pages/ClassManagement';
+import { ClassGrades } from './pages/ClassGrades';
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
           <Route path="system-config" element={<SystemConfig />} />
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="class-management" element={<ClassManagement/>} />
+          <Route path="class-grades" element={<ClassGrades/>} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -17,9 +17,16 @@ export const ActionButtons = ({
   className
 }: ActionButtonsProps) => {
 
+  const stopPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   if (!isActive) {
     return (
-      <div className={clsx("flex justify-end gap-1", className)}>
+      <div
+        className={clsx("flex justify-end gap-1", className)}
+        onClick={stopPropagation}
+      >
         {onRestore && (
           <button
             onClick={onRestore}
@@ -43,7 +50,10 @@ export const ActionButtons = ({
   }
 
   return (
-    <div className={clsx("flex justify-end gap-1", className)}>
+    <div
+      className={clsx("flex justify-end gap-1", className)}
+      onClick={stopPropagation}
+    >
       {onEdit && (
         <button
           onClick={onEdit}
