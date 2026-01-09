@@ -3,7 +3,7 @@ import { Plus, FileText } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { api } from '../services/apiService';
 import type { DashboardSummary, AttendanceChartData } from '../types';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
 const formatDate = (date?: string) => date ? new Date(date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';

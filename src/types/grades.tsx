@@ -19,11 +19,18 @@ export interface Grade {
   subjectId: number;
   gradeTypeId: number;
   gradeCategoryId: number;
-  gradeType?: GradeType;
-  gradeCategory?: GradeCategory;
   comment?: string;
   createdAt: string;
   updatedAt: string;
+  isActive: boolean;
+    gradeType?: {
+        numeric: string;
+        name: string;
+        value: number;
+    };
+    gradeCategory?: {
+        name: string;
+    };
 }
 
 export interface GradeDto {
@@ -39,22 +46,7 @@ export interface StudentGradesRowDto {
   studentId: number;
   firstName: string;
   lastName: string;
-  email: string;
   orderNumber: number;
+  average?: number;
   grades: Grade[];
-}
-
-export interface LessonStatus extends BaseEntity {
-  name: string;
-}
-
-export interface LessonHour extends BaseEntity {
-  orderNumber: number;
-  startTime: string;
-  endTime: string;
-}
-
-export interface AttendanceType extends BaseEntity {
-  name: string;
-  shortCode: string;
 }

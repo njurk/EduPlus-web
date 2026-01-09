@@ -1,5 +1,4 @@
-import { Button } from './Button';
-import { Trash2, XCircle } from 'lucide-react';
+import { Trash2, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface TrashButtonProps {
@@ -10,23 +9,25 @@ interface TrashButtonProps {
 
 export const TrashButton = ({ isTrashActive, onToggle, className }: TrashButtonProps) => {
     return (
-        <Button
-            variant={isTrashActive ? "primary" : "secondary"}
+        <button
             onClick={onToggle}
             className={clsx(
-                isTrashActive && "bg-neutral-800 hover:bg-neutral-900 border-neutral-800 text-white",
+                "flex items-center justify-center gap-2 h-10 px-4 text-sm font-medium rounded-sm shadow-sm transition-all focus:outline-none",
+                isTrashActive
+                    ? "bg-neutral-800 hover:bg-neutral-900 text-white border border-neutral-800"
+                    : "bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-300 hover:border-neutral-400",
                 className
             )}
         >
             {isTrashActive ? (
                 <>
-                    <XCircle size={16} className="mr-2" /> Powrót
+                    <ArrowLeft size={16} /> <span>Powrót</span>
                 </>
             ) : (
                 <>
-                    <Trash2 size={16} className="mr-2" /> Kosz
+                    <Trash2 size={18} /> <span>Kosz</span>
                 </>
             )}
-        </Button>
+        </button>
     );
 };

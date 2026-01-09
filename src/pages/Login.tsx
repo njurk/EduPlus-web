@@ -78,7 +78,7 @@ export const Login = () => {
                                 </div>
                                 <Input
                                     className="pl-10"
-                                    placeholder="**********"
+                                    placeholder="********"
                                     type="password"
                                     value={formData.password}
                                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}

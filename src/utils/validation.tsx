@@ -28,7 +28,7 @@ export const validateUserField = (name: string, value: any, isEdit: boolean): st
     }
 
     if (name === 'email' && !REGEX.EMAIL.test(valStr)) {
-        return "Nieprawidłowy format email";
+        return "Nieprawidłowy email";
     }
 
     if (name === 'password') {

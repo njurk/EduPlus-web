@@ -4,7 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 interface JwtPayload {
   exp: number;
   iat: number;
-  sub: string; 
+  sub: string;
 }
 
 export const ProtectedRoute = () => {

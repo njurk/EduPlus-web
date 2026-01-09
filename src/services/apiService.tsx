@@ -1,11 +1,8 @@
 import type {
-    User, UserRole, Announcement, SchoolClass, DashboardSummary,
-    AttendanceChartData, ParentStudents, Role,
+    User, UserRole, Announcement, SchoolClass, DashboardSummary, AttendanceChartData, ParentStudents, Role,
     Classroom, LessonHour, LessonStatus, GradeType, GradeCategory, AttendanceType, Subject, ChangePasswordDto,
-    SchoolYear,
-    ClassEntity,
-    ClassDetailsDto,
-    StudentGradesRowDto
+    SchoolYear, ClassEntity, ClassDetailsDto, StudentGradesRowDto,
+    SemesterDto
 } from '../types';
 
 const API_URL = 'https://localhost:7252/api';
@@ -94,10 +91,17 @@ export const api = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials)
             });
+
             if (!response.ok) {
-                if (response.status === 401) throw new Error("Nieprawidłowy email lub hasło");
-                throw new Error("Błąd serwera");
+                const errorBody = await response.text();
+                try {
+                    const errorJson = JSON.parse(errorBody);
+                    throw new Error(errorJson.message || errorJson.title || errorBody);
+                } catch {
+                    throw new Error(errorBody || "Wystąpił błąd serwera");
+                }
             }
+
             return await response.json();
         }
     },
@@ -216,23 +220,27 @@ export const api = {
             const response = await fetch(`${API_URL}/schoolyear`, { headers: getHeaders() });
             return handleResponse(response);
         },
+        getSemesters: async (yearId: number): Promise<SemesterDto[]> => {
+            const response = await fetch(`${API_URL}/schoolyear/${yearId}/semesters`, { headers: getHeaders() });
+            return handleResponse(response);
+        },
         getClassesByYear: async (yearId: number): Promise<ClassEntity[]> => {
             const response = await fetch(`${API_URL}/class?schoolYearId=${yearId}`, { headers: getHeaders() });
             return handleResponse(response);
         },
         getClassDetails: async (
-            classId: number, 
-            params?: { 
-                sortBy?: string; 
-                sortDesc?: boolean; 
+            classId: number,
+            params?: {
+                sortBy?: string;
+                sortDesc?: boolean;
                 studentSearch?: string;
-                subjectSearch?: string; 
-                subjectSortBy?: string; 
-                subjectSortDesc?: boolean; 
+                subjectSearch?: string;
+                subjectSortBy?: string;
+                subjectSortDesc?: boolean;
             }
         ): Promise<ClassDetailsDto> => {
             const query = new URLSearchParams();
-            
+
             if (params) {
                 if (params.sortBy) query.append('sortBy', params.sortBy);
                 if (params.sortDesc !== undefined) query.append('sortDesc', params.sortDesc.toString());
@@ -248,7 +256,7 @@ export const api = {
         getStudentCandidates: async (classId: number, search: string = ''): Promise<User[]> => {
             const query = new URLSearchParams();
             if (search) query.append('search', search);
-            
+
             const response = await fetch(`${API_URL}/class/${classId}/candidates?${query.toString()}`, {
                 headers: getHeaders()
             });
@@ -309,14 +317,17 @@ export const api = {
         }
     },
     classGrades: {
-        getClassGrades: async (classId: number, subjectId: number): Promise<StudentGradesRowDto[]> => {
-            const response = await fetch(`${API_URL}/class-grades/${classId}/${subjectId}`, { 
-                headers: getHeaders() 
-            });
+        getClassGrades: async (classId: number, subjectId: number, semester: number, yearId?: number): Promise<StudentGradesRowDto[]> => {
+            const url = `${API_URL}/grade/class-grades/${classId}/${subjectId}?semester=${semester}${yearId ? `&schoolYearId=${yearId}` : ''}`;
+            const response = await fetch(url, { headers: getHeaders() });
             return handleResponse(response);
         }
     },
     grades: {
+        getCurrentSemester: async (yearId: number): Promise<number> => {
+            const response = await fetch(`${API_URL}/grade/current-semester/${yearId}`, { headers: getHeaders() });
+            return handleResponse(response);
+        },
         create: async (data: any) => {
             const response = await fetch(`${API_URL}/grade`, {
                 method: 'POST',

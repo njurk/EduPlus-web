@@ -42,7 +42,7 @@ export const AdminLayout = () => {
     { label: 'Pulpit', path: '/', icon: Home },
     { label: 'Użytkownicy i powiązania', path: '/users', icon: Users },
     { label: 'Zarządzanie klasami', path: '/class-management', icon: Folder },
-    { label : 'Zarządzanie ocenami', path: '/class-grades', icon: BookMarked },
+    { label: 'Zarządzanie ocenami', path: '/class-grades', icon: BookMarked },
     { label: 'Konfiguracja systemu', path: '/system-config', icon: FilePenIcon },
     { label: 'CMS', path: '/cms', icon: Layout },
   ];

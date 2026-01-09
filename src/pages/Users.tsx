@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import type { User, Role, ParentStudents } from '../types';
+import type { User, Role } from '../types';
 import { api } from '../services/apiService';
 import { TrashButton } from '../components/ui/TrashButton';
 import { Check, AlertCircle, User as UserIcon, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus, RefreshCcw } from 'lucide-react';
@@ -60,7 +60,7 @@ export const Users = () => {
                     setData(rels);
                 }
             }
-        } catch { setErrors({ general: "Błąd pobierania danych" }); } 
+        } catch { setErrors({ general: "Błąd pobierania danych" }); }
         finally { setLoading(false); }
     }, [mainTab, filters, roles.length]);
 
@@ -78,8 +78,6 @@ export const Users = () => {
     }, [viewMode, cachedStudents.length]);
 
     const setUsersData = (d: any[]) => setData(d);
-    const setRelationsData = (d: any[]) => setData(d);
-    const setRolesData = (d: any[]) => setData(d);
 
     const handleAction = async (action: () => Promise<any>, msg?: string) => {
         if (msg && !window.confirm(msg)) return;
@@ -104,7 +102,7 @@ export const Users = () => {
 
     const openForm = (item?: any, tab: 'details' | 'relations' = 'details') => {
         setErrors({});
-        setFormData(item ? { 
+        setFormData(item ? {
             id: item.id,
             firstName: item.firstName,
             lastName: item.lastName,
@@ -118,9 +116,9 @@ export const Users = () => {
 
         const roleIds = item?.userRoles?.map((ur: any) => ur.roleId) || [];
         setSelectedRoleIds(roleIds);
-        
+
         if (item && tab === 'relations') {
-             setSelectedChildIds(item.childIds || []); 
+            setSelectedChildIds(item.childIds || []);
         } else {
             setSelectedChildIds([]);
         }
@@ -144,7 +142,7 @@ export const Users = () => {
         try {
             const payload = { ...formData, roleIds: selectedRoleIds, childIds: selectedChildIds };
             if (!payload.password) delete payload.password;
-            
+
             await (formData.id ? api.users.update(formData.id, payload) : api.users.create(payload));
             setViewMode('list');
             loadData();
@@ -262,7 +260,7 @@ export const Users = () => {
             <div className="flex-1 bg-white">
                 {loading ? <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2"><RefreshCcw className="animate-spin" size={24} /> Ładowanie...</div> : (
                     mainTab === 'users' ? (
-                        <DataTable 
+                        <DataTable
                             data={data}
                             onRowClick={!filters.showInactive ? async (u) => {
                                 setLoading(true);
@@ -275,34 +273,37 @@ export const Users = () => {
                             columns={[
                                 { header: 'Użytkownik', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
                                 { header: 'Telefon', render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
-                                { header: 'Rola', render: (u) => 
-                                    <div className="flex gap-1 flex-wrap">
-                                        {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
-                                            <span key={idx} className="bg-primary-light text-primary text-xs px-2 py-0.5 rounded border border-primary-light">{r}</span>
-                                        )) : <span className="text-neutral-400 text-xs">-</span>}
-                                    </div> 
+                                {
+                                    header: 'Rola', render: (u) =>
+                                        <div className="flex gap-1 flex-wrap">
+                                            {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
+                                                <span key={idx} className="bg-primary-light text-primary text-xs px-2 py-0.5 rounded border border-primary-light">{r}</span>
+                                            )) : <span className="text-neutral-400 text-xs">-</span>}
+                                        </div>
                                 },
                                 { header: 'Utworzono', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.createdAt)}</span> },
                                 { header: 'Edytowano', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.updatedAt)}</span> },
-                                { header: 'Akcje', className: 'text-right', render: (u) => (
-                                    <ActionButtons 
-                                        isActive={u.isActive} 
-                                        onEdit={async () => {
-                                            setLoading(true);
-                                            try {
-                                                const fullUser = await api.users.get(u.id);
-                                                openForm(fullUser);
-                                            } catch { alert("Błąd pobierania danych użytkownika"); }
-                                            finally { setLoading(false); }
-                                        }} 
-                                        onDelete={() => handleAction(() => api.users.delete(u.id), "Usunąć?")}
-                                        onRestore={() => handleRestore(u.id)}
-                                    />
-                                ) }
+                                {
+                                    header: 'Akcje', className: 'text-right', render: (u) => (
+                                        <ActionButtons
+                                            isActive={u.isActive}
+                                            onEdit={async () => {
+                                                setLoading(true);
+                                                try {
+                                                    const fullUser = await api.users.get(u.id);
+                                                    openForm(fullUser);
+                                                } catch { alert("Błąd pobierania danych użytkownika"); }
+                                                finally { setLoading(false); }
+                                            }}
+                                            onDelete={() => handleAction(() => api.users.delete(u.id), "Usunąć?")}
+                                            onRestore={() => handleRestore(u.id)}
+                                        />
+                                    )
+                                }
                             ]}
                         />
                     ) : mainTab === 'roles' ? (
-                        <DataTable 
+                        <DataTable
                             data={data}
                             columns={[
                                 { header: 'Nazwa', accessor: 'name', className: 'font-medium text-neutral-900' },
@@ -313,7 +314,7 @@ export const Users = () => {
                         />
                     ) : (
                         filters.onlyUnassignedParents ? (
-                            <DataTable 
+                            <DataTable
                                 data={data}
                                 columns={[
                                     { header: 'Rodzic', render: (p) => <div><div className="font-medium text-neutral-900">{formatName(p)}</div><div className="text-xs text-neutral-500">{p.email}</div></div> },
@@ -323,19 +324,21 @@ export const Users = () => {
                                 ]}
                             />
                         ) : (
-                            <DataTable 
+                            <DataTable
                                 data={data}
                                 columns={[
                                     { header: 'Rodzic', render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
                                     { header: 'Uczeń', accessor: 'studentName', className: 'font-medium text-neutral-900' },
                                     { header: 'Utworzono', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
                                     { header: 'Edytowano', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt || r.createdAt)}</span> },
-                                    { header: 'Akcje', className: 'text-right', render: (r) => (
-                                        <ActionButtons 
-                                            onEdit={() => handleEditRelation(r.parentId)} 
-                                            onDelete={() => handleAction(() => api.parentStudents.delete(r.id), "Usunąć powiązanie?")} 
-                                        />
-                                    )}
+                                    {
+                                        header: 'Akcje', className: 'text-right', render: (r) => (
+                                            <ActionButtons
+                                                onEdit={() => handleEditRelation(r.parentId)}
+                                                onDelete={() => handleAction(() => api.parentStudents.delete(r.id), "Usunąć powiązanie?")}
+                                            />
+                                        )
+                                    }
                                 ]}
                             />
                         )

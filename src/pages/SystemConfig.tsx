@@ -1,72 +1,201 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { TrashButton } from '../components/ui/TrashButton';
-import { api } from '../services/apiService';
-import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus } from 'lucide-react';
-import { clsx } from 'clsx';
-import { SortFilterToolbar } from '../components/ui/SortFilterToolbar';
-import { validateSystemConfig } from '../utils/validation';
-import { DataTable, type Column } from '../components/ui/DataTable';
-import { ActionButtons } from '../components/ui/ActionButtons';
-
-type BaseEntity = { id: number; isActive: boolean; createdAt: string; updatedAt: string;[key: string]: any };
-
-interface GradeType extends BaseEntity { numeric: string; value: number; name: string; }
-interface GradeCategory extends BaseEntity { name: string; weight: number; }
-interface LessonHour extends BaseEntity { orderNumber: number; startTime: string; endTime: string; }
-interface AttendanceType extends BaseEntity { shortCode: string; }
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { TrashButton } from "../components/ui/TrashButton";
+import { Modal } from "../components/ui/Modal";
+import { api } from "../services/apiService";
+import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus } from "lucide-react";
+import { clsx } from "clsx";
+import { SortFilterToolbar } from "../components/ui/SortFilterToolbar";
+import { validateSystemConfig } from "../utils/validation";
+import { DataTable, type Column } from "../components/ui/DataTable";
+import { ActionButtons } from "../components/ui/ActionButtons";
+import type { BaseEntity, GradeType, GradeCategory, AttendanceType, LessonHour } from "../types";
+import { formatDate } from "../utils/formatters";
 
 const TABS = [
-    { id: 'classrooms', label: 'Sale', icon: School },
-    { id: 'subjects', label: 'Przedmioty', icon: BookOpen },
-    { id: 'lessonHours', label: 'Godziny lekcyjne', icon: Clock },
-    { id: 'lessonStatuses', label: 'Statusy lekcji', icon: List },
-    { id: 'gradeTypes', label: 'Skala ocen', icon: GraduationCap },
-    { id: 'gradeCategories', label: 'Kategorie ocen', icon: ListOrdered },
-    { id: 'attendance', label: 'Frekwencja', icon: CalendarCheck },
+    { id: "classrooms", label: "Sale", icon: School },
+    { id: "subjects", label: "Przedmioty", icon: BookOpen },
+    { id: "lessonHours", label: "Godziny lekcyjne", icon: Clock },
+    { id: "lessonStatuses", label: "Statusy lekcji", icon: List },
+    { id: "gradeTypes", label: "Skala ocen", icon: GraduationCap },
+    { id: "gradeCategories", label: "Kategorie ocen", icon: ListOrdered },
+    { id: "attendance", label: "Frekwencja", icon: CalendarCheck },
 ] as const;
 
-const formatDate = (date?: string) => date ? new Date(date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+const ConfigFormContent = ({
+    activeTab,
+    formData,
+    errors,
+    handleInput
+}: {
+    activeTab: typeof TABS[number]['id'];
+    formData: Partial<BaseEntity>;
+    errors: Record<string, string | null>;
+    handleInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) => {
+    const getNameValue = () => (formData as any).name || "";
+
+    return (
+        <div className="p-6 space-y-4">
+            {activeTab !== "lessonHours" && (
+                <div>
+                    <label className="label-text">
+                        {activeTab === "gradeTypes" ? "Nazwa opisowa" : "Nazwa"} <span className="text-danger">*</span>
+                    </label>
+                    <Input
+                        name="name"
+                        value={getNameValue()}
+                        onChange={handleInput}
+                        className={errors.name ? "!border-danger" : ""}
+                    />
+                    {errors.name && <span className="text-xs text-danger">{errors.name}</span>}
+                </div>
+            )}
+
+            {activeTab === "gradeTypes" && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="label-text">Symbol <span className="text-danger">*</span></label>
+                        <Input
+                            name="numeric"
+                            value={(formData as GradeType).numeric || ""}
+                            onChange={handleInput}
+                            className={errors.numeric ? "!border-danger" : ""}
+                        />
+                        {errors.numeric && <span className="text-xs text-danger">{errors.numeric}</span>}
+                    </div>
+                    <div>
+                        <label className="label-text">Wartość <span className="text-danger">*</span></label>
+                        <Input
+                            type="number"
+                            step="0.25"
+                            name="value"
+                            value={(formData as GradeType).value || ""}
+                            onChange={handleInput}
+                            className={errors.value ? "!border-danger" : ""}
+                        />
+                        {errors.value && <div className="text-xs text-danger">{errors.value}</div>}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === "gradeCategories" && (
+                <div>
+                    <label className="label-text">Waga <span className="text-danger">*</span></label>
+                    <Input
+                        type="number"
+                        step="1"
+                        min="0"
+                        name="weight"
+                        value={(formData as GradeCategory).weight || ""}
+                        onChange={handleInput}
+                        className={errors.weight ? "!border-danger" : ""}
+                    />
+                    {errors.weight && <div className="text-xs text-danger">{errors.weight}</div>}
+                </div>
+            )}
+
+            {activeTab === "attendance" && (
+                <div>
+                    <label className="label-text">Skrót <span className="text-danger">*</span></label>
+                    <Input
+                        name="shortCode"
+                        maxLength={5}
+                        value={(formData as AttendanceType).shortCode || ""}
+                        onChange={handleInput}
+                    />
+                    {errors.shortCode && <span className="text-xs text-danger">{errors.shortCode}</span>}
+                </div>
+            )}
+
+            {activeTab === "lessonHours" && (
+                <div className="space-y-4">
+                    <div>
+                        <label className="label-text">Numer lekcji <span className="text-danger">*</span></label>
+                        <Input
+                            type="number"
+                            name="orderNumber"
+                            value={(formData as LessonHour).orderNumber || ""}
+                            onChange={handleInput}
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label-text">Start <span className="text-danger">*</span></label>
+                            <Input
+                                type="time"
+                                name="startTime"
+                                value={(formData as LessonHour).startTime || ""}
+                                onChange={handleInput}
+                            />
+                        </div>
+                        <div>
+                            <label className="label-text">Koniec <span className="text-danger">*</span></label>
+                            <Input
+                                type="time"
+                                name="endTime"
+                                value={(formData as LessonHour).endTime || ""}
+                                onChange={handleInput}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const SystemConfig = () => {
-    const [activeTab, setActiveTab] = useState<typeof TABS[number]['id']>('classrooms');
-    const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
+    const [activeTab, setActiveTab] =
+        useState<(typeof TABS)[number]["id"]>("classrooms");
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<any[]>([]);
     const [formData, setFormData] = useState<Partial<BaseEntity>>({});
     const [errors, setErrors] = useState<Record<string, string | null>>({});
-    
     const [filters, setFilters] = useState({
-        search: '',
-        sortBy: 'updated',
+        search: "",
+        sortBy: "updated",
         sortDesc: true,
-        showInactive: false
+        showInactive: false,
     });
 
     useEffect(() => {
         setLoading(true);
         setData([]);
-        setViewMode('list');
+        setIsModalOpen(false);
 
-        let defaultSort = 'updated';
+        let defaultSort = "updated";
         let defaultDesc = true;
 
-        if (activeTab === 'lessonHours') { defaultSort = 'orderNumber'; defaultDesc = false; }
-        else if (activeTab === 'gradeTypes') { defaultSort = 'value'; defaultDesc = true; }
+        if (activeTab === "lessonHours") {
+            defaultSort = "orderNumber";
+            defaultDesc = false;
+        } else if (activeTab === "gradeTypes") {
+            defaultSort = "value";
+            defaultDesc = true;
+        }
 
-        setFilters(prev => ({ ...prev, search: '', showInactive: false, sortBy: defaultSort, sortDesc: defaultDesc }));
+        setFilters((prev) => ({
+            ...prev,
+            search: "",
+            showInactive: false,
+            sortBy: defaultSort,
+            sortDesc: defaultDesc,
+        }));
     }, [activeTab]);
 
     const getCurrentApi = useCallback(() => {
         switch (activeTab) {
-            case 'classrooms': return api.classrooms;
-            case 'subjects': return api.subjects;
-            case 'lessonHours': return api.lessonHours;
-            case 'lessonStatuses': return api.lessonStatuses;
-            case 'gradeTypes': return api.gradeTypes;
-            case 'gradeCategories': return api.gradeCategories;
-            case 'attendance': return api.attendanceTypes;
+            case "classrooms": return api.classrooms;
+            case "subjects": return api.subjects;
+            case "lessonHours": return api.lessonHours;
+            case "lessonStatuses": return api.lessonStatuses;
+            case "gradeTypes": return api.gradeTypes;
+            case "gradeCategories": return api.gradeCategories;
+            case "attendance": return api.attendanceTypes;
             default: return api.classrooms;
         }
     }, [activeTab]);
@@ -76,8 +205,11 @@ export const SystemConfig = () => {
         try {
             const result = await getCurrentApi().getAll(filters);
             setData(result || []);
-        } catch (err) { console.error(err); }
-        finally { setLoading(false); }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     }, [getCurrentApi, filters]);
 
     useEffect(() => {
@@ -86,211 +218,210 @@ export const SystemConfig = () => {
     }, [loadData]);
 
     const getSortOptions = () => {
-        const common = [{ field: 'updated', label: 'Edytowano' }, { field: 'created', label: 'Utworzono' }];
-        if (activeTab === 'lessonHours') return [{ field: 'orderNumber', label: 'Nr lekcji' }, ...common];
-        if (activeTab === 'gradeTypes') return [{ field: 'value', label: 'Wartość' }, { field: 'name', label: 'Nazwa' }, ...common];
-        if (activeTab === 'gradeCategories') return [{ field: 'weight', label: 'Waga' }, { field: 'name', label: 'Nazwa' }, ...common];
-        if (activeTab === 'attendance') return [{ field: 'name', label: 'Nazwa' }, ...common];
-        return [{ field: 'name', label: 'Nazwa' }, ...common];
+        const common = [
+            { field: "updated", label: "Edytowano" },
+            { field: "created", label: "Utworzono" },
+        ];
+        if (activeTab === "lessonHours") return [{ field: "orderNumber", label: "Nr lekcji" }, ...common];
+        if (activeTab === "gradeTypes") return [{ field: "value", label: "Wartość" }, { field: "name", label: "Nazwa" }, ...common];
+        if (activeTab === "gradeCategories") return [{ field: "weight", label: "Waga" }, { field: "name", label: "Nazwa" }, ...common];
+        if (activeTab === "attendance") return [{ field: "name", label: "Nazwa" }, ...common];
+        return [{ field: "name", label: "Nazwa" }, ...common];
     };
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-        if (value && errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
+        let finalValue: any = value;
+
+        if (type === "checkbox") {
+            finalValue = checked;
+        } else if (type === "number") {
+            finalValue = value === "" ? null : Number(value);
+        } else if (type === "time") {
+            finalValue = value.length === 5 ? `${value}:00` : value;
+        }
+
+        setFormData((prev) => ({ ...prev, [name]: finalValue }));
+        if (value && errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
     };
 
     const handleSave = async () => {
         const newErrors = validateSystemConfig(activeTab, formData);
-        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
 
         try {
             const resource = getCurrentApi();
-            formData.id ? await resource.update(formData.id, formData) : await resource.create(formData);
+            formData.id
+                ? await resource.update(formData.id, formData)
+                : await resource.create(formData);
+
             loadData();
-            setViewMode('list');
-        } catch { alert("Błąd zapisu"); }
+            setIsModalOpen(false);
+        } catch {
+            alert("Błąd zapisu");
+        }
     };
 
     const handleStatusChange = async (item: BaseEntity, isActive: boolean) => {
         if (!window.confirm(isActive ? "Przywrócić element?" : "Przenieść do kosza?")) return;
-        try { await getCurrentApi().update(item.id, { ...item, isActive }); loadData(); } catch { alert("Błąd zmiany statusu"); }
+        try {
+            await getCurrentApi().update(item.id, { ...item, isActive });
+            loadData();
+        } catch {
+            alert("Błąd zmiany statusu");
+        }
     };
 
     const handleHardDelete = async (id: number) => {
         if (!window.confirm("Usunąć trwale?")) return;
-        try { await getCurrentApi().delete(id); loadData(); } catch { alert("Błąd usuwania"); }
+        try {
+            await getCurrentApi().delete(id);
+            loadData();
+        } catch {
+            alert("Błąd usuwania");
+        }
     };
 
     const openForm = (item?: any) => {
         setErrors({});
-        setFormData(item ? { ...item } : { isActive: true, orderNumber: (activeTab === 'lessonHours') ? (data.length + 1) : undefined });
-        setViewMode('form');
+        setFormData(
+            item
+                ? { ...item }
+                : {
+                    isActive: true,
+                    orderNumber: activeTab === "lessonHours" ? data.length + 1 : undefined,
+                }
+        );
+        setIsModalOpen(true);
     };
 
     const columns = useMemo(() => {
         const cols: Column<any>[] = [];
 
-        if (activeTab === 'lessonHours') {
-            cols.push({ header: 'Nr', accessor: 'orderNumber', className: 'text-center w-16' });
-            cols.push({ header: 'Godziny', render: (row) => `${row.startTime?.slice(0, 5)} - ${row.endTime?.slice(0, 5)}` });
-        } else if (activeTab === 'gradeTypes') {
-            cols.push({ header: 'Symbol', accessor: 'numeric' });
-            cols.push({ header: 'Nazwa', accessor: 'name' });
-            cols.push({ header: 'Wartość', render: (row) => Number(row.value).toFixed(2) });
-        } else if (activeTab === 'gradeCategories') {
-            cols.push({ header: 'Nazwa', accessor: 'name' });
-            cols.push({ header: 'Waga', accessor: 'weight' });
-        } else if (activeTab === 'attendance') {
-            cols.push({ header: 'Nazwa', accessor: 'name' });
-            cols.push({ header: 'Skrót', accessor: 'shortCode', className: 'font-mono' });
+        if (activeTab === "lessonHours") {
+            cols.push({ header: "Nr", accessor: "orderNumber", className: "text-center w-16" });
+            cols.push({ header: "Godziny", render: (row) => `${row.startTime?.slice(0, 5)} - ${row.endTime?.slice(0, 5)}` });
+        } else if (activeTab === "gradeTypes") {
+            cols.push({ header: "Symbol", accessor: "numeric" });
+            cols.push({ header: "Nazwa", accessor: "name" });
+            cols.push({ header: "Wartość", render: (row) => Number(row.value).toFixed(2) });
+        } else if (activeTab === "gradeCategories") {
+            cols.push({ header: "Nazwa", accessor: "name" });
+            cols.push({ header: "Waga", accessor: "weight" });
+        } else if (activeTab === "attendance") {
+            cols.push({ header: "Nazwa", accessor: "name" });
+            cols.push({ header: "Skrót", accessor: "shortCode", className: "font-mono" });
         } else {
-            cols.push({ header: 'Nazwa', accessor: 'name', className: 'w-1/3' });
+            cols.push({ header: "Nazwa", accessor: "name", className: "w-1/3" });
         }
 
-        cols.push({ header: 'Utworzono', render: (row) => formatDate(row.createdAt), className: 'text-neutral-500 text-xs' });
-        cols.push({ header: 'Edytowano', render: (row) => formatDate(row.updatedAt), className: 'text-neutral-500 text-xs' });
-        
+        cols.push({ header: "Utworzono", render: (row) => formatDate(row.createdAt), className: "text-neutral-500 text-xs" });
+        cols.push({ header: "Edytowano", render: (row) => formatDate(row.updatedAt), className: "text-neutral-500 text-xs" });
+
         cols.push({
-            header: 'Akcje',
-            className: 'text-right',
+            header: "Akcje",
+            className: "text-right",
             render: (row) => (
-                <ActionButtons 
+                <ActionButtons
                     isActive={!filters.showInactive}
                     onEdit={() => openForm(row)}
                     onDelete={() => filters.showInactive ? handleHardDelete(row.id) : handleStatusChange(row, false)}
                     onRestore={() => handleStatusChange(row, true)}
                 />
-            )
+            ),
         });
 
         return cols;
     }, [activeTab, filters.showInactive]);
 
-    const renderForm = () => (
-        <div className="bg-white border border-neutral-200 max-w-2xl mx-auto shadow-sm flex flex-col font-sans mt-6 rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b bg-neutral-50 font-bold text-neutral-800">{formData.id ? 'Edycja' : 'Nowy'} element</div>
-            <div className="p-6 space-y-4">
-                {activeTab !== 'lessonHours' && (
-                    <div>
-                        <label className="label-text">{activeTab === 'gradeTypes' ? 'Nazwa opisowa' : 'Nazwa'} <span className="text-danger">*</span></label>
-                        <Input name="name" value={formData.name || ''} onChange={handleInput} className={errors.name ? "!border-danger" : ""} />
-                        <span className="text-xs text-neutral-500 block mt-1">
-                            {activeTab === 'gradeTypes' && 'np. Dobry plus'}
-                            {activeTab === 'gradeCategories' && 'np. Sprawdzian'}
-                            {activeTab === 'classrooms' && 'np. 102'}
-                            {activeTab === 'subjects' && 'np. Matematyka'}
-                            {activeTab === 'lessonStatuses' && 'np. Odwołana'}
-                        </span>
-                        {errors.name && <span className="text-xs text-danger">{errors.name}</span>}
-                    </div>
-                )}
-
-                {activeTab === 'gradeTypes' && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="label-text">Symbol <span className="text-danger">*</span></label>
-                            <Input name="numeric" value={(formData as GradeType).numeric || ''} onChange={handleInput} className={errors.numeric ? "!border-danger" : ""} />
-                            <span className="text-xs text-neutral-500 block mt-1">np. 4+</span>
-                            {errors.numeric && <span className="text-xs text-danger">{errors.numeric}</span>}
-                        </div>
-                        <div>
-                            <label className="label-text">Wartość <span className="text-danger">*</span></label>
-                            <Input type="number" step="0.25" name="value" value={(formData as GradeType).value || ''} onChange={handleInput} className={errors.value ? "!border-danger" : ""} />
-                            <span className="text-xs text-neutral-500 block mt-1">np. 4.5</span>
-                            {errors.value && <div className="text-xs text-danger">{errors.value}</div>}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'gradeCategories' && (
-                    <div>
-                        <label className="label-text">Waga <span className="text-danger">*</span></label>
-                        <Input type="number" step="1" min="0" name="weight" value={(formData as GradeCategory).weight || ''} onChange={handleInput} className={errors.weight ? "!border-danger" : ""} />
-                        <span className="text-xs text-neutral-500 block mt-1">np. 3</span>
-                        {errors.weight && <div className="text-xs text-danger">{errors.weight}</div>}
-                    </div>
-                )}
-
-                {activeTab === 'attendance' && (
-                    <div>
-                        <label className="label-text">Skrót <span className="text-danger">*</span></label>
-                        <Input name="shortCode" maxLength={5} value={(formData as AttendanceType).shortCode || ''} onChange={handleInput} />
-                        <span className="text-xs text-neutral-500 block mt-1">np. NB</span>
-                        {errors.shortCode && <span className="text-xs text-danger">{errors.shortCode}</span>}
-                    </div>
-                )}
-
-                {activeTab === 'lessonHours' && (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="label-text">Numer lekcji <span className="text-danger">*</span></label>
-                            <Input type="number" name="orderNumber" value={(formData as LessonHour).orderNumber || ''} onChange={handleInput} />
-                            <span className="text-xs text-neutral-500 block mt-1">Kolejność w planie</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className="label-text">Start <span className="text-danger">*</span></label><Input type="time" name="startTime" value={(formData as LessonHour).startTime || ''} onChange={handleInput} /></div>
-                            <div><label className="label-text">Koniec <span className="text-danger">*</span></label><Input type="time" name="endTime" value={(formData as LessonHour).endTime || ''} onChange={handleInput} /></div>
-                        </div>
-                    </div>
-                )}
-            </div>
-            <div className="flex justify-end gap-3 px-6 py-4 border-t bg-neutral-50">
-                <Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button>
-                <Button onClick={handleSave}>Zapisz</Button>
-            </div>
-        </div>
-    );
-
     return (
         <div className="bg-white border border-neutral-200 shadow-sm font-sans min-h-[600px] flex flex-col">
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title={formData.id ? "Edycja elementu" : "Nowy element"}
+                maxWidth="md"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Anuluj</Button>
+                        <Button onClick={handleSave}>Zapisz</Button>
+                    </>
+                }
+            >
+                <ConfigFormContent
+                    activeTab={activeTab}
+                    formData={formData}
+                    errors={errors}
+                    handleInput={handleInput}
+                />
+            </Modal>
+
             <div className="border-b px-4 flex gap-1 bg-neutral-50/50 overflow-x-auto">
-                {TABS.map(tab => {
+                {TABS.map((tab) => {
                     const Icon = tab.icon;
                     return (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                            className={clsx("py-4 px-4 text-sm font-bold uppercase border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap",
-                                activeTab === tab.id ? "border-primary text-primary bg-white" : "border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100/50")}>
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={clsx(
+                                "py-4 px-4 text-sm font-bold uppercase border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap",
+                                activeTab === tab.id
+                                    ? "border-primary text-primary bg-white"
+                                    : "border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100/50"
+                            )}
+                        >
                             <Icon size={18} /> {tab.label}
                         </button>
-                    )
+                    );
                 })}
             </div>
 
-            {viewMode === 'list' && (
-                <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
-                    <div className="flex-1 flex items-center gap-4">
-                        <SortFilterToolbar
-                            className="flex-1"
-                            search={filters.search}
-                            onSearchChange={v => setFilters(p => ({ ...p, search: v }))}
-                            sortBy={filters.sortBy}
-                            sortDesc={filters.sortDesc}
-                            onSortChange={f => setFilters(p => ({ ...p, sortBy: f, sortDesc: p.sortBy === f ? !p.sortDesc : true }))}
-                            sortOptions={getSortOptions()}
-                            hideCreate={true}
-                        />
-                    </div>
-                    <div className="flex gap-2">
-                        <TrashButton isTrashActive={filters.showInactive} onToggle={() => {
+            <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
+                <div className="flex-1 flex items-center gap-4">
+                    <SortFilterToolbar
+                        className="flex-1"
+                        search={filters.search}
+                        onSearchChange={(v) => setFilters((p) => ({ ...p, search: v }))}
+                        sortBy={filters.sortBy}
+                        sortDesc={filters.sortDesc}
+                        onSortChange={(f) =>
+                            setFilters((p) => ({
+                                ...p,
+                                sortBy: f,
+                                sortDesc: p.sortBy === f ? !p.sortDesc : true,
+                            }))
+                        }
+                        sortOptions={getSortOptions()}
+                        hideCreate={true}
+                    />
+                </div>
+                <div className="flex gap-2 items-center">
+                    <TrashButton
+                        isTrashActive={filters.showInactive}
+                        onToggle={() => {
                             setLoading(true);
                             setData([]);
-                            setFilters(p => ({ ...p, showInactive: !p.showInactive }));
-                        }} />
-                        {!filters.showInactive && <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> Dodaj</Button>}
-                    </div>
+                            setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
+                        }}
+                    />
+                    {!filters.showInactive && (
+                        <Button onClick={() => openForm()} className="h-10">
+                            <Plus size={16} className="mr-2" /> Dodaj
+                        </Button>
+                    )}
                 </div>
-            )}
+            </div>
 
             <div className="flex-1 bg-white">
-                {viewMode === 'form' ? renderForm() : (
-                    <DataTable 
-                        data={data}
-                        columns={columns}
-                        isLoading={loading}
-                        emptyMessage="Brak danych w wybranej kategorii"
-                    />
-                )}
+                <DataTable
+                    data={data}
+                    columns={columns}
+                    isLoading={loading}
+                    emptyMessage="Brak danych w wybranej kategorii"
+                />
             </div>
         </div>
     );

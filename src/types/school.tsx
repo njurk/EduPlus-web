@@ -8,6 +8,12 @@ export interface SchoolYear {
   isActive: boolean;
 }
 
+export interface SemesterDto {
+    id: number;
+    name: string;
+    order: number;
+}
+
 export interface SchoolClass extends BaseEntity {
   name: string;
   schoolYearId: number;
@@ -62,4 +68,19 @@ export interface ClassDetailsDto {
   classInfo: ClassEntity;
   students: ClassStudent[];
   subjects: ClassSubject[];
+}
+
+export interface LessonStatus extends BaseEntity {
+  name: string;
+}
+
+export interface LessonHour extends BaseEntity {
+  orderNumber: number;
+  startTime: string;
+  endTime: string;
+}
+
+export interface AttendanceType extends BaseEntity {
+  name: string;
+  shortCode: string;
 }
