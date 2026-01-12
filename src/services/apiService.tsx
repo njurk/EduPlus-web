@@ -2,7 +2,7 @@ import type {
     User, UserRole, Announcement, SchoolClass, DashboardSummary, AttendanceChartData, ParentStudents, Role,
     Classroom, LessonHour, LessonStatus, GradeType, GradeCategory, AttendanceType, Subject, ChangePasswordDto,
     SchoolYear, ClassEntity, ClassDetailsDto, StudentGradesRowDto,
-    SemesterDto
+    SemesterDto, GradeDto, Grade, Attendance, AttendanceAdminDto
 } from '../types';
 
 const API_URL = 'https://localhost:7252/api';
@@ -197,8 +197,34 @@ export const api = {
     lessonStatuses: createCrudResource<LessonStatus>('LessonStatus'),
     gradeTypes: createCrudResource<GradeType>('GradeType'),
     gradeCategories: createCrudResource<GradeCategory>('GradeCategory'),
-    attendanceTypes: createCrudResource<AttendanceType>('AttendanceType'),
-    subjects: createCrudResource<Subject>('subject'),
+
+    attendanceTypes: {
+        ...createCrudResource<AttendanceType>('AttendanceType'),
+        getAll: async (): Promise<AttendanceType[]> => {
+            const params = new URLSearchParams({
+                showInactive: 'false',
+                sortBy: 'name',
+                sortDesc: 'false'
+            });
+
+            const response = await fetch(`${API_URL}/attendancetype?${params}`, {
+                headers: getHeaders()
+            });
+            return handleResponse(response);
+        }
+    },
+
+    subjects: {
+        ...createCrudResource<Subject>('subject'),
+        getAll: async (): Promise<Subject[]> => {
+            const response = await fetch(`${API_URL}/subject`, { headers: getHeaders() });
+            return handleResponse(response);
+        },
+        getTeachers: async (subjectId: number): Promise<User[]> => {
+            const response = await fetch(`${API_URL}/subject/${subjectId}/teachers`, { headers: getHeaders() });
+            return handleResponse(response);
+        },
+    },
 
     dashboard: {
         getSummary: async (): Promise<DashboardSummary> => {
@@ -244,7 +270,7 @@ export const api = {
             if (params) {
                 if (params.sortBy) query.append('sortBy', params.sortBy);
                 if (params.sortDesc !== undefined) query.append('sortDesc', params.sortDesc.toString());
-                if (params.studentSearch) query.append('studentSearch', params.studentSearch); // Obsługa
+                if (params.studentSearch) query.append('studentSearch', params.studentSearch);
                 if (params.subjectSearch) query.append('subjectSearch', params.subjectSearch);
                 if (params.subjectSortBy) query.append('subjectSortBy', params.subjectSortBy);
                 if (params.subjectSortDesc !== undefined) query.append('subjectSortDesc', params.subjectSortDesc.toString());
@@ -300,8 +326,16 @@ export const api = {
             });
             return handleResponse(response);
         },
+        addStudentsBulk: async (classId: number, studentIds: number[]) => {
+            const response = await fetch(`${API_URL}/class/students/bulk`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ classId, studentIds })
+            });
+            return handleResponse(response);
+        },
         assignSubject: async (data: { classId: number, subjectId: number, teacherId: number }) => {
-            const response = await fetch(`${API_URL}/classSubject/assign`, {
+            const response = await fetch(`${API_URL}/class/subjects/assign`, {
                 method: 'POST',
                 headers: getHeaders(),
                 body: JSON.stringify(data)
@@ -328,28 +362,43 @@ export const api = {
             const response = await fetch(`${API_URL}/grade/current-semester/${yearId}`, { headers: getHeaders() });
             return handleResponse(response);
         },
-        create: async (data: any) => {
+        create: async (data: GradeDto): Promise<Grade> => {
             const response = await fetch(`${API_URL}/grade`, {
                 method: 'POST',
                 headers: getHeaders(),
                 body: JSON.stringify(data)
             });
-            return handleResponse(response);
+            return handleResponse<Grade>(response);
         },
-        update: async (id: number, data: any) => {
+        update: async (id: number, data: Partial<GradeDto>): Promise<Grade> => {
             const response = await fetch(`${API_URL}/grade/${id}`, {
                 method: 'PUT',
                 headers: getHeaders(),
                 body: JSON.stringify(data)
             });
-            return handleResponse(response);
+            return handleResponse<Grade>(response);
         },
-        delete: async (id: number) => {
+        delete: async (id: number): Promise<void> => {
             const response = await fetch(`${API_URL}/grade/${id}`, {
                 method: 'DELETE',
                 headers: getHeaders()
             });
             return handleResponse(response);
         }
+    },
+    attendance: {
+        getAllAdmin: async (includeInactive: boolean = false): Promise<AttendanceAdminDto[]> => {
+            const response = await fetch(`${API_URL}/attendance/admin?includeInactive=${includeInactive}`, {
+                headers: getHeaders()
+            });
+            return handleResponse(response);
+        },
+        delete: async (id: number): Promise<void> => {
+            const response = await fetch(`${API_URL}/attendance/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            return handleResponse(response);
+        },
     },
 };

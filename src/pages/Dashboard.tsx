@@ -56,7 +56,7 @@ export const Dashboard = () => {
           <a key={stat.label} href={stat.link} className="bg-white p-6 border border-neutral-300 flex items-start justify-between hover:border-primary transition-colors group">
             <div>
               <p className="text-xs font-bold text-neutral-500 mb-1 tracking-wider uppercase group-hover:text-primary transition-colors">{stat.label}</p>
-              <h3 className="text-3xl font-bold text-neutral-800">{loading ? '...' : stat.value}</h3>
+              <h3 className="text-3xl font-bold text-neutral-800">{loading ? '-' : stat.value}</h3>
             </div>
           </a>
         ))}

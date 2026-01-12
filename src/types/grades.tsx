@@ -23,6 +23,7 @@ export interface Grade {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  teacherName?: string;
     gradeType?: {
         numeric: string;
         name: string;

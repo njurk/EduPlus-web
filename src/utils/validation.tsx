@@ -15,11 +15,6 @@ export const PASSWORD_RULES = [
     { label: "Min. 1 znak specjalny", test: (p: string) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
 ];
 
-export const isPasswordValid = (password: string): boolean => {
-    if (!password) return false;
-    return PASSWORD_RULES.every(rule => rule.test(password));
-};
-
 export const validateUserField = (name: string, value: any, isEdit: boolean): string | null => {
     const valStr = value?.toString().trim() || "";
 
@@ -90,27 +85,41 @@ export const validateSystemConfig = (activeTab: string, data: any) => {
     return errors;
 };
 
-export const validateUserProfileUpdate = (data: Partial<UserUpdateDto>): string | null => {
-    if (!data.firstName?.trim()) return "Imię jest wymagane.";
-    if (!data.lastName?.trim()) return "Nazwisko jest wymagane.";
-
-    if (data.postalCode && !REGEX.POSTAL_CODE.test(data.postalCode)) {
-        return "Kod pocztowy musi mieć format XX-XXX (np. 00-001).";
-    }
-
-    if (data.phone && !REGEX.PHONE.test(data.phone)) {
-        return "Numer telefonu jest nieprawidłowy.";
-    }
-
-    return null;
+export const isPasswordValid = (password: string): boolean => {
+    return PASSWORD_RULES.every(rule => rule.test(password));
 };
 
-export const validatePasswordChange = (data: ChangePasswordDto & { confirmPassword: string }): string | null => {
-    if (!data.currentPassword) return "Wprowadź aktualne hasło.";
-    if (data.newPassword !== data.confirmPassword) return "Nowe hasła nie są identyczne.";
-    if (!isPasswordValid(data.newPassword)) return "Nowe hasło nie spełnia wymagań bezpieczeństwa.";
+export const validateUserProfileUpdate = (data: any): Record<string, string> => {
+    const errors: Record<string, string> = {};
 
-    return null;
+    if (!data.firstName?.trim()) errors.firstName = "Imię jest wymagane";
+    if (!data.lastName?.trim()) errors.lastName = "Nazwisko jest wymagane";
+
+    if (data.postalCode && data.postalCode.trim() !== '' && !REGEX.POSTAL_CODE.test(data.postalCode)) {
+        errors.postalCode = "Kod pocztowy musi mieć format XX-XXX";
+    }
+
+    if (data.phone && data.phone.trim() !== '' && !REGEX.PHONE.test(data.phone)) {
+        errors.phone = "Numer telefonu jest nieprawidłowy.";
+    }
+
+    return errors;
+};
+
+export const validatePasswordChange = (data: any): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    if (!data.currentPassword) errors.currentPassword = "Wprowadź aktualne hasło";
+    
+    if (data.newPassword !== data.confirmPassword) {
+        errors.confirmPassword = "Nowe hasła nie są identyczne";
+    }
+    
+    if (data.newPassword && !isPasswordValid(data.newPassword)) {
+        errors.newPassword = "Hasło nie spełnia wszystkich wymagań";
+    }
+
+    return errors;
 };
 
 export const validateClassForm = (data: any) => {

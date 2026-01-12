@@ -13,7 +13,6 @@ import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear } from '..
 import { validateClassForm, REGEX } from '../utils/validation';
 import { formatDate, formatName } from '../utils/formatters';
 import { YearSelector } from '../components/ui/YearSelector';
-import { ClassTile } from '../components/ui/ClassTile';
 
 const CandidateRow = memo(({ student, index, isSelected, onToggle }: { student: User, index: number, isSelected: boolean, onToggle: (id: number) => void }) => (
     <div onClick={() => onToggle(student.id)} className={clsx("flex items-center justify-between p-2 border-b cursor-pointer text-sm select-none hover:bg-neutral-100", isSelected && "bg-primary-light text-primary-text")}>
@@ -32,267 +31,182 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
     const [activeTab, setActiveTab] = useState<'students' | 'subjects'>('students');
     const [details, setDetails] = useState<ClassDetailsDto | null>(null);
     const [loading, setLoading] = useState(false);
+    
     const [dicts, setDicts] = useState<{ students: User[], subjects: Subject[], teachers: User[] }>({ students: [], subjects: [], teachers: [] });
+    
     const [modals, setModals] = useState({ student: false, subject: false });
     const [selections, setSelections] = useState<{ candidates: number[], subject: string, teacher: string }>({ candidates: [], subject: '', teacher: '' });
-    const [studentFilters, setStudentFilters] = useState({ search: '', sortBy: 'id', sortDesc: false });
-    const [subjectFilters, setSubjectFilters] = useState({ search: '', sortBy: 'subjectName', sortDesc: false });
+    const [filters, setFilters] = useState({ studentSearch: '', subjectSearch: '' });
     const [candidateSearch, setCandidateSearch] = useState('');
+    const [teachersLoading, setTeachersLoading] = useState(false);
 
     const loadDetails = useCallback(async () => {
         setLoading(true);
-        try {
-            const data = await api.classManagement.getClassDetails(classId, {
-                sortBy: studentFilters.sortBy,
-                sortDesc: studentFilters.sortDesc,
-                studentSearch: studentFilters.search,
-                subjectSearch: subjectFilters.search,
-                subjectSortBy: subjectFilters.sortBy,
-                subjectSortDesc: subjectFilters.sortDesc
-            });
-            setDetails(data);
+        try { 
+            setDetails(await api.classManagement.getClassDetails(classId, { 
+                studentSearch: filters.studentSearch, 
+                subjectSearch: filters.subjectSearch 
+            })); 
         }
-        catch (e) { console.error(e); }
-        finally { setLoading(false); }
-    }, [classId, studentFilters.sortBy, studentFilters.sortDesc, studentFilters.search, subjectFilters.search, subjectFilters.sortBy, subjectFilters.sortDesc]);
+        catch (e) { console.error(e); } finally { setLoading(false); }
+    }, [classId, filters]);
 
     useEffect(() => { loadDetails(); }, [loadDetails]);
 
     const loadDicts = async () => {
-        if (dicts.students.length) return;
-        const [s, sub, t] = await Promise.all([
-            api.users.getAll({ roleName: 'Uczeń', onlyUnassignedParents: false }),
-            api.subjects.getAll(),
-            api.users.getAll({ roleName: 'Nauczyciel' })
+        if (dicts.subjects.length) return;
+        const [s, sub] = await Promise.all([
+            api.users.getAll({ roleName: 'Uczeń' }), 
+            api.subjects.getAll()
         ]);
-        setDicts({ students: s.filter(u => u.isActive), subjects: sub, teachers: t.filter(u => u.isActive) });
+        setDicts(prev => ({ ...prev, students: s.filter(u => u.isActive), subjects: sub }));
     };
 
-    const toggleCandidate = useCallback((id: number) => {
-        setSelections(prev => ({ ...prev, candidates: prev.candidates.includes(id) ? prev.candidates.filter(x => x !== id) : [...prev.candidates, id] }));
-    }, []);
+    useEffect(() => {
+        if (!selections.subject) {
+            setDicts(prev => ({ ...prev, teachers: [] }));
+            return;
+        }
 
-    const handleAction = async (action: () => Promise<any>, confirmMsg?: string) => {
+        const fetchTeachers = async () => {
+            setTeachersLoading(true);
+            try {
+                const teachers = await api.subjects.getTeachers(parseInt(selections.subject));
+                setDicts(prev => ({ ...prev, teachers }));
+                setSelections(prev => ({ ...prev, teacher: '' }));
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setTeachersLoading(false);
+            }
+        };
+
+        fetchTeachers();
+    }, [selections.subject]);
+
+    const handleAction = async (action: () => Promise<any>, confirmMsg?: string) => { 
         if (confirmMsg && !window.confirm(confirmMsg)) return;
-        try { await action(); loadDetails(); } catch { alert("Wystąpił błąd"); }
+        try { await action(); loadDetails(); } catch { alert("Wystąpił błąd"); } 
     };
-
-    const saveStudents = () => handleAction(async () => {
-        await Promise.all(selections.candidates.map(id => api.classManagement.addStudentToClass(classId, id)));
-        setModals({ ...modals, student: false });
-        setSelections(p => ({ ...p, candidates: [] }));
+    
+    const saveStudents = () => handleAction(async () => { 
+        await api.classManagement.addStudentsBulk(classId, selections.candidates); 
+        setModals({ ...modals, student: false }); 
+        setSelections(p => ({ ...p, candidates: [] })); 
     });
-
-    const saveSubject = () => handleAction(async () => {
-        if (!selections.subject || !selections.teacher) return;
-        await api.classManagement.assignSubject({ classId, subjectId: +selections.subject, teacherId: +selections.teacher });
-        setModals({ ...modals, subject: false });
-        setSelections(p => ({ ...p, subject: '', teacher: '' }));
+    
+    const saveSubject = () => handleAction(async () => { 
+        if (selections.subject && selections.teacher) 
+            await api.classManagement.assignSubject({ classId, subjectId: +selections.subject, teacherId: +selections.teacher }); 
+        setModals({ ...modals, subject: false }); 
     });
-
-    const assignableSubjects = useMemo(() => {
-        const assignedIds = new Set(details?.subjects.map(s => s.subjectId) || []);
-        return dicts.subjects.filter(s => !assignedIds.has(s.id));
-    }, [dicts.subjects, details?.subjects]);
 
     const availableCandidates = useMemo(() => {
         const existing = new Set(details?.students.map(s => s.studentId) || []);
         const q = candidateSearch.toLowerCase();
-
-        return dicts.students.filter(s =>
-            !existing.has(s.id) &&
-            (s.lastName.toLowerCase().includes(q) || s.firstName.toLowerCase().includes(q) || s.email.toLowerCase().includes(q))
-        );
+        return dicts.students.filter(s => !existing.has(s.id) && (s.lastName.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)));
     }, [dicts.students, details?.students, candidateSearch]);
 
-    const studentColumns: Column<any>[] = [
-        { header: 'Lp.', accessor: 'orderNumber', className: 'w-12 text-neutral-500 font-mono text-center' },
-        { header: 'Nazwisko i Imię', accessor: 'student', render: (row) => formatName(row.student), className: 'font-medium text-neutral-900' },
-        { header: 'Email', accessor: 'student', render: (row) => row.student?.email, className: 'text-neutral-600' },
-        { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
-        { header: 'Edytowano', accessor: 'updatedAt', render: (row) => formatDate(row.updatedAt), className: 'text-xs text-neutral-500' },
-        {
-            header: 'Akcje',
-            className: 'text-right',
-            render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), "Usunąć?")} />
-        }
-    ];
-
-    const subjectColumns: Column<any>[] = [
-        { header: 'Przedmiot', accessor: 'subjectName', className: 'font-medium text-neutral-900 pl-4' },
-        { header: 'Nauczyciel', accessor: 'teacherName', render: (row) => row.teacherName || '-' },
-        { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
-        { header: 'Edytowano', accessor: 'updatedAt', render: (row) => formatDate(row.updatedAt), className: 'text-xs text-neutral-500' },
-        {
-            header: 'Akcje',
-            className: 'text-right',
-            render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), "Usunąć?")} />
-        }
-    ];
-
-    if (!details && loading) return <div className="p-12 text-center text-neutral-400 font-sans"><RefreshCcw className="animate-spin inline mr-2" /> Ładowanie...</div>;
     if (!details) return null;
 
     return (
         <div className="font-sans h-full">
-            <Modal
-                isOpen={modals.student}
-                onClose={() => setModals({ ...modals, student: false })}
-                title="Przypisz uczniów"
-                maxWidth="xl"
-                footer={
-                    <>
-                        <div className="flex-1 text-xs text-neutral-500 text-left">Wybrano: <b>{selections.candidates.length}</b></div>
-                        <Button variant="secondary" onClick={() => setModals({ ...modals, student: false })}>Anuluj</Button>
-                        <Button onClick={saveStudents} disabled={!selections.candidates.length}>Przypisz</Button>
-                    </>
-                }
-            >
+            <Modal isOpen={modals.student} onClose={() => setModals({ ...modals, student: false })} title="Przypisz uczniów" maxWidth="xl"
+                footer={<><Button variant="secondary" onClick={() => setModals({ ...modals, student: false })}>Anuluj</Button><Button onClick={saveStudents} disabled={!selections.candidates.length}>Przypisz</Button></>}>
                 <div className="flex flex-col h-[50vh]">
-                    <div className="p-3 border-b bg-white">
-                        <div className="relative">
-                            <Search className="absolute left-2 top-2.5 text-neutral-400" size={16} />
-                            <Input
-                                value={candidateSearch}
-                                onChange={e => setCandidateSearch(e.target.value)}
-                                placeholder="Szukaj (max 50)..."
-                                className="pl-8 text-sm"
-                                autoFocus
-                            />
-                        </div>
-                    </div>
-                    <div className="overflow-y-auto flex-1">
-                        {availableCandidates.slice(0, 50).map((s, idx) => (
-                            <CandidateRow
-                                key={s.id}
-                                index={idx}
-                                student={s}
-                                isSelected={selections.candidates.includes(s.id)}
-                                onToggle={toggleCandidate}
-                            />
-                        ))}
-
-                        {!availableCandidates.length && <div className="p-4 text-center text-xs text-neutral-400">Brak wyników</div>}
-
-                        {availableCandidates.length > 50 && (
-                            <div className="p-2 text-center text-xs text-neutral-400 bg-neutral-50 border-t">
-                                Pokazano 50 z {availableCandidates.length} wyników. Użyj wyszukiwarki, aby zawęzić listę.
-                            </div>
-                        )}
-                    </div>
+                    <div className="p-3 border-b bg-white"><div className="relative"><Search className="absolute left-2 top-2.5 text-neutral-400" size={16} /><Input value={candidateSearch} onChange={e => setCandidateSearch(e.target.value)} placeholder="Szukaj..." className="pl-8 text-sm" autoFocus /></div></div>
+                    <div className="overflow-y-auto flex-1">{availableCandidates.slice(0, 50).map((s, idx) => <CandidateRow key={s.id} index={idx} student={s} isSelected={selections.candidates.includes(s.id)} onToggle={(id: number) => setSelections(p => ({ ...p, candidates: p.candidates.includes(id) ? p.candidates.filter(x => x !== id) : [...p.candidates, id] }))} />)}</div>
                 </div>
             </Modal>
 
-            <Modal
-                isOpen={modals.subject}
-                onClose={() => setModals({ ...modals, subject: false })}
-                title="Przypisz przedmiot"
-                maxWidth="md"
-                footer={
-                    <>
-                        <Button variant="secondary" onClick={() => setModals({ ...modals, subject: false })}>Anuluj</Button>
-                        <Button onClick={saveSubject} disabled={!selections.subject || !selections.teacher}>Zapisz</Button>
-                    </>
-                }
-            >
+            <Modal isOpen={modals.subject} onClose={() => setModals({ ...modals, subject: false })} title="Przypisz przedmiot" maxWidth="md"
+                footer={<><Button variant="secondary" onClick={() => setModals({ ...modals, subject: false })}>Anuluj</Button><Button onClick={saveSubject} disabled={!selections.subject || !selections.teacher}>Zapisz</Button></>}>
                 <div className="p-6 space-y-4">
                     <div>
                         <label className="label-text">Przedmiot</label>
-                        <select className="w-full border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:border-primary" value={selections.subject} onChange={e => setSelections({ ...selections, subject: e.target.value })}>
+                        <select className="w-full border border-neutral-300 px-3 py-2 rounded-md text-sm focus:outline-none focus:border-primary bg-white" value={selections.subject} onChange={e => setSelections({ ...selections, subject: e.target.value })}>
                             <option value="">Wybierz...</option>
-                            {assignableSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            {dicts.subjects.filter(s => !details.subjects.some(ds => ds.subjectId === s.id)).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
-                        {assignableSubjects.length === 0 && <p className="text-xs text-neutral-400 mt-1">Wszystkie dostępne przedmioty są już przypisane.</p>}
                     </div>
                     <div>
                         <label className="label-text">Nauczyciel</label>
-                        <select className="w-full border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:border-primary" value={selections.teacher} onChange={e => setSelections({ ...selections, teacher: e.target.value })}>
-                            <option value="">Wybierz...</option>
+                        <select 
+                            className="w-full border border-neutral-300 px-3 py-2 rounded-md text-sm focus:outline-none focus:border-primary bg-white disabled:bg-neutral-100" 
+                            value={selections.teacher} 
+                            onChange={e => setSelections({ ...selections, teacher: e.target.value })}
+                            disabled={!selections.subject || teachersLoading}
+                        >
+                            <option value="">{teachersLoading ? "Ładowanie..." : (selections.subject ? "Wybierz nauczyciela..." : "Najpierw wybierz przedmiot")}</option>
                             {dicts.teachers.map(t => <option key={t.id} value={t.id}>{t.lastName} {t.firstName}</option>)}
                         </select>
+                        {selections.subject && !teachersLoading && dicts.teachers.length === 0 && (
+                            <p className="text-xs text-danger mt-1">Brak nauczycieli przypisanych do tego przedmiotu.</p>
+                        )}
                     </div>
                 </div>
             </Modal>
 
             <div className="flex items-center gap-4 mb-4">
                 <button onClick={onBack} className="p-1 hover:bg-neutral-100 rounded text-neutral-600"><ArrowLeft size={20} /></button>
-                <div><h2 className="text-xl font-bold text-neutral-800">Klasa {details.classInfo.level}{details.classInfo.letter}</h2></div>
+                <h2 className="text-xl font-bold text-neutral-800">Klasa {details.classInfo.level}{details.classInfo.letter}</h2>
             </div>
 
-            <div className="flex border-b border-neutral-200 mb-0 bg-white">
-                {[
-                    { id: 'students', label: 'Uczniowie', icon: Users },
-                    { id: 'subjects', label: 'Przedmioty', icon: BookOpen }
-                ].map(t => (
-                    <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={clsx("flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-none", activeTab === t.id ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-black hover:border-neutral-300")}>
+            <div className="flex border-b border-neutral-200 bg-white">
+                {[{ id: 'students', label: 'uczniowie', icon: Users }, { id: 'subjects', label: 'przedmioty', icon: BookOpen }].map(t => (
+                    <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={clsx("flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-none uppercase", activeTab === t.id ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-black")}>
                         <t.icon size={16} /> {t.label}
                     </button>
                 ))}
             </div>
 
             <div className="bg-white border border-neutral-200 border-t-0 min-h-[500px]">
-                {activeTab === 'students' && (
+                {activeTab === 'students' ? (
                     <div className="flex flex-col h-full">
-                        <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
+                        <div className="p-3 border-b flex justify-between gap-4 bg-neutral-50/30">
                             <SortFilterToolbar
                                 className="p-0 border-0 flex-1"
-                                search={studentFilters.search}
-                                onSearchChange={v => setStudentFilters({ ...studentFilters, search: v })}
-                                sortBy={studentFilters.sortBy}
-                                sortDesc={studentFilters.sortDesc}
-                                onSortChange={f => setStudentFilters({ ...studentFilters, sortBy: f, sortDesc: f === studentFilters.sortBy ? !studentFilters.sortDesc : false })}
-                                sortOptions={[
-                                    { field: 'id', label: 'Lp.' },
-                                    { field: 'lastName', label: 'Nazwisko' },
-                                    { field: 'email', label: 'Email' },
-                                    { field: 'updatedAt', label: 'Edytowano' },
-                                    { field: 'createdAt', label: 'Utworzono' }
-                                ]}
+                                search={filters.studentSearch}
+                                onSearchChange={v => setFilters({ ...filters, studentSearch: v })}
                                 hideCreate
+                                sortBy="" sortDesc={false} onSortChange={() => { }} sortOptions={[]}
                             />
-                            <div className="pl-4 border-l">
-                                <Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}>
-                                    <UserPlus size={16} className="mr-2" /> Przypisz
-                                </Button>
-                            </div>
+                            <div className="pl-4 border-l"><Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button></div>
                         </div>
-                        <DataTable
-                            data={details.students}
-                            columns={studentColumns}
-                            emptyMessage="Brak uczniów w klasie"
-                        />
+                        <DataTable data={details.students} columns={[
+                            { header: 'Lp.', accessor: 'orderNumber', className: 'w-12 text-center' },
+                            { header: 'Uczeń', render: (row) => formatName(row.student), className: 'font-medium' },
+                            { header: 'Email', render: (row) => row.student?.email },
+                            { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },                            
+                            { 
+                                header: 'Akcje', 
+                                className: 'text-right', 
+                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), "Czy na pewno chcesz usunąć tego ucznia z klasy?")} /> 
+                            }
+                        ]} emptyMessage="Brak uczniów" />
                     </div>
-                )}
-
-                {activeTab === 'subjects' && (
+                ) : (
                     <div className="flex flex-col h-full">
-                        <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
+                        <div className="p-3 border-b flex justify-between gap-4 bg-neutral-50/30">
                             <SortFilterToolbar
                                 className="p-0 border-0 flex-1"
-                                search={subjectFilters.search}
-                                onSearchChange={v => setSubjectFilters({ ...subjectFilters, search: v })}
-                                sortBy={subjectFilters.sortBy}
-                                sortDesc={subjectFilters.sortDesc}
-                                onSortChange={f => setSubjectFilters({ ...subjectFilters, sortBy: f, sortDesc: f === subjectFilters.sortBy ? !subjectFilters.sortDesc : false })}
-                                sortOptions={[
-                                    { field: 'subjectName', label: 'Nazwa' },
-                                    { field: 'teacherName', label: 'Nauczyciel' },
-                                    { field: 'updatedAt', label: 'Edytowano' },
-                                    { field: 'createdAt', label: 'Utworzono' }
-                                ]}
+                                search={filters.subjectSearch}
+                                onSearchChange={v => setFilters({ ...filters, subjectSearch: v })}
                                 hideCreate
+                                sortBy="" sortDesc={false} onSortChange={() => { }} sortOptions={[]}
                             />
-                            <div className="pl-4 border-l">
-                                <Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}>
-                                    <Plus size={16} className="mr-2" /> Przypisz
-                                </Button>
-                            </div>
+                            <div className="pl-4 border-l"><Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button></div>
                         </div>
-                        <DataTable
-                            data={details.subjects}
-                            columns={subjectColumns}
-                            emptyMessage="Brak przypisanych przedmiotów"
-                        />
+                        <DataTable data={details.subjects} columns={[
+                            { header: 'Przedmiot', accessor: 'subjectName', className: 'font-medium pl-4' },
+                            { header: 'Nauczyciel', accessor: 'teacherName' },
+                            { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+                            { 
+                                header: 'Akcje', 
+                                className: 'text-right', 
+                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), "Czy na pewno chcesz usunąć ten przedmiot z klasy? Spowoduje to utratę powiązanych danych (np. planu lekcji).")} /> 
+                            }
+                        ]} emptyMessage="Brak przedmiotów" />
                     </div>
                 )}
             </div>
@@ -307,6 +221,7 @@ export const ClassManagement = () => {
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState<{ open: boolean, data: Partial<ClassEntity>, errors: Record<string, string> }>({ open: false, data: {}, errors: {} });
     const [showInactive, setShowInactive] = useState(false);
+    const [filters, setFilters] = useState({ search: '', sortBy: 'level', sortDesc: false });
 
     useEffect(() => {
         api.classManagement.getYears().then(res => {
@@ -336,74 +251,62 @@ export const ClassManagement = () => {
         } catch (e: any) { alert(e.message || "Błąd zapisu"); }
     };
 
-    const delClass = (id: number) => { if (window.confirm("Usunąć klasę?")) api.classManagement.deleteClass(id).then(loadClasses).catch(() => alert("Błąd usuwania")); };
-    const restoreClass = (item: ClassEntity) => { if (window.confirm("Przywrócić?")) api.classManagement.updateClass(item.id, { ...item, isActive: true }).then(loadClasses).catch(() => alert("Błąd")); };
+    const delClass = (id: number) => { if (confirm("Usunąć?")) api.classManagement.deleteClass(id).then(loadClasses).catch(() => alert("Błąd usuwania")); };
+    const restoreClass = (item: ClassEntity) => { if (confirm("Przywrócić?")) api.classManagement.updateClass(item.id, { ...item, isActive: true }).then(loadClasses).catch(() => alert("Błąd")); };
+
+    const classColumns: Column<ClassEntity>[] = [
+        { header: 'Klasa', accessor: 'level', className: 'text-neutral-800 font-medium', render: (row) => `${row.level}${row.letter}` },
+        { header: 'Liczba uczniów', accessor: 'studentCount', render: (row) => row.studentCount || 0 },
+        { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+        { header: 'Edytowano', accessor: 'updatedAt', render: (row) => formatDate(row.updatedAt), className: 'text-xs text-neutral-500' },
+        { header: 'Akcje', className: 'text-right', render: (row) => (<div onClick={e => e.stopPropagation()}><ActionButtons isActive={row.isActive} onEdit={() => setForm({ open: true, data: { ...row }, errors: {} })} onDelete={() => delClass(row.id)} onRestore={() => restoreClass(row)} /></div>) }
+    ];
+
+    const filteredClasses = useMemo(() => {
+        let result = [...classes];
+        if (filters.search) {
+            const q = filters.search.toLowerCase();
+            result = result.filter(c => `${c.level}${c.letter}`.toLowerCase().includes(q));
+        }
+        result.sort((a, b) => {
+            const valA = filters.sortBy === 'level' ? a.level : (a as any)[filters.sortBy];
+            const valB = filters.sortBy === 'level' ? b.level : (b as any)[filters.sortBy];
+            if (valA < valB) return filters.sortDesc ? 1 : -1;
+            if (valA > valB) return filters.sortDesc ? -1 : 1;
+            return 0;
+        });
+        return result;
+    }, [classes, filters]);
 
     if (selected.class) return <ClassDetailsView classId={selected.class} onBack={() => setSelected(p => ({ ...p, class: null }))} />;
 
     return (
         <div className="font-sans max-w-6xl mx-auto space-y-4">
-            <Modal
-                isOpen={form.open}
-                onClose={() => setForm({ ...form, open: false })}
-                title={form.data.id ? 'Edycja Klasy' : 'Nowa Klasa'}
-                maxWidth="sm"
-                footer={<><Button variant="secondary" onClick={() => setForm({ ...form, open: false })}>Anuluj</Button><Button onClick={saveClass}>Zapisz</Button></>}
-            >
+            <Modal isOpen={form.open} onClose={() => setForm({ ...form, open: false })} title={form.data.id ? 'Edycja klasy' : 'Nowa klasa'} maxWidth="sm"
+                footer={<><Button variant="secondary" onClick={() => setForm({ ...form, open: false })}>Anuluj</Button><Button onClick={saveClass}>Zapisz</Button></>}>
                 <div className="grid grid-cols-2 gap-4 p-4">
-                    <div>
-                        <label className="label-text">Poziom</label>
-                        <Input type="number" min={1} max={8} value={form.data.level || ''} onChange={e => setForm({ ...form, data: { ...form.data, level: parseInt(e.target.value) || undefined } })} />
-                        {form.errors.level && <span className="text-danger text-xs">{form.errors.level}</span>}
-                    </div>
-                    <div>
-                        <label className="label-text">Oddział</label>
-                        <Input value={form.data.letter || ''} onChange={e => { const v = e.target.value.toUpperCase(); if (!v || REGEX.CLASS_LETTER.test(v)) setForm({ ...form, data: { ...form.data, letter: v } }) }} placeholder="A" />
-                        {form.errors.letter && <span className="text-danger text-xs">{form.errors.letter}</span>}
-                    </div>
+                    <div><label className="label-text">Poziom</label><Input type="number" min={1} max={8} value={form.data.level || ''} onChange={e => setForm({ ...form, data: { ...form.data, level: +e.target.value } })} /></div>
+                    <div><label className="label-text">Oddział</label><Input value={form.data.letter || ''} onChange={e => setForm({ ...form, data: { ...form.data, letter: e.target.value.toUpperCase() } })} /></div>
                 </div>
             </Modal>
 
-            <div className="flex justify-between items-center pb-4 border-b border-neutral-200">
-                <h1 className="text-xl font-bold text-neutral-800">Struktura szkoły</h1>
-                <div className="flex gap-2">
-                    <YearSelector
-                        years={years}
-                        selectedYear={selected.year}
-                        onChange={(id) => setSelected(p => ({ ...p, year: id }))}
-                    />
-                    <TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} />
-                </div>
+            <div className="flex justify-between items-center pb-4 border-b">
+                <h1 className="text-xl font-bold text-neutral-800">Zarządzanie klasami</h1>
+                <div className="flex gap-2"><YearSelector years={years} selectedYear={selected.year} onChange={id => setSelected(p => ({ ...p, year: id }))} /><TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} /></div>
             </div>
 
-            <div className="bg-white border border-neutral-200 p-6 min-h-[400px]">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-sm font-bold text-neutral-700 uppercase tracking-wide">Lista klas {showInactive && '(nieaktywne)'}</h2>
-                    {!showInactive && <Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button>}
-                </div>
-
-                {loading ? <div className="text-center p-12 text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" /> Ładowanie...</div> : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                        {classes.map(cls => (
-                            <ClassTile
-                                key={cls.id}
-                                data={cls}
-                                onClick={() => setSelected(p => ({ ...p, class: cls.id }))}
-                                showStatus={true}
-                                showFooter={true}
-                                actions={
-                                    <ActionButtons
-                                        isActive={cls.isActive}
-                                        onEdit={() => setForm({ open: true, data: { ...cls }, errors: {} })}
-                                        onDelete={() => delClass(cls.id)}
-                                        onRestore={() => restoreClass(cls)}
-                                    />
-                                }
-                            />
-                        ))}
-                        {!classes.length && <div className="col-span-full text-center p-12 border border-dashed border-neutral-300 text-neutral-400">Brak klas</div>}
+            <div className="bg-white border border-neutral-200 min-h-[400px]">
+                <div className="flex flex-col h-full">
+                    <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
+                        <SortFilterToolbar className="flex-1" search={filters.search} onSearchChange={v => setFilters({ ...filters, search: v })}
+                            sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSortChange={f => setFilters({ ...filters, sortBy: f, sortDesc: f === filters.sortBy ? !filters.sortDesc : false })}
+                            sortOptions={[{ field: 'level', label: 'Klasa' }, { field: 'updatedAt', label: 'Edytowano' }, { field: 'createdAt', label: 'Utworzono' }]} hideCreate />
+                        {!showInactive && <div className="pl-4 border-l"><Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button></div>}
                     </div>
-                )}
+                    {loading ? <div className="text-center p-12 text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" /> Ładowanie...</div> : (
+                        <DataTable data={filteredClasses} columns={classColumns} emptyMessage="Brak klas w wybranym roku szkolnym" onRowClick={(row) => setSelected(p => ({ ...p, class: row.id }))} />
+                    )}
+                </div>
             </div>
         </div>
     );

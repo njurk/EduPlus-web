@@ -9,7 +9,7 @@ interface SemesterSelectorProps {
 
 export const SemesterSelector = ({ semesters, selectedOrder, onChange }: SemesterSelectorProps) => {
     return (
-        <div className="flex items-center gap-2 h-10 bg-white border border-neutral-300 px-3 rounded-sm shadow-sm hover:border-neutral-400 transition-colors">
+        <div className="flex items-center gap-2 h-10 bg-white border border-neutral-300 px-3 rounded-sm shadow-sm">
             <Filter className="text-primary shrink-0" size={18} />
             <select
                 className="bg-transparent text-sm font-medium text-neutral-700 focus:outline-none cursor-pointer w-full border-none p-0 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
