@@ -1,4 +1,4 @@
-import { Edit2, Trash2, RefreshCcw } from 'lucide-react';
+import { Edit2, Trash2, RefreshCcw, Eye } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface ActionButtonsProps {
@@ -6,6 +6,7 @@ interface ActionButtonsProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onRestore?: () => void;
+  onDetails?: () => void;
   className?: string;
 }
 
@@ -14,6 +15,7 @@ export const ActionButtons = ({
   onEdit,
   onDelete,
   onRestore,
+  onDetails,
   className
 }: ActionButtonsProps) => {
 
@@ -54,6 +56,15 @@ export const ActionButtons = ({
       className={clsx("flex justify-end gap-1", className)}
       onClick={stopPropagation}
     >
+      {onDetails && (
+        <button
+          onClick={onDetails}
+          title="Szczegóły"
+          className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded transition-colors"
+        >
+          <Eye size={16} />
+        </button>
+      )}
       {onEdit && (
         <button
           onClick={onEdit}

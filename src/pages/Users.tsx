@@ -12,6 +12,7 @@ import { PasswordInput } from '../components/ui/PasswordInput';
 import { validateUserField, validateUserForm } from '../utils/validation';
 import { DataTable } from '../components/ui/DataTable';
 import { formatDate, formatName } from '../utils/formatters';
+import { DetailsModal } from '../components/modals/DetailsModal';
 
 const FIELDS_CONFIG = { firstName: "Imię", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
 
@@ -19,9 +20,12 @@ export const Users = () => {
     const [mainTab, setMainTab] = useState<'users' | 'relations' | 'roles'>('users');
     const [data, setData] = useState<any[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
-    const [cachedStudents, setCachedStudents] = useState<User[]>([]);
-    const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
+    const [viewMode, setViewMode] = useState<'list' | 'form' | 'assign'>('list');
     const [loading, setLoading] = useState(false);
+    const [assignmentTarget, setAssignmentTarget] = useState<User | null>(null);
+    const [assignmentCandidates, setAssignmentCandidates] = useState<User[]>([]);
+    const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<number[]>([]);
+    const [relationSearch, setRelationSearch] = useState('');
 
     const [filters, setFilters] = useState({
         search: '',
@@ -33,10 +37,10 @@ export const Users = () => {
 
     const [formData, setFormData] = useState<Partial<User>>({});
     const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
-    const [selectedChildIds, setSelectedChildIds] = useState<number[]>([]);
     const [errors, setErrors] = useState<Record<string, string | null>>({});
-    const [formTab, setFormTab] = useState<'details' | 'relations'>('details');
-    const [relationSearch, setRelationSearch] = useState('');
+
+    const [detailsUser, setDetailsUser] = useState<any>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -67,17 +71,15 @@ export const Users = () => {
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
 
     useEffect(() => {
-        setUsersData([]);
+        setData([]);
         setFilters(prev => ({ ...prev, search: '', showInactive: false, onlyUnassignedParents: false, sortBy: 'created', sortDesc: true }));
     }, [mainTab]);
 
     useEffect(() => {
-        if (viewMode === 'form' && !cachedStudents.length) {
-            api.users.getAll({ roleName: 'Uczeń' }).then(setCachedStudents).catch(console.error);
+        if (viewMode === 'form' && !roles.length) {
+            api.roles.getAll().then(setRoles).catch(console.error);
         }
-    }, [viewMode, cachedStudents.length]);
-
-    const setUsersData = (d: any[]) => setData(d);
+    }, [viewMode, roles.length]);
 
     const handleAction = async (action: () => Promise<any>, msg?: string) => {
         if (msg && !window.confirm(msg)) return;
@@ -88,19 +90,29 @@ export const Users = () => {
         await handleAction(() => api.users.restore(id), "Przywrócić użytkownika?");
     };
 
-    const handleEditRelation = async (parentId: number) => {
+    const handleEditRelation = async (userId: number) => {
         setLoading(true);
         try {
-            const parent = await api.users.get(parentId);
-            openForm(parent, 'relations');
+            const user = await api.users.get(userId);
+            setAssignmentTarget(user);
+
+            const isStudent = user.userRoles?.some((ur: any) => ur.roleName === 'Uczeń' || ur.role?.name === 'Uczeń');
+            const targetRole = isStudent ? 'Rodzic' : 'Uczeń';
+
+            const candidates = await api.users.getAll({ roleName: targetRole });
+            setAssignmentCandidates(candidates);
+
+            setSelectedAssignmentIds(isStudent ? (user.parentIds || []) : (user.childIds || []));
+            setRelationSearch('');
+            setViewMode('assign');
         } catch {
-            alert("Błąd pobierania danych rodzica");
+            alert("Błąd przygotowania przypisania");
         } finally {
             setLoading(false);
         }
     };
 
-    const openForm = (item?: any, tab: 'details' | 'relations' = 'details') => {
+    const openForm = (item?: any) => {
         setErrors({});
         setFormData(item ? {
             id: item.id,
@@ -114,17 +126,11 @@ export const Users = () => {
             isActive: item.isActive
         } : { isActive: true, firstName: '', lastName: '', email: '' });
 
-        const roleIds = item?.userRoles?.map((ur: any) => ur.roleId) || [];
+        const roleIds = item?.userRoles?.map((ur: any) => {
+            if (typeof ur === 'number') return ur;
+            return ur.roleId || ur.role?.id;
+        }) || [];
         setSelectedRoleIds(roleIds);
-
-        if (item && tab === 'relations') {
-            setSelectedChildIds(item.childIds || []);
-        } else {
-            setSelectedChildIds([]);
-        }
-
-        setFormTab(tab);
-        setRelationSearch('');
         setViewMode('form');
     };
 
@@ -140,7 +146,7 @@ export const Users = () => {
         if (Object.keys(formErrors).length) return setErrors(formErrors);
 
         try {
-            const payload = { ...formData, roleIds: selectedRoleIds, childIds: selectedChildIds };
+            const payload = { ...formData, roleIds: selectedRoleIds };
             if (!payload.password) delete payload.password;
 
             await (formData.id ? api.users.update(formData.id, payload) : api.users.create(payload));
@@ -149,9 +155,31 @@ export const Users = () => {
         } catch (e: any) { setErrors({ general: e.message || "Błąd zapisu" }); }
     };
 
-    const availableStudents = cachedStudents.filter(u =>
-        u.id !== formData.id &&
-        (u.lastName + " " + u.firstName + " " + u.email).toLowerCase().includes(relationSearch.toLowerCase())
+    const handleSaveAssignment = async () => {
+        if (!assignmentTarget) return;
+        setLoading(true);
+        try {
+            const isStudent = assignmentTarget.userRoles?.some((ur: any) => ur.roleName === 'Uczeń' || ur.role?.name === 'Uczeń');
+            const payload: any = { ...assignmentTarget, roleIds: assignmentTarget.userRoles?.map((ur: any) => ur.roleId) };
+
+            if (isStudent) {
+                payload.parentIds = selectedAssignmentIds;
+            } else {
+                payload.childIds = selectedAssignmentIds;
+            }
+
+            await api.users.update(assignmentTarget.id, payload);
+            setViewMode('list');
+            loadData();
+        } catch {
+            alert("Błąd zapisu powiązań");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filteredCandidates = assignmentCandidates.filter(c =>
+        (c.lastName + " " + c.firstName + " " + c.email).toLowerCase().includes(relationSearch.toLowerCase())
     );
 
     const renderForm = () => (
@@ -162,62 +190,70 @@ export const Users = () => {
                 </h3>
             </div>
 
-            <div className="flex border-b px-6 gap-6 bg-white">
-                <button onClick={() => setFormTab('details')} className={clsx("py-3 text-sm font-medium flex gap-2 border-b-2 transition-colors", formTab === 'details' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><UserIcon size={16} /> Dane podstawowe</button>
-                <button onClick={() => setFormTab('relations')} className={clsx("py-3 text-sm font-medium flex gap-2 border-b-2 transition-colors", formTab === 'relations' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><UsersIcon size={16} /> Powiązania</button>
-            </div>
-
             <div className="p-6 flex-1 overflow-y-auto bg-white">
                 {errors.general && <div className="mb-4 p-3 bg-danger-light text-danger-text rounded flex gap-2 text-sm"><AlertCircle size={16} />{errors.general}</div>}
 
-                {formTab === 'details' ? (
-                    <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            {Object.keys(FIELDS_CONFIG).map(f => (
-                                <div key={f} className={f === 'email' ? 'md:col-span-2' : ''}>
-                                    <label className="label-text">{FIELDS_CONFIG[f as keyof typeof FIELDS_CONFIG]} {!['phone', 'street', 'city', 'postalCode'].includes(f) && <span className="text-danger">*</span>}</label>
-                                    <Input name={f} value={(formData[f as keyof User] as string) || ''} onChange={handleInput} className={errors[f] ? "!border-danger" : ""} />
-                                    {errors[f] && <span className="text-xs text-danger">{errors[f]}</span>}
-                                </div>
-                            ))}
-                            <div className="md:col-span-2 border-t pt-4">
-                                <PasswordInput
-                                    value={formData.password || ''}
-                                    onChange={handleInput}
-                                    required={!formData.id}
-                                    showRules={!!(!formData.id || formData.password)}
-                                />
-                                {errors.password && <span className="text-xs text-danger">{errors.password}</span>}
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    {Object.keys(FIELDS_CONFIG).map(f => (
+                        <div key={f} className={f === 'email' ? 'md:col-span-2' : ''}>
+                            <label className="label-text">{FIELDS_CONFIG[f as keyof typeof FIELDS_CONFIG]} {!['phone', 'street', 'city', 'postalCode'].includes(f) && <span className="text-danger">*</span>}</label>
+                            <Input name={f} value={(formData[f as keyof User] as string) || ''} onChange={handleInput} className={errors[f] ? "!border-danger" : ""} />
+                            {errors[f] && <span className="text-xs text-danger">{errors[f]}</span>}
                         </div>
-                        <div className="border-t pt-4"><label className="label-text block mb-2">Rola <span className="text-danger">*</span></label>
-                            <div className="flex gap-2 flex-wrap">{roles.map(r => (<button key={r.id} onClick={() => setSelectedRoleIds(p => p.includes(r.id) ? p.filter(id => id !== r.id) : [...p, r.id])} className={clsx("px-3 py-1.5 text-sm border rounded flex gap-2 transition-colors", selectedRoleIds.includes(r.id) ? "bg-primary text-white border-primary" : "bg-white text-neutral-600 hover:border-primary")}>{selectedRoleIds.includes(r.id) && <Check size={14} />}{r.name}</button>))}</div>
-                        </div>
-                    </>
-                ) : (
-                    <div className="space-y-4">
-                        <div className="relative"><Search className="absolute left-3 top-2.5 text-neutral-400" size={18} /><Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder="Szukaj ucznia..." className="pl-10" /></div>
-                        <div className="border rounded h-64 overflow-y-auto divide-y divide-neutral-100">
-                            {availableStudents.map(s => (
-                                <div key={s.id} onClick={() => setSelectedChildIds(p => p.includes(s.id) ? p.filter(id => id !== s.id) : [...p, s.id])} className={clsx("p-3 flex justify-between cursor-pointer hover:bg-neutral-50 transition-colors", selectedChildIds.includes(s.id) && "bg-primary-light")}>
-                                    <div>
-                                        <div className={clsx("font-medium text-sm", selectedChildIds.includes(s.id) ? "text-primary" : "text-neutral-700")}>{formatName(s)}</div>
-                                        <div className="text-xs text-neutral-500">{s.email}</div>
-                                    </div>
-                                    {selectedChildIds.includes(s.id) && <Check size={16} className="text-primary" />}
-                                </div>
-                            ))}
-                            {!availableStudents.length && <div className="p-4 text-center text-neutral-400 text-sm">Nie znaleziono uczniów</div>}
-                        </div>
-                        <div className="text-xs text-neutral-500 mt-2">Zaznaczono: {selectedChildIds.length}</div>
+                    ))}
+                    <div className="md:col-span-2 border-t pt-4">
+                        <PasswordInput value={formData.password || ''} onChange={handleInput} required={!formData.id} showRules={!!(!formData.id || formData.password)} />
+                        {errors.password && <span className="text-xs text-danger">{errors.password}</span>}
                     </div>
-                )}
+                </div>
+                <div className="border-t pt-4"><label className="label-text block mb-2">Rola <span className="text-danger">*</span></label>
+                    <div className="flex gap-2 flex-wrap">{roles.map(r => (<button key={r.id} onClick={() => setSelectedRoleIds(p => p.includes(r.id) ? p.filter(id => id !== r.id) : [...p, r.id])} className={clsx("px-3 py-1.5 text-sm border rounded flex gap-2 transition-colors", selectedRoleIds.includes(r.id) ? "bg-primary text-white border-primary" : "bg-white text-neutral-600 hover:border-primary")}>{selectedRoleIds.includes(r.id) && <Check size={14} />}{r.name}</button>))}</div>
+                </div>
             </div>
             <div className="flex justify-end gap-3 px-6 py-4 border-t bg-neutral-50 mt-auto"><Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button><Button onClick={handleSave}>Zapisz</Button></div>
         </div>
     );
 
+    const renderAssignForm = () => (
+        <div className="bg-white border border-neutral-200 max-w-2xl mx-auto shadow-sm min-h-[500px] flex flex-col font-sans mt-6 rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b bg-neutral-50 flex justify-between items-center">
+                <div>
+                    <h3 className="text-lg font-bold text-neutral-800">Zarządzaj powiązaniami</h3>
+                    <p className="text-sm text-neutral-500">{formatName(assignmentTarget!)}</p>
+                </div>
+                <UsersIcon className="text-neutral-300" size={24} />
+            </div>
+
+            <div className="p-6 flex-1 flex flex-col gap-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-2.5 text-neutral-400" size={18} />
+                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder="Szukaj użytkownika..." className="pl-10" />
+                </div>
+
+                <div className="border rounded-lg flex-1 overflow-y-auto divide-y divide-neutral-100 min-h-[300px]">
+                    {filteredCandidates.map(c => (
+                        <div key={c.id} onClick={() => setSelectedAssignmentIds(p => p.includes(c.id) ? p.filter(id => id !== c.id) : [...p, c.id])} className={clsx("p-4 flex justify-between items-center cursor-pointer hover:bg-neutral-50 transition-colors", selectedAssignmentIds.includes(c.id) && "bg-primary-light/30")}>
+                            <div>
+                                <div className={clsx("font-medium text-sm", selectedAssignmentIds.includes(c.id) ? "text-primary" : "text-neutral-700")}>{formatName(c)}</div>
+                                <div className="text-xs text-neutral-500">{c.email}</div>
+                            </div>
+                            {selectedAssignmentIds.includes(c.id) ? <Check size={20} className="text-primary" /> : <Plus size={18} className="text-neutral-300" />}
+                        </div>
+                    ))}
+                    {!filteredCandidates.length && <div className="p-12 text-center text-neutral-400 text-sm">Nie znaleziono kandydatów</div>}
+                </div>
+                <div className="text-sm text-neutral-600 font-medium">Zaznaczono elementów: {selectedAssignmentIds.length}</div>
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t bg-neutral-50">
+                <Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button>
+                <Button onClick={handleSaveAssignment}>Zapisz powiązania</Button>
+            </div>
+        </div>
+    );
+
     if (viewMode === 'form') return renderForm();
+    if (viewMode === 'assign') return renderAssignForm();
 
     return (
         <div className="bg-white border border-neutral-200 shadow-sm font-sans flex flex-col min-h-[600px]">
@@ -249,12 +285,12 @@ export const Users = () => {
                         isTrashActive={filters.showInactive || false}
                         onToggle={() => {
                             setLoading(true);
-                            setUsersData([]);
+                            setData([]);
                             setFilters(p => ({ ...p, showInactive: !p.showInactive }));
                         }}
                     />
                 )}
-                {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> Pokaż bez powiązań</label>}
+                {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> Pokaż rodziców bez powiązań</label>}
             </div>
 
             <div className="flex-1 bg-white">
@@ -262,14 +298,6 @@ export const Users = () => {
                     mainTab === 'users' ? (
                         <DataTable
                             data={data}
-                            onRowClick={!filters.showInactive ? async (u) => {
-                                setLoading(true);
-                                try {
-                                    const fullUser = await api.users.get(u.id);
-                                    openForm(fullUser);
-                                } catch { alert("Błąd pobierania danych użytkownika"); }
-                                finally { setLoading(false); }
-                            } : undefined}
                             columns={[
                                 { header: 'Użytkownik', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
                                 { header: 'Telefon', render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
@@ -277,7 +305,7 @@ export const Users = () => {
                                     header: 'Rola', render: (u) =>
                                         <div className="flex gap-1 flex-wrap">
                                             {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
-                                                <span key={idx} className="bg-primary-light text-primary text-xs px-2 py-0.5 rounded border border-primary-light">{r}</span>
+                                                <span key={idx} className="text-neutral-500 text-xs">{r}</span>
                                             )) : <span className="text-neutral-400 text-xs">-</span>}
                                         </div>
                                 },
@@ -297,6 +325,25 @@ export const Users = () => {
                                             }}
                                             onDelete={() => handleAction(() => api.users.delete(u.id), "Usunąć?")}
                                             onRestore={() => handleRestore(u.id)}
+                                            onDetails={async () => {
+                                                setLoading(true);
+                                                try {
+                                                    const fullUser = await api.users.get(u.id);
+                                                    const roleNames = fullUser.userRoles?.map((ur: any) => ur.roleName || ur.role?.name).filter(Boolean).join(', ') || '-';
+                                                    const relatedContent = fullUser.relations && fullUser.relations.length > 0
+                                                        ? fullUser.relations.join(', ')
+                                                        : '-';
+
+                                                    setDetailsUser({
+                                                        ...fullUser,
+                                                        roleNames,
+                                                        relatedContent,
+                                                        createdAt: fullUser.createdAt,
+                                                    });
+                                                    setIsDetailsOpen(true);
+                                                } catch { alert("Błąd pobierania szczegółów"); }
+                                                finally { setLoading(false); }
+                                            }}
                                         />
                                     )
                                 }
@@ -345,6 +392,23 @@ export const Users = () => {
                     )
                 )}
             </div>
+
+            {detailsUser && (
+                <DetailsModal
+                    isOpen={isDetailsOpen}
+                    onClose={() => setIsDetailsOpen(false)}
+                    title={`Szczegóły użytkownika: ${formatName(detailsUser)}`}
+                    data={detailsUser}
+                    labels={{
+                        ...FIELDS_CONFIG,
+                        roleNames: "Przypisane role",
+                        relatedContent: "Powiązania",
+                        createdAt: "Data utworzenia",
+                        updatedAt: "Ostatnia modyfikacja"
+                    }}
+                    excludeKeys={['id', 'password', 'userRoles', 'childIds', 'parentIds', 'parentStudents', 'tickets', 'grades', 'attendances', 'announcements', 'classId', 'class', 'isActive', 'relations']}
+                />
+            )}
         </div>
     );
 };

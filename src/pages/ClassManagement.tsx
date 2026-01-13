@@ -10,7 +10,7 @@ import { api } from '../services/apiService';
 import { Users, BookOpen, UserPlus, RefreshCcw, Search, Check, Plus, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear } from '../types';
-import { validateClassForm, REGEX } from '../utils/validation';
+import { validateClassForm } from '../utils/validation';
 import { formatDate, formatName } from '../utils/formatters';
 import { YearSelector } from '../components/ui/YearSelector';
 
@@ -30,10 +30,10 @@ const CandidateRow = memo(({ student, index, isSelected, onToggle }: { student: 
 const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => void }) => {
     const [activeTab, setActiveTab] = useState<'students' | 'subjects'>('students');
     const [details, setDetails] = useState<ClassDetailsDto | null>(null);
-    const [loading, setLoading] = useState(false);
-    
+    const [, setLoading] = useState(false);
+
     const [dicts, setDicts] = useState<{ students: User[], subjects: Subject[], teachers: User[] }>({ students: [], subjects: [], teachers: [] });
-    
+
     const [modals, setModals] = useState({ student: false, subject: false });
     const [selections, setSelections] = useState<{ candidates: number[], subject: string, teacher: string }>({ candidates: [], subject: '', teacher: '' });
     const [filters, setFilters] = useState({ studentSearch: '', subjectSearch: '' });
@@ -42,11 +42,11 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
     const loadDetails = useCallback(async () => {
         setLoading(true);
-        try { 
-            setDetails(await api.classManagement.getClassDetails(classId, { 
-                studentSearch: filters.studentSearch, 
-                subjectSearch: filters.subjectSearch 
-            })); 
+        try {
+            setDetails(await api.classManagement.getClassDetails(classId, {
+                studentSearch: filters.studentSearch,
+                subjectSearch: filters.subjectSearch
+            }));
         }
         catch (e) { console.error(e); } finally { setLoading(false); }
     }, [classId, filters]);
@@ -56,7 +56,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
     const loadDicts = async () => {
         if (dicts.subjects.length) return;
         const [s, sub] = await Promise.all([
-            api.users.getAll({ roleName: 'Uczeń' }), 
+            api.users.getAll({ roleName: 'Uczeń' }),
             api.subjects.getAll()
         ]);
         setDicts(prev => ({ ...prev, students: s.filter(u => u.isActive), subjects: sub }));
@@ -84,21 +84,21 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
         fetchTeachers();
     }, [selections.subject]);
 
-    const handleAction = async (action: () => Promise<any>, confirmMsg?: string) => { 
+    const handleAction = async (action: () => Promise<any>, confirmMsg?: string) => {
         if (confirmMsg && !window.confirm(confirmMsg)) return;
-        try { await action(); loadDetails(); } catch { alert("Wystąpił błąd"); } 
+        try { await action(); loadDetails(); } catch { alert("Wystąpił błąd"); }
     };
-    
-    const saveStudents = () => handleAction(async () => { 
-        await api.classManagement.addStudentsBulk(classId, selections.candidates); 
-        setModals({ ...modals, student: false }); 
-        setSelections(p => ({ ...p, candidates: [] })); 
+
+    const saveStudents = () => handleAction(async () => {
+        await api.classManagement.addStudentsBulk(classId, selections.candidates);
+        setModals({ ...modals, student: false });
+        setSelections(p => ({ ...p, candidates: [] }));
     });
-    
-    const saveSubject = () => handleAction(async () => { 
-        if (selections.subject && selections.teacher) 
-            await api.classManagement.assignSubject({ classId, subjectId: +selections.subject, teacherId: +selections.teacher }); 
-        setModals({ ...modals, subject: false }); 
+
+    const saveSubject = () => handleAction(async () => {
+        if (selections.subject && selections.teacher)
+            await api.classManagement.assignSubject({ classId, subjectId: +selections.subject, teacherId: +selections.teacher });
+        setModals({ ...modals, subject: false });
     });
 
     const availableCandidates = useMemo(() => {
@@ -131,9 +131,9 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                     </div>
                     <div>
                         <label className="label-text">Nauczyciel</label>
-                        <select 
-                            className="w-full border border-neutral-300 px-3 py-2 rounded-md text-sm focus:outline-none focus:border-primary bg-white disabled:bg-neutral-100" 
-                            value={selections.teacher} 
+                        <select
+                            className="w-full border border-neutral-300 px-3 py-2 rounded-md text-sm focus:outline-none focus:border-primary bg-white disabled:bg-neutral-100"
+                            value={selections.teacher}
                             onChange={e => setSelections({ ...selections, teacher: e.target.value })}
                             disabled={!selections.subject || teachersLoading}
                         >
@@ -177,11 +177,11 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                             { header: 'Lp.', accessor: 'orderNumber', className: 'w-12 text-center' },
                             { header: 'Uczeń', render: (row) => formatName(row.student), className: 'font-medium' },
                             { header: 'Email', render: (row) => row.student?.email },
-                            { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },                            
-                            { 
-                                header: 'Akcje', 
-                                className: 'text-right', 
-                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), "Czy na pewno chcesz usunąć tego ucznia z klasy?")} /> 
+                            { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+                            {
+                                header: 'Akcje',
+                                className: 'text-right',
+                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), "Czy na pewno chcesz usunąć tego ucznia z klasy?")} />
                             }
                         ]} emptyMessage="Brak uczniów" />
                     </div>
@@ -201,10 +201,10 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                             { header: 'Przedmiot', accessor: 'subjectName', className: 'font-medium pl-4' },
                             { header: 'Nauczyciel', accessor: 'teacherName' },
                             { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
-                            { 
-                                header: 'Akcje', 
-                                className: 'text-right', 
-                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), "Czy na pewno chcesz usunąć ten przedmiot z klasy? Spowoduje to utratę powiązanych danych (np. planu lekcji).")} /> 
+                            {
+                                header: 'Akcje',
+                                className: 'text-right',
+                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), "Czy na pewno chcesz usunąć ten przedmiot z klasy? Spowoduje to utratę powiązanych danych (np. planu lekcji).")} />
                             }
                         ]} emptyMessage="Brak przedmiotów" />
                     </div>

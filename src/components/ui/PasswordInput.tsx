@@ -24,7 +24,7 @@ export const PasswordInput = ({
     placeholder,
     required = false,
     className,
-    showRules = true
+    showRules = false
 }: PasswordInputProps) => {
     return (
         <div className={className}>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { api } from '../services/apiService';
@@ -86,9 +86,9 @@ export const Login = () => {
                                 />
                             </div>
                             <div className="text-right mt-1">
-                                <a href="/reset-password" className="text-xs text-primary hover:text-primary-hover hover:underline">
+                                <Link to="/reset-password" className="text-xs text-primary hover:text-primary-hover hover:underline">
                                     Zapomniałeś hasła?
-                                </a>
+                                </Link>
                             </div>
                         </div>
                         <Button

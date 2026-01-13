@@ -7,7 +7,7 @@ import { SortFilterToolbar } from '../ui/SortFilterToolbar';
 import { ActionButtons } from '../ui/ActionButtons';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import type { Attendance, AttendanceType, AttendanceAdminDto } from '../../types';
+import type { AttendanceType, AttendanceAdminDto } from '../../types';
 
 export const AttendanceView = ({ classId }: { classId: number }) => {
     const [loading, setLoading] = useState(false);
@@ -35,6 +35,8 @@ export const AttendanceView = ({ classId }: { classId: number }) => {
         desc: true
     });
 
+    const [teachersLoading, setTeachersLoading] = useState(false);
+
     useEffect(() => {
         const init = async () => {
             setLoading(true);
@@ -45,10 +47,12 @@ export const AttendanceView = ({ classId }: { classId: number }) => {
                     api.attendanceTypes.getAll()
                 ]);
 
-                const subjectsMap = details.subjects.map(s => ({ id: s.subjectId, name: s.subjectName, teacherName: s.teacherName }));
-                const teachersMap = Array.from(new Set(details.subjects.map(s => s.teacherName)))
-                    .filter(Boolean)
-                    .map((name, i) => ({ id: i, name }));
+                const subjectsMap = details.subjects.map(s => ({
+                    id: s.subjectId,
+                    name: s.subjectName,
+                    teacherId: s.teacherId,
+                    teacherName: s.teacherName
+                }));
 
                 const studentIds = new Set(details.students.map(s => s.studentId));
                 const classAttendance = attendanceData.filter(a => studentIds.has(a.studentId));
@@ -56,7 +60,7 @@ export const AttendanceView = ({ classId }: { classId: number }) => {
                 setData(classAttendance);
                 setDicts({
                     subjects: subjectsMap,
-                    teachers: teachersMap,
+                    teachers: [],
                     types: typesData
                 });
 
@@ -69,6 +73,30 @@ export const AttendanceView = ({ classId }: { classId: number }) => {
         };
         init();
     }, [classId]);
+
+    useEffect(() => {
+        if (!filters.subjectId) {
+            const allTeachers = Array.from(new Map(
+                dicts.subjects.map(s => [s.teacherName, { id: s.teacherId, name: s.teacherName }])
+            ).values());
+            setDicts(prev => ({ ...prev, teachers: allTeachers }));
+            return;
+        }
+
+        const fetchTeachers = async () => {
+            setTeachersLoading(true);
+            try {
+                const teachers = await api.subjects.getTeachers(parseInt(filters.subjectId));
+                setDicts(prev => ({ ...prev, teachers: teachers.map(t => ({ id: t.id, name: `${t.lastName} ${t.firstName}` })) }));
+                setFilters(prev => ({ ...prev, teacherId: '' }));
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setTeachersLoading(false);
+            }
+        };
+        fetchTeachers();
+    }, [filters.subjectId, dicts.subjects]);
 
     const filteredData = useMemo(() => {
         let res = [...data];
@@ -220,11 +248,12 @@ export const AttendanceView = ({ classId }: { classId: number }) => {
                 <div className="w-48">
                     <label className="text-xs font-medium text-neutral-500 mb-1 block">Nauczyciel</label>
                     <select
-                        className="w-full border border-neutral-300 rounded-md px-3 h-9 text-sm bg-white focus:outline-none focus:border-primary"
+                        className="w-full border border-neutral-300 rounded-md px-3 h-9 text-sm bg-white focus:outline-none focus:border-primary disabled:bg-neutral-100"
                         value={filters.teacherId}
                         onChange={(e) => setFilters(p => ({ ...p, teacherId: e.target.value }))}
+                        disabled={teachersLoading}
                     >
-                        <option value="">Wszyscy</option>
+                        <option value="">{teachersLoading ? 'Ładowanie...' : 'Wszyscy'}</option>
                         {dicts.teachers.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                 </div>

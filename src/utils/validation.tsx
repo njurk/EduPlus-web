@@ -1,4 +1,4 @@
-import type { ChangePasswordDto, GradeDto, UserUpdateDto } from "../types";
+import type { GradeDto } from "../types";
 
 export const REGEX = {
     EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -110,11 +110,11 @@ export const validatePasswordChange = (data: any): Record<string, string> => {
     const errors: Record<string, string> = {};
 
     if (!data.currentPassword) errors.currentPassword = "Wprowadź aktualne hasło";
-    
+
     if (data.newPassword !== data.confirmPassword) {
         errors.confirmPassword = "Nowe hasła nie są identyczne";
     }
-    
+
     if (data.newPassword && !isPasswordValid(data.newPassword)) {
         errors.newPassword = "Hasło nie spełnia wszystkich wymagań";
     }

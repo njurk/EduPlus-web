@@ -2,10 +2,11 @@ import type {
     User, UserRole, Announcement, SchoolClass, DashboardSummary, AttendanceChartData, ParentStudents, Role,
     Classroom, LessonHour, LessonStatus, GradeType, GradeCategory, AttendanceType, Subject, ChangePasswordDto,
     SchoolYear, ClassEntity, ClassDetailsDto, StudentGradesRowDto,
-    SemesterDto, GradeDto, Grade, Attendance, AttendanceAdminDto
+    SemesterDto, GradeDto, Grade, AttendanceAdminDto,
+    PaginatedResponse, Ticket, CreateTicketDto, CloseTicketDto, PageContent, Page, Target, ScheduleLesson
 } from '../types';
 
-const API_URL = 'https://localhost:7252/api';
+const API_URL = 'http://localhost:5107/api';
 
 const getHeaders = () => {
     const token = localStorage.getItem('token');
@@ -103,6 +104,43 @@ export const api = {
             }
 
             return await response.json();
+        }
+    },
+    schoolYears: {
+        getAll: async (): Promise<SchoolYear[]> => {
+            const response = await fetch(`${API_URL}/SchoolYear`, { headers: getHeaders() });
+            return handleResponse<SchoolYear[]>(response);
+        },
+        get: async (id: number): Promise<SchoolYear> => {
+            const response = await fetch(`${API_URL}/SchoolYear/${id}`, { headers: getHeaders() });
+            return handleResponse<SchoolYear>(response);
+        },
+        getSemesters: async (id: number): Promise<SemesterDto[]> => {
+            const response = await fetch(`${API_URL}/SchoolYear/${id}/semesters`, { headers: getHeaders() });
+            return handleResponse<SemesterDto[]>(response);
+        },
+        create: async (data: Partial<SchoolYear>): Promise<SchoolYear> => {
+            const response = await fetch(`${API_URL}/SchoolYear`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            return handleResponse<SchoolYear>(response);
+        },
+        update: async (id: number, data: Partial<SchoolYear>): Promise<SchoolYear> => {
+            const response = await fetch(`${API_URL}/SchoolYear/${id}`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            return handleResponse<SchoolYear>(response);
+        },
+        delete: async (id: number): Promise<void> => {
+            const response = await fetch(`${API_URL}/SchoolYear/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            return handleResponse<void>(response);
         }
     },
     users: {
@@ -401,4 +439,71 @@ export const api = {
             return handleResponse(response);
         },
     },
-};
+    tickets: {
+        getAll: async (pageNumber: number = 1, pageSize: number = 10, showClosed?: boolean, search?: string, sortBy?: string, sortDesc?: boolean): Promise<PaginatedResponse<Ticket>> => {
+            const url = new URL(`${API_URL}/Ticket`);
+            url.searchParams.append('pageNumber', pageNumber.toString());
+            url.searchParams.append('pageSize', pageSize.toString());
+            if (showClosed !== undefined) url.searchParams.append('showClosed', showClosed.toString());
+            if (search) url.searchParams.append('search', search);
+            if (sortBy) url.searchParams.append('sortBy', sortBy);
+            if (sortDesc !== undefined) url.searchParams.append('sortDesc', sortDesc.toString());
+
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse<PaginatedResponse<Ticket>>(response);
+        },
+        create: async (data: CreateTicketDto): Promise<Ticket> => {
+            const response = await fetch(`${API_URL}/Ticket`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            return handleResponse<Ticket>(response);
+        },
+        close: async (id: number, data: CloseTicketDto): Promise<void> => {
+            const response = await fetch(`${API_URL}/Ticket/${id}/close`, {
+                method: 'PATCH',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            return handleResponse<void>(response);
+        }
+    },
+    pageContent: {
+        getByPageId: async (pageId: number): Promise<PageContent[]> => {
+            const response = await fetch(`${API_URL}/PageContent?pageId=${pageId}`, { headers: getHeaders() });
+            return handleResponse<PageContent[]>(response);
+        },
+        update: async (id: number, newValue: string): Promise<PageContent> => {
+            const response = await fetch(`${API_URL}/PageContent/${id}`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(newValue)
+            });
+            return handleResponse<PageContent>(response);
+        }
+    },
+    targets: {
+        getAll: async (): Promise<Target[]> => {
+            const response = await fetch(`${API_URL}/Target`, { headers: getHeaders() });
+            return handleResponse(response);
+        }
+    },
+    pages: {
+        getAll: async (targetId?: number): Promise<Page[]> => {
+            const url = new URL(`${API_URL}/Page`);
+            if (targetId) url.searchParams.append('targetId', targetId.toString());
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse(response);
+        }
+    },
+    schedule: {
+        getClassSchedule: async (classId: number, dateFrom: string, dateTo: string): Promise<ScheduleLesson[]> => {
+            const url = new URL(`${API_URL}/WeeklySchedule/${classId}`);
+            url.searchParams.append('dateFrom', dateFrom);
+            url.searchParams.append('dateTo', dateTo);
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse(response);
+        }
+    }
+}

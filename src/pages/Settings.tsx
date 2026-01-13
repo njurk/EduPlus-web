@@ -293,7 +293,9 @@ export const Settings = () => {
                                 value={passwordData.newPassword}
                                 onChange={e => handlePasswordInputChange('newPassword', e.target.value)}
                                 className={passwordErrors.newPassword ? 'border-danger' : ''}
+                                showRules
                             />
+                            {passwordErrors.newPassword && <p className="text-xs text-danger mt-1">{passwordErrors.newPassword}</p>}
                         </div>
                         <div>
                             <label htmlFor="confirmPassword" className="label-text">Potwierdź hasło</label>

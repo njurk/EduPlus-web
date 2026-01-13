@@ -1,7 +1,8 @@
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  children?: React.ReactNode;
 }
 
 export const Button = ({ variant = 'primary', className, ...props }: ButtonProps) => {

@@ -23,6 +23,9 @@ export interface User extends BaseEntity {
   postalCode?: string;
   password?: string;
   userRoles: UserRole[];
+  childIds?: number[];
+  parentIds?: number[];
+  relations?: string[];
 }
 
 export interface ParentStudents {
@@ -39,14 +42,14 @@ export interface ParentStudents {
 export interface UserUpdateDto {
   firstName: string;
   lastName: string;
-  email: string; 
+  email: string;
   phone?: string;
   street?: string;
   city?: string;
   postalCode?: string;
   isActive: boolean;
   roleIds: number[];
-  childIds?: number[]; 
+  childIds?: number[];
   password?: string;
 }
 

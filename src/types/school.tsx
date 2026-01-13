@@ -90,3 +90,20 @@ export interface Lesson extends BaseEntity {
   topic?: string;
   orderNumber: number;
 }
+
+export interface ScheduleLesson {
+  id: number;
+  subjectId: number;
+  subjectName: string;
+  classId: number;
+  className: string;
+  teacherId: number;
+  teacherName: string;
+  classroomId?: number;
+  classroomName?: string;
+  date: string;
+  orderNumber: number;
+  startTime: string;
+  endTime: string;
+  topic?: string;
+}
