@@ -29,10 +29,10 @@ export const SortFilterToolbar = ({
 }: SortFilterToolbarProps) => {
 
   return (
-    <div className={clsx("px-4 py-3 border-b flex flex-col sm:flex-row justify-between items-center gap-4", className)}>
+    <div className={clsx("px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-4", className)}>
       <div className="flex items-center gap-4 flex-1 w-full sm:w-auto">
         <SearchBar value={search} onChange={onSearchChange} className="w-full sm:max-w-xs bg-white" />
-        <div className="flex gap-4 border-l pl-4  overflow-x-auto">
+        <div className="flex gap-4 pl-4 overflow-x-auto">
           {sortOptions.map((option) => (
             <button
               key={option.field}

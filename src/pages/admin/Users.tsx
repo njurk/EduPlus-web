@@ -311,6 +311,7 @@ export const Users = () => {
                                 },
                                 { header: 'Utworzono', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.createdAt)}</span> },
                                 { header: 'Edytowano', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.updatedAt)}</span> },
+                                { header: 'Zmodyfikowano', render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
                                 {
                                     header: 'Akcje', className: 'text-right', render: (u) => (
                                         <ActionButtons
