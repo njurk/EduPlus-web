@@ -61,117 +61,114 @@ export const CMS = () => {
     };
 
     return (
-        <div className="bg-white border border-neutral-200 shadow-sm font-sans flex flex-col h-[calc(100vh-100px)] rounded-lg overflow-hidden">
-            <div className="border-b px-6 py-4 bg-neutral-50/30">
-                <h2 className="text-xl font-bold text-neutral-800">Zarządzanie treścią (CMS)</h2>
-                <p className="text-sm text-neutral-500">Edytuj statyczne treści w aplikacji</p>
+        <div>
+            <div className="pb-4 bg-neutral-50/30">
+                <h2 className="text-xl font-bold text-neutral-800">Zarządzanie treściami</h2>
             </div>
-
-            <div className="flex flex-1 overflow-hidden">
-                <div className="w-1/4 border-r bg-neutral-50 flex flex-col">
-                    <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
-                        <Layout size={14} /> Sekcje (Targets)
+            <div className="font-sans flex flex-col h-[calc(100vh-200px)] border border-neutral-200 shadow-sm rounded-xs overflow-hidden">
+                <div className="flex flex-1 overflow-hidden">
+                    <div className="w-1/4 border-r bg-neutral-50 flex flex-col">
+                        <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
+                            <Layout size={14} /> Sekcja
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-2 space-y-1">
+                            {loadingTargets && <div className="p-4 text-center"><RefreshCcw className="animate-spin inline text-neutral-400" /></div>}
+                            {targets.map(t => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => setSelectedTargetId(t.id)}
+                                    className={clsx(
+                                        "w-full text-left px-4 py-3 rounded-xs text-sm font-medium flex flex-col",
+                                        selectedTargetId === t.id ? "bg-white ring-1 ring-neutral-200 shadow-sm text-primary" : "text-neutral-600 hover:bg-neutral-200/50"
+                                    )}
+                                >
+                                    <span className={clsx(selectedTargetId === t.id && "font-bold")}>{t.title}</span>
+                                    <span className="text-xs text-neutral-400 font-normal">{t.label}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div className="overflow-y-auto flex-1 p-2 space-y-1">
-                        {loadingTargets && <div className="p-4 text-center"><RefreshCcw className="animate-spin inline text-neutral-400" /></div>}
-                        {targets.map(t => (
-                            <button
-                                key={t.id}
-                                onClick={() => setSelectedTargetId(t.id)}
-                                className={clsx(
-                                    "w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors flex flex-col",
-                                    selectedTargetId === t.id ? "bg-white shadow-sm ring-1 ring-neutral-200 text-primary" : "text-neutral-600 hover:bg-neutral-100/50"
-                                )}
-                            >
-                                <span className={clsx(selectedTargetId === t.id && "font-bold")}>{t.title}</span>
-                                <span className="text-xs text-neutral-400 font-normal">{t.label}</span>
-                            </button>
-                        ))}
+
+                    <div className="w-1/4 border-r bg-white flex flex-col">
+                        <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
+                            <FileText size={14} /> Strona
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-2 space-y-1">
+                            {loadingPages && <div className="p-4 text-center"><RefreshCcw className="animate-spin inline text-neutral-400" /></div>}
+                            {!loadingPages && pages.length === 0 && <div className="p-4 text-center text-sm text-neutral-400">Brak stron w tej sekcji</div>}
+                            {pages.map(p => (
+                                <button
+                                    key={p.id}
+                                    onClick={() => setSelectedPageId(p.id)}
+                                    className={clsx(
+                                        "w-full text-left px-4 py-3 rounded-xs text-sm",
+                                        selectedPageId === p.id ? "bg-primary-light text-primary font-medium" : "text-neutral-700 hover:bg-neutral-50"
+                                    )}
+                                >
+                                    {p.title}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
 
-                <div className="w-1/4 border-r bg-white flex flex-col">
-                    <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
-                        <FileText size={14} /> Strony (Pages)
-                    </div>
-                    <div className="overflow-y-auto flex-1 p-2 space-y-1">
-                        {loadingPages && <div className="p-4 text-center"><RefreshCcw className="animate-spin inline text-neutral-400" /></div>}
-                        {!loadingPages && pages.length === 0 && <div className="p-4 text-center text-sm text-neutral-400">Brak stron w tej sekcji</div>}
-                        {pages.map(p => (
-                            <button
-                                key={p.id}
-                                onClick={() => setSelectedPageId(p.id)}
-                                className={clsx(
-                                    "w-full text-left px-4 py-3 rounded-md text-sm transition-colors",
-                                    selectedPageId === p.id ? "bg-primary-light text-primary font-medium" : "text-neutral-700 hover:bg-neutral-50"
-                                )}
-                            >
-                                {p.title}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                    <div className="flex-1 bg-white flex flex-col">
+                        <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
+                            <Type size={14} /> treść
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-2">
+                            {loadingContents && <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2 max-w-sm mx-auto"><RefreshCcw className="animate-spin" size={24} /> Ładowanie treści...</div>}
 
-                <div className="flex-1 bg-white flex flex-col">
-                    <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
-                        <Type size={14} /> Edycja treści
-                    </div>
-                    <div className="overflow-y-auto flex-1 p-6">
-                        {loadingContents && <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2 max-w-sm mx-auto"><RefreshCcw className="animate-spin" size={24} /> Ładowanie treści...</div>}
+                            {!selectedPageId && !loadingContents && (
+                                <div className="p-4 text-center text-sm text-neutral-400">Wybierz stronę aby edytować treści</div>
+                            )}
 
-                        {!selectedPageId && !loadingContents && (
-                            <div className="h-full flex flex-col items-center justify-center text-neutral-300">
-                                <Layout size={48} className="mb-4" />
-                                <p>Wybierz stronę z listy, aby edytować jej treść</p>
-                            </div>
-                        )}
+                            {selectedPageId && !loadingContents && contents.length === 0 && (
+                                <div className="text-center text-neutral-400 mt-12">Brak edytowalnych elementów na tej stronie</div>
+                            )}
 
-                        {selectedPageId && !loadingContents && contents.length === 0 && (
-                            <div className="text-center text-neutral-400 mt-12">Brak edytowalnych elementów na tej stronie</div>
-                        )}
-
-                        <div className="space-y-6 max-w-3xl">
-                            {contents.map(c => (
-                                <div key={c.id} className="border border-neutral-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow bg-white">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div>
-                                            <span className="text-xs font-mono text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">{c.key}</span>
+                            <div className="space-y-6 max-w-3xl">
+                                {contents.map(c => (
+                                    <div key={c.id} className="border border-neutral-200 rounded-xs p-4 shadow-sm hover:shadow-md bg-white">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <span className="text-xs font-mono text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">{c.key}</span>
+                                            </div>
+                                            {editingContentId !== c.id && (
+                                                <button
+                                                    onClick={() => { setEditingContentId(c.id); setEditValue(c.value); }}
+                                                    className="text-primary hover:text-primary-hover p-1"
+                                                    title="Edytuj"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
-                                        {editingContentId !== c.id && (
-                                            <button
-                                                onClick={() => { setEditingContentId(c.id); setEditValue(c.value); }}
-                                                className="text-primary hover:text-primary-hover p-1"
-                                                title="Edytuj"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
+
+                                        {editingContentId === c.id ? (
+                                            <div className="space-y-3 animation-fade-in">
+                                                <textarea
+                                                    value={editValue}
+                                                    onChange={e => setEditValue(e.target.value)}
+                                                    className="w-full min-h-[120px] p-3 border border-primary rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                    autoFocus
+                                                />
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="secondary" onClick={() => setEditingContentId(null)} disabled={saving} className="text-xs py-1 h-8">
+                                                        <X size={14} className="mr-1" /> Anuluj
+                                                    </Button>
+                                                    <Button onClick={() => handleSaveContent(c.id)} disabled={saving} className="text-xs py-1 h-8">
+                                                        {saving ? <RefreshCcw className="animate-spin" size={14} /> : <Save size={14} className="mr-1" />} Zapisz
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-neutral-800 text-sm whitespace-pre-wrap leading-relaxed pl-1 border-l-2 border-transparent">
+                                                {c.value || <span className="text-neutral-300 italic">Brak treści</span>}
+                                            </div>
                                         )}
                                     </div>
-
-                                    {editingContentId === c.id ? (
-                                        <div className="space-y-3 animation-fade-in">
-                                            <textarea
-                                                value={editValue}
-                                                onChange={e => setEditValue(e.target.value)}
-                                                className="w-full min-h-[120px] p-3 border border-primary rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                                autoFocus
-                                            />
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="secondary" onClick={() => setEditingContentId(null)} disabled={saving} className="text-xs py-1 h-8">
-                                                    <X size={14} className="mr-1" /> Anuluj
-                                                </Button>
-                                                <Button onClick={() => handleSaveContent(c.id)} disabled={saving} className="text-xs py-1 h-8">
-                                                    {saving ? <RefreshCcw className="animate-spin" size={14} /> : <Save size={14} className="mr-1" />} Zapisz
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-neutral-800 text-sm whitespace-pre-wrap leading-relaxed pl-1 border-l-2 border-transparent">
-                                            {c.value || <span className="text-neutral-300 italic">Brak treści</span>}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, BookMarked, Megaphone, Calendar, HelpCircle } from 'lucide-react';
+import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, BookMarked, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, FileCheck } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const Clock = () => {
@@ -43,6 +43,10 @@ export const AdminLayout = () => {
     { label: 'Użytkownicy i uprawnienia', path: '/users', icon: Users },
     { label: 'Klasy', path: '/class-management', icon: Folder },
     { label: 'Dzienniki', path: '/class-register', icon: BookMarked },
+    { label: 'Lekcje', path: '/lessons', icon: BookOpen },
+    { label: 'Oceny', path: '/grades', icon: GraduationCap },
+    { label: 'Frekwencja', path: '/attendance', icon: ClipboardCheck },
+    { label: 'Usprawiedliwienia', path: '/excuses', icon: FileCheck },
     { label: 'Plany lekcji', path: '/schedule', icon: Calendar },
     { label: 'Ogłoszenia', path: '/announcements', icon: Megaphone },
     { label: 'Zgłoszenia', path: '/tickets', icon: HelpCircle },
