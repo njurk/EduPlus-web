@@ -1,18 +1,18 @@
-import { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Modal } from '../components/ui/Modal';
-import { DataTable, type Column } from '../components/ui/DataTable';
-import { SortFilterToolbar } from '../components/ui/SortFilterToolbar';
-import { ActionButtons } from '../components/ui/ActionButtons';
-import { TrashButton } from '../components/ui/TrashButton';
-import { api } from '../services/apiService';
+﻿import { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Modal } from '../../components/ui/Modal';
+import { DataTable, type Column } from '../../components/ui/DataTable';
+import { SortFilterToolbar } from '../../components/ui/SortFilterToolbar';
+import { ActionButtons } from '../../components/ui/ActionButtons';
+import { TrashButton } from '../../components/ui/TrashButton';
+import { api } from '../../services/apiService';
 import { Users, BookOpen, UserPlus, RefreshCcw, Search, Check, Plus, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
-import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear } from '../types';
-import { validateClassForm } from '../utils/validation';
-import { formatDate, formatName } from '../utils/formatters';
-import { YearSelector } from '../components/ui/YearSelector';
+import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear } from '../../types';
+import { validateClassForm } from '../../utils/validation';
+import { formatDate, formatName } from '../../utils/formatters';
+import { YearSelector } from '../../components/ui/YearSelector';
 
 const CandidateRow = memo(({ student, index, isSelected, onToggle }: { student: User, index: number, isSelected: boolean, onToggle: (id: number) => void }) => (
     <div onClick={() => onToggle(student.id)} className={clsx("flex items-center justify-between p-2 border-b cursor-pointer text-sm select-none hover:bg-neutral-100", isSelected && "bg-primary-light text-primary-text")}>

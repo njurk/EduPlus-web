@@ -1,17 +1,17 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Dashboard } from './pages/Dashboard';
+import { Dashboard } from './pages/admin/Dashboard';
 import { AdminLayout } from './layouts/AdminLayout';
-import { Users } from './pages/Users';
-import { SystemConfig } from './pages/SystemConfig';
+import { Users } from './pages/admin/Users';
+import { SystemConfig } from './pages/admin/SystemConfig';
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { Settings } from './pages/Settings';
-import { ClassManagement } from './pages/ClassManagement';
-import { ClassRegister } from './pages/ClassRegister';
-import { Schedule } from './pages/Schedule';
-import { Announcements } from './pages/Announcements';
-import { Tickets } from './pages/Tickets';
-import { CMS } from './pages/CMS';
+import { Settings } from './pages/admin/Settings';
+import { ClassManagement } from './pages/admin/ClassManagement';
+import { ClassRegister } from './pages/teacher/ClassRegister';
+import { Schedule } from './pages/admin/Schedule';
+import { Announcements } from './pages/admin/Announcements';
+import { Tickets } from './pages/admin/Tickets';
+import { CMS } from './pages/admin/CMS';
 import { ResetPassword } from './pages/ResetPassword';
 
 export default function App() {

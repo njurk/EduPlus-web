@@ -1,17 +1,18 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { TrashButton } from "../components/ui/TrashButton";
-import { Modal } from "../components/ui/Modal";
-import { api } from "../services/apiService";
+﻿import { useState, useEffect, useCallback, useMemo } from "react";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { TrashButton } from "../../components/ui/TrashButton";
+import { Modal } from "../../components/ui/Modal";
+import { api } from "../../services/apiService";
 import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus } from "lucide-react";
 import { clsx } from "clsx";
-import { SortFilterToolbar } from "../components/ui/SortFilterToolbar";
-import { validateSystemConfig } from "../utils/validation";
-import { DataTable, type Column } from "../components/ui/DataTable";
-import { ActionButtons } from "../components/ui/ActionButtons";
-import type { BaseEntity, GradeType, GradeCategory, AttendanceType, LessonHour } from "../types";
-import { formatDate } from "../utils/formatters";
+import { SortFilterToolbar } from "../../components/ui/SortFilterToolbar";
+import { validateSystemConfig } from "../../utils/validation";
+import { DataTable, type Column } from "../../components/ui/DataTable";
+import { ActionButtons } from "../../components/ui/ActionButtons";
+import type { BaseEntity, GradeType, GradeCategory, AttendanceType, LessonHour } from "../../types";
+import { formatDate } from "../../utils/formatters";
+
 
 const TABS = [
     { id: "classrooms", label: "Sale", icon: School },

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import type { Target, Page, PageContent } from '../types';
-import { api } from '../services/apiService';
-import { Button } from '../components/ui/Button';
+﻿import { useState, useEffect } from 'react';
+import type { Target, Page, PageContent } from '../../types';
+import { api } from '../../services/apiService';
+import { Button } from '../../components/ui/Button';
 import { Edit2, Save, X, Layout, FileText, Type } from 'lucide-react';
 import clsx from 'clsx';
 import { RefreshCcw } from 'lucide-react';

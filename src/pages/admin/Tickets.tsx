@@ -1,15 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import type { Ticket, PaginatedResponse } from '../types';
-import { api } from '../services/apiService';
+﻿import { useState, useEffect, useCallback } from 'react';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import type { Ticket, PaginatedResponse } from '../../types';
+import { api } from '../../services/apiService';
 import { RefreshCcw, CheckCircle, Clock, Plus } from 'lucide-react';
-import { SortFilterToolbar } from '../components/ui/SortFilterToolbar';
-import { DataTable } from '../components/ui/DataTable';
-import { formatDate } from '../utils/formatters';
-import { Pagination } from '../components/ui/Pagination';
-import { TicketDetailsModal } from '../components/modals/TicketDetailsModal';
-import { Modal } from '../components/ui/Modal';
+import { SortFilterToolbar } from '../../components/ui/SortFilterToolbar';
+import { DataTable } from '../../components/ui/DataTable';
+import { formatDate } from '../../utils/formatters';
+import { Pagination } from '../../components/ui/Pagination';
+import { TicketDetailsModal } from '../../components/modals/TicketDetailsModal';
+import { Modal } from '../../components/ui/Modal';
 
 export const Tickets = () => {
     const [data, setData] = useState<PaginatedResponse<Ticket> | null>(null);

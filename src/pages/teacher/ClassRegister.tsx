@@ -1,17 +1,17 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { DataTable, type Column } from '../components/ui/DataTable';
-import { SortFilterToolbar } from '../components/ui/SortFilterToolbar';
-import { api } from '../services/apiService';
+﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { DataTable, type Column } from '../../components/ui/DataTable';
+import { SortFilterToolbar } from '../../components/ui/SortFilterToolbar';
+import { api } from '../../services/apiService';
 import { BookOpen, ArrowLeft, Plus, RefreshCcw, CheckSquare } from 'lucide-react';
 import { clsx } from 'clsx';
-import type { Subject, SchoolYear, ClassEntity, Grade, StudentGradesRowDto, SemesterDto } from '../types';
-import { formatDate, formatName } from '../utils/formatters';
-import { YearSelector } from '../components/ui/YearSelector';
-import { SemesterSelector } from '../components/ui/SemesterSelector';
-import { GradeSquare } from '../components/ui/GradeSquare';
-import { GradeModal } from '../components/ui/GradeModal';
-import { SubjectTile } from '../components/ui/SubjectTile';
-import { AttendanceView } from '../components/ui/AttendanceView';
+import type { Subject, SchoolYear, ClassEntity, Grade, StudentGradesRowDto, SemesterDto } from '../../types';
+import { formatDate, formatName } from '../../utils/formatters';
+import { YearSelector } from '../../components/ui/YearSelector';
+import { SemesterSelector } from '../../components/ui/SemesterSelector';
+import { GradeSquare } from '../../components/ui/GradeSquare';
+import { GradeModal } from '../../components/ui/GradeModal';
+import { SubjectTile } from '../../components/ui/SubjectTile';
+import { AttendanceView } from '../../components/ui/AttendanceView';
 
 const SubjectGradesView = ({ classId, subject, yearName, yearId, className, onBack }: any) => {
     const [data, setData] = useState<StudentGradesRowDto[]>([]);

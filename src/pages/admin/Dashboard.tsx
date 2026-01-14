@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Plus, FileText } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { api } from '../services/apiService';
-import type { DashboardSummary, AttendanceChartData } from '../types';
+import { Button } from '../../components/ui/Button';
+import { api } from '../../services/apiService';
+import type { DashboardSummary, AttendanceChartData } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 

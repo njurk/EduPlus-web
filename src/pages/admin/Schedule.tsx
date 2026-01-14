@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { api } from '../services/apiService';
-import type { SchoolYear, ClassEntity, ScheduleLesson, LessonHour } from '../types';
-import { Button } from '../components/ui/Button';
+﻿import { useState, useEffect } from 'react';
+import { api } from '../../services/apiService';
+import type { SchoolYear, ClassEntity, ScheduleLesson, LessonHour } from '../../types';
+import { Button } from '../../components/ui/Button';
 import { RefreshCcw, ChevronLeft, ChevronRight, Calendar, User, MapPin } from 'lucide-react';
 import clsx from 'clsx';
 
