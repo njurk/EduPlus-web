@@ -37,6 +37,8 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
     const [modals, setModals] = useState({ student: false, subject: false });
     const [selections, setSelections] = useState<{ candidates: number[], subject: string, teacher: string }>({ candidates: [], subject: '', teacher: '' });
     const [filters, setFilters] = useState({ studentSearch: '', subjectSearch: '' });
+    const [studentSort, setStudentSort] = useState({ sortBy: 'lastName', sortDesc: false });
+    const [subjectSort, setSubjectSort] = useState({ sortBy: 'subjectName', sortDesc: false });
     const [candidateSearch, setCandidateSearch] = useState('');
     const [teachersLoading, setTeachersLoading] = useState(false);
 
@@ -45,11 +47,15 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
         try {
             setDetails(await api.classManagement.getClassDetails(classId, {
                 studentSearch: filters.studentSearch,
-                subjectSearch: filters.subjectSearch
+                subjectSearch: filters.subjectSearch,
+                sortBy: studentSort.sortBy,
+                sortDesc: studentSort.sortDesc,
+                subjectSortBy: subjectSort.sortBy,
+                subjectSortDesc: subjectSort.sortDesc
             }));
         }
         catch (e) { console.error(e); } finally { setLoading(false); }
-    }, [classId, filters]);
+    }, [classId, filters, studentSort, subjectSort]);
 
     useEffect(() => { loadDetails(); }, [loadDetails]);
 
@@ -168,7 +174,8 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                 className="p-0 border-0 flex-1"
                                 search={filters.studentSearch}
                                 onSearchChange={v => setFilters({ ...filters, studentSearch: v })}
-                                sortBy="" sortDesc={false} onSortChange={() => { }} sortOptions={[]}
+                                sortBy={studentSort.sortBy} sortDesc={studentSort.sortDesc} onSortChange={f => setStudentSort(p => ({ sortBy: f, sortDesc: f === p.sortBy ? !p.sortDesc : false }))}
+                                sortOptions={[{ field: 'lastName', label: 'Nazwisko' }, { field: 'email', label: 'Email' }, { field: 'createdat', label: 'Data dodania' }, { field: 'id', label: 'Lp.' }]}
                             />
                             <div className="pl-4 border-l"><Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button></div>
                         </div>
@@ -191,7 +198,8 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                 className="p-0 border-0 flex-1"
                                 search={filters.subjectSearch}
                                 onSearchChange={v => setFilters({ ...filters, subjectSearch: v })}
-                                sortBy="" sortDesc={false} onSortChange={() => { }} sortOptions={[]}
+                                sortBy={subjectSort.sortBy} sortDesc={subjectSort.sortDesc} onSortChange={f => setSubjectSort(p => ({ sortBy: f, sortDesc: f === p.sortBy ? !p.sortDesc : false }))}
+                                sortOptions={[{ field: 'subjectName', label: 'Przedmiot' }, { field: 'teacherName', label: 'Nauczyciel' }, { field: 'createdat', label: 'Data dodania' }]}
                             />
                             <div className="pl-4 border-l"><Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button></div>
                         </div>

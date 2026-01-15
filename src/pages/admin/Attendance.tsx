@@ -43,7 +43,14 @@ export const Attendance = () => {
     const loadData = useCallback(async () => {
         if (!filters.yearId) return;
         setLoading(true);
-        try { setData(await api.attendance.getAllAdmin(false)); } finally { setLoading(false); }
+        try {
+            setData(await api.attendance.getAllAdmin({
+                includeInactive: filters.showInactive,
+                search: filters.search,
+                sortBy: filters.sortBy,
+                sortDesc: filters.sortDesc
+            }));
+        } finally { setLoading(false); }
     }, [filters]);
 
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);

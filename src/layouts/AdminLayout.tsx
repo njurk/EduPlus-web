@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, BookMarked, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, FileCheck } from 'lucide-react';
+import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, FileCheck } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const Clock = () => {
@@ -46,23 +46,22 @@ export const AdminLayout = () => {
       ]
     },
     {
-      title: 'Nauczanie',
-      items: [
-        { label: 'Dzienniki', path: '/class-register', icon: BookMarked },
-        { label: 'Plany lekcji', path: '/schedule', icon: Calendar },
-        { label: 'Lekcje', path: '/lessons', icon: BookOpen },
-        { label: 'Oceny', path: '/grades', icon: GraduationCap },
-        { label: 'Frekwencja', path: '/attendance', icon: ClipboardCheck },
-        { label: 'Usprawiedliwienia', path: '/excuses', icon: FileCheck },
-      ]
-    },
-    {
       title: 'Zarządzanie',
       items: [
         { label: 'Użytkownicy', path: '/users', icon: Users },
         { label: 'Klasy', path: '/class-management', icon: Folder },
         { label: 'Ogłoszenia', path: '/announcements', icon: Megaphone },
         { label: 'Zgłoszenia', path: '/tickets', icon: HelpCircle },
+      ]
+    },
+    {
+      title: 'Nauczanie',
+      items: [
+        { label: 'Plany lekcji', path: '/schedule', icon: Calendar },
+        { label: 'Lekcje', path: '/lessons', icon: BookOpen },
+        { label: 'Oceny', path: '/grades', icon: GraduationCap },
+        { label: 'Frekwencja', path: '/attendance', icon: ClipboardCheck },
+        { label: 'Usprawiedliwienia', path: '/excuses', icon: FileCheck },
       ]
     },
     {

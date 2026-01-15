@@ -41,8 +41,8 @@ export const Excuses = () => {
 
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
 
-    const handleAccept = async (id: number, accept: boolean) => { await api.excuses.update(id, { isAccepted: accept }); loadData(); };
-    const handleDelete = async (id: number) => { if (!window.confirm("Usunąć?")) return; await api.excuses.delete(id); loadData(); };
+    const handleAccept = async (id: number, accept: boolean) => { await api.excuses.update(id, { isAccepted: accept }); await loadData(); };
+    const handleDelete = async (id: number) => { if (!window.confirm("Usunąć?")) return; await api.excuses.delete(id); await loadData(); };
 
     return (
         <div className="space-y-4">

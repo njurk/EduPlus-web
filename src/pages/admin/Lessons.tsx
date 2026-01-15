@@ -56,7 +56,7 @@ export const Lessons = () => {
     const handleDelete = async (id: number) => {
         if (!window.confirm("Usunąć lekcję?")) return;
         await api.lessons.delete(id);
-        loadData();
+        await loadData();
     };
 
     return (

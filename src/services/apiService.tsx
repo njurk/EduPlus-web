@@ -449,10 +449,13 @@ export const api = {
         }
     },
     attendance: {
-        getAllAdmin: async (includeInactive: boolean = false): Promise<AttendanceAdminDto[]> => {
-            const response = await fetch(`${API_URL}/attendance/admin?includeInactive=${includeInactive}`, {
-                headers: getHeaders()
-            });
+        getAllAdmin: async (params?: { includeInactive?: boolean, search?: string, sortBy?: string, sortDesc?: boolean }): Promise<AttendanceAdminDto[]> => {
+            const url = new URL(`${API_URL}/attendance/admin`);
+            if (params?.includeInactive) url.searchParams.append('includeInactive', 'true');
+            if (params?.search) url.searchParams.append('search', params.search);
+            if (params?.sortBy) url.searchParams.append('sortBy', params.sortBy);
+            if (params?.sortDesc !== undefined) url.searchParams.append('sortDesc', params.sortDesc.toString());
+            const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse(response);
         },
         delete: async (id: number): Promise<void> => {

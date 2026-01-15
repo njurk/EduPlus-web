@@ -214,8 +214,7 @@ export const SystemConfig = () => {
     }, [getCurrentApi, filters]);
 
     useEffect(() => {
-        const timer = setTimeout(loadData, 300);
-        return () => clearTimeout(timer);
+        loadData();
     }, [loadData]);
 
     const getSortOptions = () => {
@@ -259,7 +258,7 @@ export const SystemConfig = () => {
                 ? await resource.update(formData.id, formData)
                 : await resource.create(formData);
 
-            loadData();
+            await loadData();
             setIsModalOpen(false);
         } catch {
             alert("Błąd zapisu");
@@ -270,7 +269,7 @@ export const SystemConfig = () => {
         if (!window.confirm(isActive ? "Przywrócić element?" : "Przenieść do kosza?")) return;
         try {
             await getCurrentApi().update(item.id, { ...item, isActive });
-            loadData();
+            await loadData();
         } catch {
             alert("Błąd zmiany statusu");
         }
@@ -280,7 +279,7 @@ export const SystemConfig = () => {
         if (!window.confirm("Usunąć trwale?")) return;
         try {
             await getCurrentApi().delete(id);
-            loadData();
+            await loadData();
         } catch {
             alert("Błąd usuwania");
         }

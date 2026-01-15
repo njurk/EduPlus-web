@@ -108,7 +108,7 @@ export const Tickets = () => {
                 isOpen={isDetailsOpen}
                 onClose={() => setIsDetailsOpen(false)}
                 ticket={selectedTicket}
-                onTicketClosed={() => { loadData(); }}
+                onTicketClosed={async () => { await loadData(); }}
             />
         </div>
     );

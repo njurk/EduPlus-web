@@ -4,7 +4,7 @@ import { Input } from '../../components/ui/Input';
 import type { User, Role } from '../../types';
 import { api } from '../../services/apiService';
 import { TrashButton } from '../../components/ui/TrashButton';
-import { Check, AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus, RefreshCcw } from 'lucide-react';
+import { Check, AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus } from 'lucide-react';
 import { clsx } from 'clsx';
 import { SortToolbar } from '../../components/ui/SortToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
@@ -13,6 +13,7 @@ import { validateUserField, validateUserForm } from '../../utils/validation';
 import { DataTable } from '../../components/ui/DataTable';
 import { formatDate, formatName } from '../../utils/formatters';
 import { DetailsModal } from '../../components/modals/DetailsModal';
+import { Modal } from '../../components/modals/Modal';
 
 const FIELDS_CONFIG = { firstName: "Imię", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
 
@@ -63,11 +64,11 @@ export const Users = () => {
                     setData(rels);
                 }
             }
-        } catch { setErrors({ general: "Błąd pobierania danych" }); }
+        } catch (e) { console.error('Error:', e); }
         finally { setLoading(false); }
     }, [mainTab, filters, roles.length]);
 
-    useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
+    useEffect(() => { loadData(); }, [mainTab, filters]);
 
     useEffect(() => {
         setData([]);
@@ -82,7 +83,7 @@ export const Users = () => {
 
     const handleAction = async (action: () => Promise<any>, msg?: string) => {
         if (msg && !window.confirm(msg)) return;
-        try { await action(); loadData(); } catch { alert("Błąd operacji"); }
+        try { await action(); await loadData(); } catch (e: any) { console.error('handleAction error:', e); alert(e?.message || "Błąd operacji"); }
     };
 
     const handleRestore = async (id: number) => {
@@ -90,7 +91,6 @@ export const Users = () => {
     };
 
     const handleEditRelation = async (userId: number) => {
-        setLoading(true);
         try {
             const user = await api.users.get(userId);
             setAssignmentTarget(user);
@@ -106,8 +106,6 @@ export const Users = () => {
             setViewMode('assign');
         } catch {
             alert("Błąd przygotowania przypisania");
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -150,13 +148,12 @@ export const Users = () => {
 
             await (formData.id ? api.users.update(formData.id, payload) : api.users.create(payload));
             setViewMode('list');
-            loadData();
+            await loadData();
         } catch (e: any) { setErrors({ general: e.message || "Błąd zapisu" }); }
     };
 
     const handleSaveAssignment = async () => {
         if (!assignmentTarget) return;
-        setLoading(true);
         try {
             const isStudent = assignmentTarget.userRoles?.some((ur: any) => ur.roleName === 'Uczeń' || ur.role?.name === 'Uczeń');
             const payload: any = { ...assignmentTarget, roleIds: assignmentTarget.userRoles?.map((ur: any) => ur.roleId) };
@@ -169,11 +166,9 @@ export const Users = () => {
 
             await api.users.update(assignmentTarget.id, payload);
             setViewMode('list');
-            loadData();
+            await loadData();
         } catch {
             alert("Błąd zapisu powiązań");
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -182,17 +177,22 @@ export const Users = () => {
     );
 
     const renderForm = () => (
-        <div className="bg-white border border-neutral-200 max-w-4xl mx-auto shadow-sm min-h-[500px] flex flex-col font-sans mt-6 rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b bg-neutral-50">
-                <h3 className="text-lg font-bold text-neutral-800">
-                    {formData.id ? 'Edycja' : 'Nowy'} użytkownika
-                </h3>
-            </div>
+        <Modal
+            isOpen={viewMode === 'form'}
+            onClose={() => setViewMode('list')}
+            title={`${formData.id ? 'Edycja' : 'Nowy'} użytkownika`}
+            maxWidth="lg"
+            footer={
+                <>
+                    <Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button>
+                    <Button onClick={handleSave}>Zapisz</Button>
+                </>
+            }
+        >
+            <div className="p-6 space-y-6">
+                {errors.general && <div className="p-3 bg-danger-light text-danger-text rounded flex gap-2 text-sm"><AlertCircle size={16} />{errors.general}</div>}
 
-            <div className="p-6 flex-1 overflow-y-auto bg-white">
-                {errors.general && <div className="mb-4 p-3 bg-danger-light text-danger-text rounded flex gap-2 text-sm"><AlertCircle size={16} />{errors.general}</div>}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {Object.keys(FIELDS_CONFIG).map(f => (
                         <div key={f} className={f === 'email' ? 'md:col-span-2' : ''}>
                             <label className="label-text">{FIELDS_CONFIG[f as keyof typeof FIELDS_CONFIG]} {!['phone', 'street', 'city', 'postalCode'].includes(f) && <span className="text-danger">*</span>}</label>
@@ -205,31 +205,48 @@ export const Users = () => {
                         {errors.password && <span className="text-xs text-danger">{errors.password}</span>}
                     </div>
                 </div>
-                <div className="border-t pt-4"><label className="label-text block mb-2">Rola <span className="text-danger">*</span></label>
-                    <div className="flex gap-2 flex-wrap">{roles.map(r => (<button key={r.id} onClick={() => setSelectedRoleIds(p => p.includes(r.id) ? p.filter(id => id !== r.id) : [...p, r.id])} className={clsx("px-3 py-1.5 text-sm border rounded flex gap-2 transition-colors", selectedRoleIds.includes(r.id) ? "bg-primary text-white border-primary" : "bg-white text-neutral-600 hover:border-primary")}>{selectedRoleIds.includes(r.id) && <Check size={14} />}{r.name}</button>))}</div>
+                <div className="border-t pt-4">
+                    <label className="label-text block mb-2">Rola <span className="text-danger">*</span></label>
+                    <div className="flex gap-2 flex-wrap">
+                        {roles.map(r => (
+                            <button
+                                key={r.id}
+                                onClick={() => setSelectedRoleIds(p => p.includes(r.id) ? p.filter(id => id !== r.id) : [...p, r.id])}
+                                className={clsx("px-3 py-1.5 text-sm border rounded flex gap-2 transition-colors", selectedRoleIds.includes(r.id) ? "bg-primary text-white border-primary" : "bg-white text-neutral-600 hover:border-primary")}
+                            >
+                                {selectedRoleIds.includes(r.id) && <Check size={14} />}
+                                {r.name}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
-            <div className="flex justify-end gap-3 px-6 py-4 border-t bg-neutral-50 mt-auto"><Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button><Button onClick={handleSave}>Zapisz</Button></div>
-        </div>
+        </Modal>
     );
 
     const renderAssignForm = () => (
-        <div className="bg-white border border-neutral-200 max-w-2xl mx-auto shadow-sm min-h-[500px] flex flex-col font-sans mt-6 rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b bg-neutral-50 flex justify-between items-center">
-                <div>
-                    <h3 className="text-lg font-bold text-neutral-800">Zarządzaj powiązaniami</h3>
-                    <p className="text-sm text-neutral-500">{formatName(assignmentTarget!)}</p>
+        <Modal
+            isOpen={viewMode === 'assign'}
+            onClose={() => setViewMode('list')}
+            title="Zarządzaj powiązaniami"
+            maxWidth="lg"
+            footer={
+                <>
+                    <Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button>
+                    <Button onClick={handleSaveAssignment}>Zapisz powiązania</Button>
+                </>
+            }
+        >
+            <div className="p-6 flex flex-col gap-4">
+                <div className="mb-2">
+                    <p className="text-sm text-neutral-500">Użytkownik: <span className="font-medium text-neutral-800">{formatName(assignmentTarget!)}</span></p>
                 </div>
-                <UsersIcon className="text-neutral-300" size={24} />
-            </div>
-
-            <div className="p-6 flex-1 flex flex-col gap-4">
                 <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-neutral-400" size={18} />
                     <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder="Szukaj użytkownika..." className="pl-10" />
                 </div>
 
-                <div className="border rounded-lg flex-1 overflow-y-auto divide-y divide-neutral-100 min-h-[300px]">
+                <div className="border rounded-lg overflow-y-auto divide-y divide-neutral-100 max-h-[350px]">
                     {filteredCandidates.map(c => (
                         <div key={c.id} onClick={() => setSelectedAssignmentIds(p => p.includes(c.id) ? p.filter(id => id !== c.id) : [...p, c.id])} className={clsx("p-4 flex justify-between items-center cursor-pointer hover:bg-neutral-50 transition-colors", selectedAssignmentIds.includes(c.id) && "bg-primary-light/30")}>
                             <div>
@@ -243,16 +260,10 @@ export const Users = () => {
                 </div>
                 <div className="text-sm text-neutral-600 font-medium">Zaznaczono elementów: {selectedAssignmentIds.length}</div>
             </div>
-
-            <div className="flex justify-end gap-3 px-6 py-4 border-t bg-neutral-50">
-                <Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button>
-                <Button onClick={handleSaveAssignment}>Zapisz powiązania</Button>
-            </div>
-        </div>
+        </Modal>
     );
 
-    if (viewMode === 'form') return renderForm();
-    if (viewMode === 'assign') return renderAssignForm();
+    // if (viewMode === 'form') return renderForm();
 
     return (
         <div className="bg-white border border-neutral-200 shadow-sm font-sans flex flex-col min-h-[600px]">
@@ -292,102 +303,105 @@ export const Users = () => {
             </div>
 
             <div className="flex-1 bg-white">
-                {loading ? <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2"><RefreshCcw className="animate-spin" size={24} /> Ładowanie...</div> : (
-                    mainTab === 'users' ? (
+                {mainTab === 'users' ? (
+                    <DataTable
+                        data={data}
+                        isLoading={loading}
+                        columns={[
+                            { header: 'Użytkownik', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
+                            { header: 'Telefon', render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
+                            {
+                                header: 'Rola', render: (u) =>
+                                    <div className="flex gap-1 flex-wrap">
+                                        {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
+                                            <span key={idx} className="text-neutral-500 text-xs">{r}</span>
+                                        )) : <span className="text-neutral-400 text-xs">-</span>}
+                                    </div>
+                            },
+                            { header: 'Utworzono', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.createdAt)}</span> },
+                            { header: 'Edytowano', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.updatedAt)}</span> },
+                            { header: 'Edytowane przez', render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
+                            {
+                                header: 'Akcje', className: 'text-right', render: (u) => (
+                                    <ActionButtons
+                                        isActive={u.isActive}
+                                        onEdit={u.isActive ? async () => {
+                                            try {
+                                                const fullUser = await api.users.get(u.id);
+                                                openForm(fullUser);
+                                            } catch { alert("Błąd pobierania danych użytkownika"); }
+                                        } : undefined}
+                                        onDelete={u.isActive ? () => handleAction(() => api.users.delete(u.id), "Usunąć?") : undefined}
+                                        onRestore={!u.isActive ? () => handleRestore(u.id) : undefined}
+                                        onDetails={async () => {
+                                            try {
+                                                const fullUser = await api.users.get(u.id);
+                                                const roleNames = fullUser.userRoles?.map((ur: any) => ur.roleName || ur.role?.name).filter(Boolean).join(', ') || '-';
+                                                const relatedContent = fullUser.relations && fullUser.relations.length > 0
+                                                    ? fullUser.relations.join(', ')
+                                                    : '-';
+
+                                                setDetailsUser({
+                                                    ...fullUser,
+                                                    roleNames,
+                                                    relatedContent,
+                                                    createdAt: fullUser.createdAt,
+                                                });
+                                                setIsDetailsOpen(true);
+                                            } catch { alert("Błąd pobierania szczegółów"); }
+                                        }}
+                                    />
+                                )
+                            }
+                        ]}
+                    />
+                ) : mainTab === 'roles' ? (
+                    <DataTable
+                        data={data}
+                        isLoading={loading}
+                        columns={[
+                            { header: 'Nazwa', accessor: 'name', className: 'font-medium text-neutral-900' },
+                            { header: 'Poziom', accessor: 'level', className: 'text-neutral-600' },
+                            { header: 'Opis', render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
+                            { header: 'Utworzono', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
+                            { header: 'Edytowano', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt)}</span> },
+                            { header: 'Edytowane przez', render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> }
+                        ]}
+                    />
+                ) : (
+                    filters.onlyUnassignedParents ? (
                         <DataTable
                             data={data}
+                            isLoading={loading}
                             columns={[
-                                { header: 'Użytkownik', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
-                                { header: 'Telefon', render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
+                                { header: 'Rodzic', render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
+                                { header: 'Status', render: () => <span className="italic text-neutral-500">brak powiązań</span> },
+                                { header: 'Utworzono', render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span> },
+                                { header: 'Edytowano', render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.updatedAt)}</span> },
+                                { header: 'Edytowane przez', render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },
+                                { header: 'Akcje', className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> Przypisz</button> }
+                            ]}
+                        />
+                    ) : (
+                        <DataTable
+                            data={data}
+                            isLoading={loading}
+                            columns={[
+                                { header: 'Rodzic', render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
+                                { header: 'Uczeń', accessor: 'studentName', className: 'font-medium text-neutral-900' },
+                                { header: 'Utworzono', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
+                                { header: 'Edytowano', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt || r.createdAt)}</span> },
+                                { header: 'Edytowane przez', render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
                                 {
-                                    header: 'Rola', render: (u) =>
-                                        <div className="flex gap-1 flex-wrap">
-                                            {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
-                                                <span key={idx} className="text-neutral-500 text-xs">{r}</span>
-                                            )) : <span className="text-neutral-400 text-xs">-</span>}
-                                        </div>
-                                },
-                                { header: 'Utworzono', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.createdAt)}</span> },
-                                { header: 'Edytowano', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.updatedAt)}</span> },
-                                { header: 'Zmodyfikowano', render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
-                                {
-                                    header: 'Akcje', className: 'text-right', render: (u) => (
+                                    header: 'Akcje', className: 'text-right', render: (r) => (
                                         <ActionButtons
-                                            isActive={u.isActive}
-                                            onEdit={async () => {
-                                                setLoading(true);
-                                                try {
-                                                    const fullUser = await api.users.get(u.id);
-                                                    openForm(fullUser);
-                                                } catch { alert("Błąd pobierania danych użytkownika"); }
-                                                finally { setLoading(false); }
-                                            }}
-                                            onDelete={() => handleAction(() => api.users.delete(u.id), "Usunąć?")}
-                                            onRestore={() => handleRestore(u.id)}
-                                            onDetails={async () => {
-                                                setLoading(true);
-                                                try {
-                                                    const fullUser = await api.users.get(u.id);
-                                                    const roleNames = fullUser.userRoles?.map((ur: any) => ur.roleName || ur.role?.name).filter(Boolean).join(', ') || '-';
-                                                    const relatedContent = fullUser.relations && fullUser.relations.length > 0
-                                                        ? fullUser.relations.join(', ')
-                                                        : '-';
-
-                                                    setDetailsUser({
-                                                        ...fullUser,
-                                                        roleNames,
-                                                        relatedContent,
-                                                        createdAt: fullUser.createdAt,
-                                                    });
-                                                    setIsDetailsOpen(true);
-                                                } catch { alert("Błąd pobierania szczegółów"); }
-                                                finally { setLoading(false); }
-                                            }}
+                                            onEdit={() => handleEditRelation(r.parentId)}
+                                            onDelete={() => handleAction(() => api.parentStudents.delete(r.id), "Usunąć powiązanie?")}
                                         />
                                     )
                                 }
                             ]}
                         />
-                    ) : mainTab === 'roles' ? (
-                        <DataTable
-                            data={data}
-                            columns={[
-                                { header: 'Nazwa', accessor: 'name', className: 'font-medium text-neutral-900' },
-                                { header: 'Poziom', accessor: 'level', className: 'text-neutral-600' },
-                                { header: 'Opis', render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
-                                { header: 'Utworzono', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> }
-                            ]}
-                        />
-                    ) : (
-                        filters.onlyUnassignedParents ? (
-                            <DataTable
-                                data={data}
-                                columns={[
-                                    { header: 'Rodzic', render: (p) => <div><div className="font-medium text-neutral-900">{formatName(p)}</div><div className="text-xs text-neutral-500">{p.email}</div></div> },
-                                    { header: 'Status', render: () => <span className="italic text-neutral-500">brak powiązań</span> },
-                                    { header: 'Utworzono', render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span> },
-                                    { header: 'Akcje', className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> Przypisz</button> }
-                                ]}
-                            />
-                        ) : (
-                            <DataTable
-                                data={data}
-                                columns={[
-                                    { header: 'Rodzic', render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
-                                    { header: 'Uczeń', accessor: 'studentName', className: 'font-medium text-neutral-900' },
-                                    { header: 'Utworzono', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
-                                    { header: 'Edytowano', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt || r.createdAt)}</span> },
-                                    {
-                                        header: 'Akcje', className: 'text-right', render: (r) => (
-                                            <ActionButtons
-                                                onEdit={() => handleEditRelation(r.parentId)}
-                                                onDelete={() => handleAction(() => api.parentStudents.delete(r.id), "Usunąć powiązanie?")}
-                                            />
-                                        )
-                                    }
-                                ]}
-                            />
-                        )
                     )
                 )}
             </div>
@@ -408,6 +422,8 @@ export const Users = () => {
                     excludeKeys={['id', 'password', 'userRoles', 'childIds', 'parentIds', 'parentStudents', 'tickets', 'grades', 'attendances', 'announcements', 'classId', 'class', 'isActive', 'relations']}
                 />
             )}
+            {viewMode === 'form' && renderForm()}
+            {viewMode === 'assign' && renderAssignForm()}
         </div>
     );
 };

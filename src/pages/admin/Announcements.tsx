@@ -30,13 +30,13 @@ export const Announcements = () => {
     const handleDelete = async (id: number) => {
         if (!window.confirm("Usunąć ogłoszenie?")) return;
         await api.announcements.delete(id);
-        loadData();
+        await loadData();
     };
 
     const handleRestore = async (id: number) => {
         if (!window.confirm("Przywrócić?")) return;
         await api.announcements.restore(id);
-        loadData();
+        await loadData();
     };
 
     return (

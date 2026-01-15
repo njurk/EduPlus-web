@@ -44,7 +44,7 @@ export const Grades = () => {
         if (!filters.yearId) return;
         setLoading(true);
         try {
-            const params: Record<string, any> = { search: filters.search, sortBy: filters.sortBy, sortDesc: filters.sortDesc };
+            const params: Record<string, any> = { search: filters.search, sortBy: filters.sortBy, sortDesc: filters.sortDesc, showInactive: filters.showInactive };
             if (filters.classId) params.classId = filters.classId;
             setData(await api.grades.getAll(params));
         } finally { setLoading(false); }

@@ -7,7 +7,6 @@ import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Settings } from './pages/admin/Settings';
 import { ClassManagement } from './pages/admin/ClassManagement';
-import { ClassRegister } from './pages/teacher/ClassRegister';
 import { Schedule } from './pages/admin/Schedule';
 import { Announcements } from './pages/admin/Announcements';
 import { Tickets } from './pages/admin/Tickets';
@@ -32,7 +31,6 @@ export default function App() {
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
           <Route path="class-management" element={<ClassManagement />} />
-          <Route path="class-register" element={<ClassRegister />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="tickets" element={<Tickets />} />
