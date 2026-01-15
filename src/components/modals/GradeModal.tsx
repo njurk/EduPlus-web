@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
+import { Modal } from './Modal';
 import { api } from '../../services/apiService';
 import { Edit2, Trash2, Calendar, Tag, MessageSquare, Scale, User } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -29,11 +29,11 @@ export const GradeModal = ({ isOpen, onClose, onSuccess, studentId, subjectId, g
         Promise.all([api.gradeTypes.getAll(), api.gradeCategories.getAll()])
             .then(([t, c]) => { setTypes(t); setCats(c); })
             .catch(console.error);
-            
-        setFormData({ 
-            gradeTypeId: grade?.gradeTypeId, 
-            gradeCategoryId: grade?.gradeCategoryId, 
-            comment: grade?.comment || '' 
+
+        setFormData({
+            gradeTypeId: grade?.gradeTypeId,
+            gradeCategoryId: grade?.gradeCategoryId,
+            comment: grade?.comment || ''
         });
         setErrors({});
         setIsEditing(!grade);
@@ -43,7 +43,7 @@ export const GradeModal = ({ isOpen, onClose, onSuccess, studentId, subjectId, g
         const payloadToValidate = { ...formData };
         const errs = validateGradeForm(payloadToValidate);
         if (Object.keys(errs).length) return setErrors(errs);
-        
+
         const payload = {
             studentId: Number(studentId),
             subjectId: Number(subjectId),
@@ -54,18 +54,18 @@ export const GradeModal = ({ isOpen, onClose, onSuccess, studentId, subjectId, g
 
         try {
             grade ? await api.grades.update(grade.id, payload) : await api.grades.create(payload);
-            onSuccess(); 
+            onSuccess();
             onClose();
-        } catch (e: any) { 
-            alert("Błąd zapisu: " + (e.message || "Nieznany błąd")); 
+        } catch (e: any) {
+            alert("Błąd zapisu: " + (e.message || "Nieznany błąd"));
         }
     };
 
     const handleDelete = async () => {
-        if (confirm("Usunąć ocenę?")) { 
-            await api.grades.delete(grade!.id); 
-            onSuccess(); 
-            onClose(); 
+        if (confirm("Usunąć ocenę?")) {
+            await api.grades.delete(grade!.id);
+            onSuccess();
+            onClose();
         }
     };
 

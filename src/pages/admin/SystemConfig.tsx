@@ -2,11 +2,11 @@
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { TrashButton } from "../../components/ui/TrashButton";
-import { Modal } from "../../components/ui/Modal";
+import { Modal } from "../../components/modals/Modal";
 import { api } from "../../services/apiService";
 import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus } from "lucide-react";
 import { clsx } from "clsx";
-import { SortFilterToolbar } from "../../components/ui/SortFilterToolbar";
+import { SortToolbar } from "../../components/ui/SortToolbar";
 import { validateSystemConfig } from "../../utils/validation";
 import { DataTable, type Column } from "../../components/ui/DataTable";
 import { ActionButtons } from "../../components/ui/ActionButtons";
@@ -382,7 +382,7 @@ export const SystemConfig = () => {
 
             <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
                 <div className="flex-1 flex items-center gap-4">
-                    <SortFilterToolbar
+                    <SortToolbar
                         className="flex-1"
                         search={filters.search}
                         onSearchChange={(v) => setFilters((p) => ({ ...p, search: v }))}
@@ -396,7 +396,6 @@ export const SystemConfig = () => {
                             }))
                         }
                         sortOptions={getSortOptions()}
-                        hideCreate={true}
                     />
                 </div>
                 <div className="flex gap-2 items-center">

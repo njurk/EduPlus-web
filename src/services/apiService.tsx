@@ -2,7 +2,7 @@ import type {
     User, UserRole, Announcement, SchoolClass, DashboardSummary, AttendanceChartData, ParentStudents, Role,
     Classroom, LessonHour, LessonStatus, GradeType, GradeCategory, AttendanceType, Subject, ChangePasswordDto,
     SchoolYear, ClassEntity, ClassDetailsDto, StudentGradesRowDto,
-    SemesterDto, GradeDto, Grade, AttendanceAdminDto,
+    SemesterDto, GradeDto, Grade, AttendanceAdminDto, UptimeInfo,
     PaginatedResponse, Ticket, CreateTicketDto, CloseTicketDto, PageContent, Page, Target, ScheduleLesson
 } from '../types';
 
@@ -77,6 +77,13 @@ function createCrudResource<T>(endpoint: string) {
         delete: async (id: number): Promise<void> => {
             const response = await fetch(`${API_URL}/${endpoint}/${id}`, {
                 method: 'DELETE',
+                headers: getHeaders()
+            });
+            return handleResponse<void>(response);
+        },
+        restore: async (id: number): Promise<void> => {
+            const response = await fetch(`${API_URL}/${endpoint}/${id}/restore`, {
+                method: 'PATCH',
                 headers: getHeaders()
             });
             return handleResponse<void>(response);
@@ -276,6 +283,10 @@ export const api = {
                 headers: getHeaders()
             });
             return handleResponse<AttendanceChartData[]>(response);
+        },
+        getUptime: async (): Promise<UptimeInfo> => {
+            const response = await fetch(`${API_URL}/dashboard/uptime`);
+            return handleResponse<UptimeInfo>(response);
         }
     },
 
@@ -400,6 +411,19 @@ export const api = {
             const response = await fetch(`${API_URL}/grade/current-semester/${yearId}`, { headers: getHeaders() });
             return handleResponse(response);
         },
+        getAll: async (params?: Record<string, any>): Promise<any[]> => {
+            const url = new URL(`${API_URL}/grade`);
+            if (params) {
+                Object.keys(params).forEach(key => {
+                    const value = params[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        url.searchParams.append(key, value.toString());
+                    }
+                });
+            }
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse(response);
+        },
         create: async (data: GradeDto): Promise<Grade> => {
             const response = await fetch(`${API_URL}/grade`, {
                 method: 'POST',
@@ -505,5 +529,77 @@ export const api = {
             const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse(response);
         }
+    },
+    lessons: {
+        ...createCrudResource<any>('lesson'),
+        getAll: async (params?: Record<string, any>): Promise<any[]> => {
+            const url = new URL(`${API_URL}/lesson`);
+            if (params) {
+                Object.keys(params).forEach(key => {
+                    const value = params[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        url.searchParams.append(key, value.toString());
+                    }
+                });
+            }
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse(response);
+        }
+    },
+    excuses: {
+        ...createCrudResource<any>('excuse'),
+        getAll: async (params?: Record<string, any>): Promise<any[]> => {
+            const url = new URL(`${API_URL}/excuse`);
+            if (params) {
+                Object.keys(params).forEach(key => {
+                    const value = params[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        url.searchParams.append(key, value.toString());
+                    }
+                });
+            }
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse(response);
+        }
+    },
+    export: {
+        downloadSchedulePdf: async (classId: number, yearId?: number, semesterId?: number): Promise<void> => {
+            const url = new URL(`${API_URL}/export/schedule/pdf`);
+            url.searchParams.append('classId', classId.toString());
+            if (yearId) url.searchParams.append('yearId', yearId.toString());
+            if (semesterId) url.searchParams.append('semesterId', semesterId.toString());
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `plan_lekcji_${classId}.pdf`;
+            link.click();
+        },
+        downloadScheduleXlsx: async (classId: number, yearId?: number, semesterId?: number): Promise<void> => {
+            const url = new URL(`${API_URL}/export/schedule/xlsx`);
+            url.searchParams.append('classId', classId.toString());
+            if (yearId) url.searchParams.append('yearId', yearId.toString());
+            if (semesterId) url.searchParams.append('semesterId', semesterId.toString());
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `plan_lekcji_${classId}.xlsx`;
+            link.click();
+        },
+        downloadScheduleCsv: async (classId: number, yearId?: number, semesterId?: number): Promise<void> => {
+            const url = new URL(`${API_URL}/export/schedule/csv`);
+            url.searchParams.append('classId', classId.toString());
+            if (yearId) url.searchParams.append('yearId', yearId.toString());
+            if (semesterId) url.searchParams.append('semesterId', semesterId.toString());
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `plan_lekcji_${classId}.csv`;
+            link.click();
+        }
     }
 }
+
+

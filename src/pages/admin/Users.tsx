@@ -4,9 +4,9 @@ import { Input } from '../../components/ui/Input';
 import type { User, Role } from '../../types';
 import { api } from '../../services/apiService';
 import { TrashButton } from '../../components/ui/TrashButton';
-import { Check, AlertCircle, User as UserIcon, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus, RefreshCcw } from 'lucide-react';
+import { Check, AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus, RefreshCcw } from 'lucide-react';
 import { clsx } from 'clsx';
-import { SortFilterToolbar } from '../../components/ui/SortFilterToolbar';
+import { SortToolbar } from '../../components/ui/SortToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { validateUserField, validateUserForm } from '../../utils/validation';
@@ -38,7 +38,6 @@ export const Users = () => {
     const [formData, setFormData] = useState<Partial<User>>({});
     const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
     const [errors, setErrors] = useState<Record<string, string | null>>({});
-
     const [detailsUser, setDetailsUser] = useState<any>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
@@ -267,7 +266,7 @@ export const Users = () => {
             </div>
 
             <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
-                <SortFilterToolbar
+                <SortToolbar
                     className="flex-1"
                     search={filters.search} onSearchChange={v => setFilters(p => ({ ...p, search: v }))}
                     sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSortChange={f => setFilters(p => ({ ...p, sortBy: f, sortDesc: p.sortBy === f ? !p.sortDesc : false }))}
@@ -278,7 +277,6 @@ export const Users = () => {
                             { field: 'parentName', label: 'Rodzic' }, { field: 'studentName', label: 'Uczeń' }, { field: 'created', label: 'Utworzono' }
                         ]
                     }
-                    hideCreate={true}
                 />
                 {mainTab === 'users' && (
                     <TrashButton

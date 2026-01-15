@@ -1,4 +1,4 @@
-import { Modal } from '../ui/Modal';
+import { Modal } from './Modal';
 import { Button } from '../ui/Button';
 import { formatDate } from '../../utils/formatters';
 

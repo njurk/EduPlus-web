@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal } from '../ui/Modal';
+import { Modal } from './Modal';
 import { Button } from '../ui/Button';
 import type { Ticket } from '../../types';
 import { formatDate } from '../../utils/formatters';

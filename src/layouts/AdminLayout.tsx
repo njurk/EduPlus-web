@@ -31,27 +31,47 @@ export const AdminLayout = () => {
   const handleNavClick = () => setSidebarOpen(false);
 
   const handleLogout = () => {
-    if (window.confirm("Czy na pewno chcesz się wylogować?")) {
+    if (window.confirm("Na pewno chcesz się wylogować?")) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       navigate('/login');
     }
   };
 
-  const navItems = [
-    { label: 'Pulpit', path: '/', icon: Home },
-    { label: 'Użytkownicy i uprawnienia', path: '/users', icon: Users },
-    { label: 'Klasy', path: '/class-management', icon: Folder },
-    { label: 'Dzienniki', path: '/class-register', icon: BookMarked },
-    { label: 'Lekcje', path: '/lessons', icon: BookOpen },
-    { label: 'Oceny', path: '/grades', icon: GraduationCap },
-    { label: 'Frekwencja', path: '/attendance', icon: ClipboardCheck },
-    { label: 'Usprawiedliwienia', path: '/excuses', icon: FileCheck },
-    { label: 'Plany lekcji', path: '/schedule', icon: Calendar },
-    { label: 'Ogłoszenia', path: '/announcements', icon: Megaphone },
-    { label: 'Zgłoszenia', path: '/tickets', icon: HelpCircle },
-    { label: 'Konfiguracja systemu', path: '/system-config', icon: FilePenIcon },
-    { label: 'CMS', path: '/cms', icon: Layout },
+  const navSections = [
+    {
+      title: null,
+      items: [
+        { label: 'Pulpit', path: '/', icon: Home },
+      ]
+    },
+    {
+      title: 'Nauczanie',
+      items: [
+        { label: 'Dzienniki', path: '/class-register', icon: BookMarked },
+        { label: 'Plany lekcji', path: '/schedule', icon: Calendar },
+        { label: 'Lekcje', path: '/lessons', icon: BookOpen },
+        { label: 'Oceny', path: '/grades', icon: GraduationCap },
+        { label: 'Frekwencja', path: '/attendance', icon: ClipboardCheck },
+        { label: 'Usprawiedliwienia', path: '/excuses', icon: FileCheck },
+      ]
+    },
+    {
+      title: 'Zarządzanie',
+      items: [
+        { label: 'Użytkownicy', path: '/users', icon: Users },
+        { label: 'Klasy', path: '/class-management', icon: Folder },
+        { label: 'Ogłoszenia', path: '/announcements', icon: Megaphone },
+        { label: 'Zgłoszenia', path: '/tickets', icon: HelpCircle },
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { label: 'Konfiguracja', path: '/system-config', icon: FilePenIcon },
+        { label: 'CMS', path: '/cms', icon: Layout },
+      ]
+    }
   ];
 
   return (
@@ -65,32 +85,37 @@ export const AdminLayout = () => {
       />
 
       <aside className={clsx(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-neutral-900 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 border-r border-neutral-800 shadow-xl lg:shadow-none",
+        "fixed inset-y-0 left-0 z-50 w-56 bg-neutral-900 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 border-r border-neutral-800",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex items-center justify-between h-14 px-4 bg-primary border-b border-primary-hover">
-          <span className="font-bold text-lg tracking-tight text-white">EduPlus Admin</span>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white hover:text-neutral-200 transition-colors">
+          <span className="font-bold text-lg tracking-tight text-white">EduPlus</span>
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white hover:text-neutral-200">
             <X size={20} />
           </button>
         </div>
 
-        <nav className="p-2 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={handleNavClick}
-              className={({ isActive }) => clsx(
-                "flex items-center px-3 py-2 text-sm transition-all duration-200 rounded-md font-medium group",
-                isActive
-                  ? "bg-primary text-white shadow-md"
-                  : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
-              )}
-            >
-              <item.icon size={18} className="mr-3 shrink-0" />
-              {item.label}
-            </NavLink>
+        <nav className="p-2 space-y-4 overflow-y-auto h-[calc(100vh-110px)]">
+          {navSections.map((section, idx) => (
+            <div key={idx}>
+              {section.title && <div className="px-3 py-1 text-xs font-semibold text-neutral-500 uppercase tracking-wider">{section.title}</div>}
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={handleNavClick}
+                    className={({ isActive }) => clsx(
+                      "flex items-center px-3 py-2 text-sm rounded-xs font-medium",
+                      isActive ? "bg-primary text-white" : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                    )}
+                  >
+                    <item.icon size={16} className="mr-2 shrink-0" />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

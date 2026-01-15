@@ -1,9 +1,9 @@
 ﻿import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Modal } from '../../components/ui/Modal';
+import { Modal } from '../../components/modals/Modal';
 import { DataTable, type Column } from '../../components/ui/DataTable';
-import { SortFilterToolbar } from '../../components/ui/SortFilterToolbar';
+import { SortToolbar } from '../../components/ui/SortToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { api } from '../../services/apiService';
@@ -164,11 +164,10 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                 {activeTab === 'students' ? (
                     <div className="flex flex-col h-full">
                         <div className="p-3 border-b flex justify-between gap-4 bg-neutral-50/30">
-                            <SortFilterToolbar
+                            <SortToolbar
                                 className="p-0 border-0 flex-1"
                                 search={filters.studentSearch}
                                 onSearchChange={v => setFilters({ ...filters, studentSearch: v })}
-                                hideCreate
                                 sortBy="" sortDesc={false} onSortChange={() => { }} sortOptions={[]}
                             />
                             <div className="pl-4 border-l"><Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button></div>
@@ -188,11 +187,10 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                 ) : (
                     <div className="flex flex-col h-full">
                         <div className="p-3 border-b flex justify-between gap-4 bg-neutral-50/30">
-                            <SortFilterToolbar
+                            <SortToolbar
                                 className="p-0 border-0 flex-1"
                                 search={filters.subjectSearch}
                                 onSearchChange={v => setFilters({ ...filters, subjectSearch: v })}
-                                hideCreate
                                 sortBy="" sortDesc={false} onSortChange={() => { }} sortOptions={[]}
                             />
                             <div className="pl-4 border-l"><Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button></div>
@@ -298,9 +296,9 @@ export const ClassManagement = () => {
             <div className="bg-white border border-neutral-200 min-h-[400px]">
                 <div className="flex flex-col h-full">
                     <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
-                        <SortFilterToolbar className="flex-1" search={filters.search} onSearchChange={v => setFilters({ ...filters, search: v })}
+                        <SortToolbar className="flex-1" search={filters.search} onSearchChange={v => setFilters({ ...filters, search: v })}
                             sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSortChange={f => setFilters({ ...filters, sortBy: f, sortDesc: f === filters.sortBy ? !filters.sortDesc : false })}
-                            sortOptions={[{ field: 'level', label: 'Klasa' }, { field: 'updatedAt', label: 'Edytowano' }, { field: 'createdAt', label: 'Utworzono' }]} hideCreate />
+                            sortOptions={[{ field: 'level', label: 'Klasa' }, { field: 'updatedAt', label: 'Edytowano' }, { field: 'createdAt', label: 'Utworzono' }]} />
                         {!showInactive && <div className="pl-4 border-l"><Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button></div>}
                     </div>
                     {loading ? <div className="text-center p-12 text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" /> Ładowanie...</div> : (

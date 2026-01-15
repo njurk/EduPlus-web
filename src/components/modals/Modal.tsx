@@ -29,7 +29,7 @@ export const Modal = ({ isOpen, onClose, title, children, footer, maxWidth = 'md
 
     return (
         <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center p-4">
-            <div className={clsx("bg-white border border-neutral-300 w-full flex flex-col max-h-[90vh] shadow-xl rounded-lg overflow-hidden", widthClass)}>
+            <div className={clsx("bg-white border border-neutral-300 w-full flex flex-col max-h-[90vh] rounded-xs overflow-hidden", widthClass)}>
                 <div className="p-4 border-b flex justify-between items-center bg-neutral-50">
                     <h3 className="font-bold text-sm uppercase text-neutral-600 tracking-wide">{title}</h3>
                     <button onClick={onClose} className="text-neutral-400 hover:text-neutral-800 transition-colors">

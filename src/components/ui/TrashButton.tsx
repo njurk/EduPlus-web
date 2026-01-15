@@ -7,27 +7,17 @@ interface TrashButtonProps {
     className?: string;
 }
 
-export const TrashButton = ({ isTrashActive, onToggle, className }: TrashButtonProps) => {
-    return (
-        <button
-            onClick={onToggle}
-            className={clsx(
-                "flex items-center justify-center gap-2 h-10 px-4 text-sm font-medium rounded-sm shadow-sm transition-all focus:outline-none",
-                isTrashActive
-                    ? "bg-neutral-800 hover:bg-neutral-900 text-white border border-neutral-800"
-                    : "bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-300 hover:border-neutral-400",
-                className
-            )}
-        >
-            {isTrashActive ? (
-                <>
-                    <ArrowLeft size={16} /> <span>Powrót</span>
-                </>
-            ) : (
-                <>
-                    <Trash2 size={18} /> <span>Kosz</span>
-                </>
-            )}
-        </button>
-    );
-};
+export const TrashButton = ({ isTrashActive, onToggle, className }: TrashButtonProps) => (
+    <button
+        onClick={onToggle}
+        className={clsx(
+            "flex items-center gap-1.5 px-2 py-1 text-sm font-medium rounded-xs border transition-colors",
+            isTrashActive
+                ? "bg-neutral-800 text-white border-neutral-800"
+                : "bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50",
+            className
+        )}
+    >
+        {isTrashActive ? <><ArrowLeft size={14} />Powrót</> : <><Trash2 size={14} />Kosz</>}
+    </button>
+);

@@ -2,7 +2,7 @@
 import type { Ticket, PaginatedResponse } from '../../types';
 import { api } from '../../services/apiService';
 import { RefreshCcw, CheckCircle, Clock } from 'lucide-react';
-import { SortFilterToolbar } from '../../components/ui/SortFilterToolbar';
+import { SortToolbar } from '../../components/ui/SortToolbar';
 import { DataTable } from '../../components/ui/DataTable';
 import { formatDate } from '../../utils/formatters';
 import { Pagination } from '../../components/ui/Pagination';
@@ -44,7 +44,7 @@ export const Tickets = () => {
             </div>
 
             <div className="flex items-center justify-between gap-4 py-4 border-b bg-white">
-                <SortFilterToolbar
+                <SortToolbar
                     className="flex-1"
                     search={search}
                     onSearchChange={setSearch}
@@ -59,7 +59,6 @@ export const Tickets = () => {
                         { field: 'subject', label: 'Temat' },
                         { field: 'userFullName', label: 'Użytkownik' }
                     ]}
-                    hideCreate={true}
                 />
                 <div className="flex items-center gap-2 px-4 border-l">
                     <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer select-none">

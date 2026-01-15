@@ -1,17 +1,19 @@
 ﻿import { useState, useEffect } from 'react';
-import { Plus, Users, Megaphone, Clock } from 'lucide-react';
+import { Plus, Users, Megaphone } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../services/apiService';
-import type { DashboardSummary, AttendanceChartData, UptimeInfo } from '../../types';
+import type { DashboardSummary, AttendanceChartData } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
+import { UptimeCounter } from '../../components/ui/UptimeCounter';
 
 const formatDate = (date?: string) => date ? new Date(date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
 
 export const Dashboard = () => {
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [chartData, setChartData] = useState<AttendanceChartData[]>([]);
-  const [uptime, setUptime] = useState<UptimeInfo | null>(null);
+  const [uptimeSeconds, setUptimeSeconds] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -21,11 +23,11 @@ export const Dashboard = () => {
         const [summaryResult, chartResult, uptimeResult] = await Promise.all([
           api.dashboard.getSummary(),
           api.dashboard.getAttendanceChart(),
-          fetch('http://localhost:5107/api/dashboard/uptime').then(r => r.json()).catch(() => null)
+          api.dashboard.getUptime().catch(() => null)
         ]);
         setData(summaryResult);
         setChartData(chartResult);
-        setUptime(uptimeResult);
+        if (uptimeResult?.uptimeSeconds) setUptimeSeconds(uptimeResult.uptimeSeconds);
       } catch (e) {
         console.error(e);
       } finally {
@@ -53,12 +55,7 @@ export const Dashboard = () => {
             <span className="font-semibold text-neutral-700 ml-1">{data?.status.semester ?? '-'}</span>
           </p>
         </div>
-        {uptime && (
-          <div className="flex items-center gap-2 text-xs text-neutral-400 bg-neutral-100 px-3 py-1.5 rounded">
-            <Clock size={14} />
-            <span>System uptime: {uptime.uptime}</span>
-          </div>
-        )}
+        {uptimeSeconds !== null && <UptimeCounter initialSeconds={uptimeSeconds} />}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -137,4 +134,3 @@ export const Dashboard = () => {
     </div>
   );
 };
-

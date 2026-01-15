@@ -99,7 +99,7 @@ export const DataTable = <T extends { id: number | string }>({
                         <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="p-1.5 rounded border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-1.5 rounded-xs border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <ChevronLeft size={16} />
                         </button>
@@ -109,7 +109,7 @@ export const DataTable = <T extends { id: number | string }>({
                         <button
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
-                            className="p-1.5 rounded border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-1.5 rounded-xs border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <ChevronRight size={16} />
                         </button>

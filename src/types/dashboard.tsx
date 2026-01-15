@@ -6,6 +6,8 @@ export interface Announcement extends BaseEntity {
   description: string;
   authorId: number;
   author?: User;
+  authorName?: string;
+  modifiedByName?: string;
 }
 
 export interface DashboardStats {
