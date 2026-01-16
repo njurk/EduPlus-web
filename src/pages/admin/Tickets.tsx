@@ -1,4 +1,4 @@
-Ôªøimport { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Ticket, PaginatedResponse } from '../../types';
 import { api } from '../../services/apiService';
 import { RefreshCcw, CheckCircle, Clock } from 'lucide-react';
@@ -28,7 +28,7 @@ export const Tickets = () => {
             setData(response);
         } catch (error) {
             console.error(error);
-            alert("B≈ÇƒÖd pobierania zg≈Çosze≈Ñ");
+            alert("B≥πd pobierania zg≥oszeÒ");
         } finally {
             setLoading(false);
         }
@@ -78,7 +78,7 @@ export const Tickets = () => {
             <div className="flex-1 bg-white">
                 {loading && !data ? (
                     <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2">
-                        <RefreshCcw className="animate-spin" size={24} /> ≈Åadowanie...
+                        <RefreshCcw className="animate-spin" size={24} /> £adowanie...
                     </div>
                 ) : (
                     <>
@@ -92,7 +92,7 @@ export const Tickets = () => {
                                 { header: getText('columns.createdAt'), render: (t) => <span className="text-neutral-600 text-sm">{formatDate(t.createdAt)}</span> },
                                 { header: getText('columns.closedAt'), render: (t) => t.closedAt ? <span className="text-neutral-500 text-sm">{formatDate(t.closedAt)}</span> : <span className="text-neutral-300">-</span> }
                             ]}
-                            emptyMessage={getText('empty')}
+                            emptyMessage={'Brak danych'}
                         />
 
                         {data && (

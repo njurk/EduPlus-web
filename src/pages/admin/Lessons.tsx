@@ -81,7 +81,7 @@ export const Lessons = () => {
                         sortOptions={[{ field: 'date', label: 'Data' }, { field: 'subjectName', label: 'Przedmiot' }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'£adowanie...'}</div> : (
                     <DataTable data={data} columns={[
                         { header: getText('columns.date'), render: l => <span className="text-xs">{formatDate(l.date)}</span> },
                         { header: getText('columns.number'), render: l => l.orderNumber },
@@ -89,7 +89,7 @@ export const Lessons = () => {
                         { header: getText('columns.subject'), render: l => <span className="font-medium">{l.subjectName}</span> },
                         { header: getText('columns.teacher'), render: l => l.teacherName },
                         { header: getText('columns.actions'), className: 'text-right', render: l => <ActionButtons onDelete={() => handleDelete(l.id)} /> }
-                    ]} emptyMessage={getText('empty')} />
+                    ]} emptyMessage={'Brak danych'} />
                 )}
             </div>
         </div>

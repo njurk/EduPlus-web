@@ -66,7 +66,7 @@ export const Attendance = () => {
                     <SemesterSelector semesters={semesters} selectedOrder={filters.semesterOrder} onChange={v => setFilters(f => ({ ...f, semesterOrder: v }))} showAll />
                     <ClassSelector classes={classes} selectedClass={filters.classId} onChange={v => setFilters(f => ({ ...f, classId: v }))} showAll />
                     <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-                    <Button><Plus size={14} className="mr-1" />{getText('actions.add')}</Button>
+                    <Button><Plus size={14} className="mr-1" />{'Dodaj'}</Button>
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs">
@@ -77,13 +77,13 @@ export const Attendance = () => {
                         sortOptions={[{ field: 'studentName', label: getText('sort.student') }, { field: 'date', label: getText('sort.date') }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'£adowanie...'}</div> : (
                     <DataTable data={data} columns={[
                         { header: getText('columns.date'), render: a => <span className="text-xs">{formatDate(a.lessonDate)}</span> },
                         { header: getText('columns.student'), render: a => <span className="font-medium">{a.studentName}</span> },
                         { header: getText('columns.subject'), render: a => a.subjectName },
                         { header: getText('columns.status'), render: a => <span className={a.attendanceTypeName === 'Obecny' ? 'text-success' : a.attendanceTypeName === 'Nieobecny' ? 'text-danger' : 'text-warning'}>{a.attendanceTypeName}</span> }
-                    ]} emptyMessage={getText('empty')} />
+                    ]} emptyMessage={'Brak danych'} />
                 )}
             </div>
         </div>

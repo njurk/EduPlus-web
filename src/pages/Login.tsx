@@ -29,7 +29,7 @@ export const Login = () => {
             navigate('/');
 
         } catch (err: any) {
-            setError(err.message || getText('error.login'));
+            setError(err.message || 'Wystąpił błąd logowania');
         } finally {
             setLoading(false);
         }
@@ -41,8 +41,8 @@ export const Login = () => {
                 <div className="bg-neutral-900 p-8 text-center">
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <img
-                            src={getText('logoUrl') || '/logo-512.png'}
-                            alt={getText('logoAlt') || 'Logo'}
+                            src={'/' + getText('logoUrl')}
+                            alt={getText('logoAlt')}
                             className="w-14 h-14 object-contain"
                         />
                     </div>
@@ -64,7 +64,7 @@ export const Login = () => {
                                 </div>
                                 <Input
                                     className="pl-10"
-                                    placeholder="example@mail.com"
+                                    placeholder="example@gmail.com"
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -97,7 +97,7 @@ export const Login = () => {
                             className="w-full py-3 text-base justify-center mt-4"
                             disabled={loading}
                         >
-                            {loading ? getText('button.loading') : getText('button.login')}
+                            {loading ? 'Logowanie...' : getText('button.login')}
                         </Button>
                     </form>
                 </div>

@@ -196,23 +196,19 @@ export const ResetPassword = () => {
                 {step === 'reset' && (
                     <form onSubmit={handleReset} className="space-y-4">
                         <input type="hidden" value={email} />
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-1">Nowe hasło</label>
-                            <PasswordInput
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                required
-                                showRules
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-1">Powtórz hasło</label>
-                            <PasswordInput
-                                value={confirmPassword}
-                                onChange={e => setConfirmPassword(e.target.value)}
-                                required
-                            />
-                        </div>
+                        <PasswordInput
+                            label="Nowe hasło"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                            showRules
+                        />
+                        <PasswordInput
+                            label="Powtórz hasło"
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                            required
+                        />
                         <Button type="submit" className="w-full justify-center" disabled={loading}>
                             {loading ? 'Zapisywanie...' : 'Zmień hasło'}
                         </Button>

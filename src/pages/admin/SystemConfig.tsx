@@ -1,4 +1,4 @@
-ï»¿import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { TrashButton } from "../../components/ui/TrashButton";
@@ -68,7 +68,7 @@ const ConfigFormContent = ({
                         {errors.numeric && <span className="text-xs text-danger">{errors.numeric}</span>}
                     </div>
                     <div>
-                        <label className="label-text">WartoÅ›Ä‡ <span className="text-danger">*</span></label>
+                        <label className="label-text">Wartoœæ <span className="text-danger">*</span></label>
                         <Input
                             type="number"
                             step="0.25"
@@ -100,7 +100,7 @@ const ConfigFormContent = ({
 
             {activeTab === "attendance" && (
                 <div>
-                    <label className="label-text">SkrÃ³t <span className="text-danger">*</span></label>
+                    <label className="label-text">Skrót <span className="text-danger">*</span></label>
                     <Input
                         name="shortCode"
                         maxLength={5}
@@ -225,7 +225,7 @@ export const SystemConfig = () => {
             { field: "created", label: "Utworzono" },
         ];
         if (activeTab === "lessonHours") return [{ field: "orderNumber", label: "Nr lekcji" }, ...common];
-        if (activeTab === "gradeTypes") return [{ field: "value", label: "WartoÅ›Ä‡" }, { field: "name", label: "Nazwa" }, ...common];
+        if (activeTab === "gradeTypes") return [{ field: "value", label: "Wartoœæ" }, { field: "name", label: "Nazwa" }, ...common];
         if (activeTab === "gradeCategories") return [{ field: "weight", label: "Waga" }, { field: "name", label: "Nazwa" }, ...common];
         if (activeTab === "attendance") return [{ field: "name", label: "Nazwa" }, ...common];
         return [{ field: "name", label: "Nazwa" }, ...common];
@@ -263,27 +263,27 @@ export const SystemConfig = () => {
             await loadData();
             setIsModalOpen(false);
         } catch {
-            alert(getText('error.save'));
+            alert('B³¹d zapisu');
         }
     };
 
     const handleStatusChange = async (item: BaseEntity, isActive: boolean) => {
-        if (!window.confirm(isActive ? getText('confirm.restore') : getText('confirm.moveToTrash'))) return;
+        if (!window.confirm(isActive ? 'Przywróciæ element?' : 'Przenieœæ do kosza?')) return;
         try {
             await getCurrentApi().update(item.id, { ...item, isActive });
             await loadData();
         } catch {
-            alert(getText('error.status'));
+            alert('B³¹d zmiany statusu');
         }
     };
 
     const handleHardDelete = async (id: number) => {
-        if (!window.confirm(getText('confirm.permanentDelete'))) return;
+        if (!window.confirm('Usun¹æ trwale?')) return;
         try {
             await getCurrentApi().delete(id);
             await loadData();
         } catch {
-            alert(getText('error.delete'));
+            alert('B³¹d usuwania');
         }
     };
 
@@ -353,8 +353,8 @@ export const SystemConfig = () => {
                 maxWidth="md"
                 footer={
                     <>
-                        <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{getText('actions.cancel')}</Button>
-                        <Button onClick={handleSave}>{getText('actions.save')}</Button>
+                        <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{'Anuluj'}</Button>
+                        <Button onClick={handleSave}>{'Zapisz'}</Button>
                     </>
                 }
             >

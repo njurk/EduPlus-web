@@ -54,7 +54,7 @@ export const Excuses = () => {
                     <YearSelector years={years} selectedYear={filters.yearId} onChange={v => setFilters(f => ({ ...f, yearId: v, semesterOrder: null }))} />
                     <SemesterSelector semesters={semesters} selectedOrder={filters.semesterOrder} onChange={v => setFilters(f => ({ ...f, semesterOrder: v }))} showAll />
                     <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-                    <Button><Plus size={14} className="mr-1" />{getText('actions.add')}</Button>
+                    <Button><Plus size={14} className="mr-1" />{'Dodaj'}</Button>
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs">
@@ -65,7 +65,7 @@ export const Excuses = () => {
                         sortOptions={[{ field: 'studentName', label: 'UczeÅ„' }, { field: 'createdAt', label: 'Data' }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'£adowanie...'}</div> : (
                     <DataTable data={data} columns={[
                         { header: getText('columns.date'), render: e => <span className="text-xs">{formatDate(e.createdAt)}</span> },
                         { header: getText('columns.student'), render: e => <span className="font-medium">{e.studentName}</span> },
@@ -81,7 +81,7 @@ export const Excuses = () => {
                                 </div>
                             ) : <Button variant="ghost" onClick={() => handleDelete(e.id)} className="p-1 text-danger text-xs">{getText('actions.delete')}</Button>
                         }
-                    ]} emptyMessage={getText('empty')} />
+                    ]} emptyMessage={'Brak danych'} />
                 )}
             </div>
         </div>

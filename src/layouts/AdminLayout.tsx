@@ -33,7 +33,7 @@ export const AdminLayout = () => {
   const handleNavClick = () => setSidebarOpen(false);
 
   const handleLogout = () => {
-    if (window.confirm(getText('confirm.logout'))) {
+    if (window.confirm('Na pewno chcesz się wylogować?')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       navigate('/login');
@@ -139,22 +139,22 @@ export const AdminLayout = () => {
             <Clock />
             <div className="flex items-center gap-4 pl-6 border-l border-neutral-200 h-8">
               <span className="text-sm font-medium text-neutral-600 hidden md:block">
-                {getText('greeting.prefix')} <span className="text-neutral-900 font-semibold">
-                  {user?.name || getText('greeting.defaultUser')}
-                </span>{getText('greeting.suffix')}
+                Witaj, <span className="text-neutral-900 font-semibold">
+                  {user?.name || 'Użytkownik'}
+                </span>!
               </span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate('/settings')}
                   className="p-2 text-neutral-500 hover:text-primary hover:bg-neutral-50 transition-all rounded-full"
-                  title={getText('nav.settings')}
+                  title="Ustawienia"
                 >
                   <Settings size={20} />
                 </button>
                 <button
                   onClick={handleLogout}
                   className="p-2 text-neutral-500 hover:text-danger hover:bg-neutral-50 transition-all rounded-full"
-                  title={getText('nav.logout')}
+                  title="Wyloguj"
                 >
                   <LogOut size={20} />
                 </button>

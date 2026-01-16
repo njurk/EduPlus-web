@@ -1,4 +1,4 @@
-ï»¿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import type { User, Role } from '../../types';
@@ -16,7 +16,7 @@ import { DetailsModal } from '../../components/modals/DetailsModal';
 import { Modal } from '../../components/modals/Modal';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
-const FIELDS_CONFIG = { firstName: "ImiÄ™", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
+const FIELDS_CONFIG = { firstName: "Imiê", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
 
 export const Users = () => {
     const { getText } = useCMSContent('users');
@@ -85,11 +85,11 @@ export const Users = () => {
 
     const handleAction = async (action: () => Promise<any>, msg?: string) => {
         if (msg && !window.confirm(msg)) return;
-        try { await action(); await loadData(); } catch (e: any) { console.error('handleAction error:', e); alert(e?.message || "BÅ‚Ä…d operacji"); }
+        try { await action(); await loadData(); } catch (e: any) { console.error('handleAction error:', e); alert(e?.message || "B³¹d operacji"); }
     };
 
     const handleRestore = async (id: number) => {
-        await handleAction(() => api.users.restore(id), "PrzywrÃ³ciÄ‡ uÅ¼ytkownika?");
+        await handleAction(() => api.users.restore(id), "Przywróciæ u¿ytkownika?");
     };
 
     const handleEditRelation = async (userId: number) => {
@@ -97,8 +97,8 @@ export const Users = () => {
             const user = await api.users.get(userId);
             setAssignmentTarget(user);
 
-            const isStudent = user.userRoles?.some((ur: any) => ur.roleName === 'UczeÅ„' || ur.role?.name === 'UczeÅ„');
-            const targetRole = isStudent ? 'Rodzic' : 'UczeÅ„';
+            const isStudent = user.userRoles?.some((ur: any) => ur.roleName === 'Uczeñ' || ur.role?.name === 'Uczeñ');
+            const targetRole = isStudent ? 'Rodzic' : 'Uczeñ';
 
             const candidates = await api.users.getAll({ roleName: targetRole });
             setAssignmentCandidates(candidates);
@@ -107,7 +107,7 @@ export const Users = () => {
             setRelationSearch('');
             setViewMode('assign');
         } catch {
-            alert("BÅ‚Ä…d przygotowania przypisania");
+            alert("B³¹d przygotowania przypisania");
         }
     };
 
@@ -151,13 +151,13 @@ export const Users = () => {
             await (formData.id ? api.users.update(formData.id, payload) : api.users.create(payload));
             setViewMode('list');
             await loadData();
-        } catch (e: any) { setErrors({ general: e.message || "BÅ‚Ä…d zapisu" }); }
+        } catch (e: any) { setErrors({ general: e.message || "B³¹d zapisu" }); }
     };
 
     const handleSaveAssignment = async () => {
         if (!assignmentTarget) return;
         try {
-            const isStudent = assignmentTarget.userRoles?.some((ur: any) => ur.roleName === 'UczeÅ„' || ur.role?.name === 'UczeÅ„');
+            const isStudent = assignmentTarget.userRoles?.some((ur: any) => ur.roleName === 'Uczeñ' || ur.role?.name === 'Uczeñ');
             const payload: any = { ...assignmentTarget, roleIds: assignmentTarget.userRoles?.map((ur: any) => ur.roleId) };
 
             if (isStudent) {
@@ -170,7 +170,7 @@ export const Users = () => {
             setViewMode('list');
             await loadData();
         } catch {
-            alert("BÅ‚Ä…d zapisu powiÄ…zaÅ„");
+            alert("B³¹d zapisu powi¹zañ");
         }
     };
 
@@ -186,8 +186,8 @@ export const Users = () => {
             maxWidth="lg"
             footer={
                 <>
-                    <Button variant="secondary" onClick={() => setViewMode('list')}>{getText('actions.cancel')}</Button>
-                    <Button onClick={handleSave}>{getText('actions.save')}</Button>
+                    <Button variant="secondary" onClick={() => setViewMode('list')}>{'Anuluj'}</Button>
+                    <Button onClick={handleSave}>{'Zapisz'}</Button>
                 </>
             }
         >
@@ -234,8 +234,8 @@ export const Users = () => {
             maxWidth="lg"
             footer={
                 <>
-                    <Button variant="secondary" onClick={() => setViewMode('list')}>{getText('actions.cancel')}</Button>
-                    <Button onClick={handleSaveAssignment}>{getText('actions.saveRelations')}</Button>
+                    <Button variant="secondary" onClick={() => setViewMode('list')}>{'Anuluj'}</Button>
+                    <Button onClick={handleSaveAssignment}>{'Zapisz powi¹zania'}</Button>
                 </>
             }
         >
@@ -245,7 +245,7 @@ export const Users = () => {
                 </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-neutral-400" size={18} />
-                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder={getText('placeholder.searchUser')} className="pl-10" />
+                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder={'Szukaj u¿ytkownika...'} className="pl-10" />
                 </div>
 
                 <div className="border rounded-lg overflow-y-auto divide-y divide-neutral-100 max-h-[350px]">
@@ -258,9 +258,9 @@ export const Users = () => {
                             {selectedAssignmentIds.includes(c.id) ? <Check size={20} className="text-primary" /> : <Plus size={18} className="text-neutral-300" />}
                         </div>
                     ))}
-                    {!filteredCandidates.length && <div className="p-12 text-center text-neutral-400 text-sm">Nie znaleziono kandydatÃ³w</div>}
+                    {!filteredCandidates.length && <div className="p-12 text-center text-neutral-400 text-sm">Nie znaleziono kandydatów</div>}
                 </div>
-                <div className="text-sm text-neutral-600 font-medium">Zaznaczono elementÃ³w: {selectedAssignmentIds.length}</div>
+                <div className="text-sm text-neutral-600 font-medium">Zaznaczono elementów: {selectedAssignmentIds.length}</div>
             </div>
         </Modal>
     );
@@ -275,7 +275,7 @@ export const Users = () => {
                     <button onClick={() => setMainTab('roles')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'roles' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><Shield size={18} /> {getText('tabs.roles')}</button>
                     <button onClick={() => setMainTab('relations')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'relations' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><LinkIcon size={18} /> {getText('tabs.relations')}</button>
                 </div>
-                {mainTab === 'users' && <div className="py-3"><Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {getText('actions.add')}</Button></div>}
+                {mainTab === 'users' && <div className="py-3"><Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {'Dodaj'}</Button></div>}
             </div>
 
             <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
@@ -331,9 +331,9 @@ export const Users = () => {
                                             try {
                                                 const fullUser = await api.users.get(u.id);
                                                 openForm(fullUser);
-                                            } catch { alert("BÅ‚Ä…d pobierania danych uÅ¼ytkownika"); }
+                                            } catch { alert("B³¹d pobierania danych u¿ytkownika"); }
                                         } : undefined}
-                                        onDelete={u.isActive ? () => handleAction(() => api.users.delete(u.id), "UsunÄ…Ä‡?") : undefined}
+                                        onDelete={u.isActive ? () => handleAction(() => api.users.delete(u.id), "Usun¹æ?") : undefined}
                                         onRestore={!u.isActive ? () => handleRestore(u.id) : undefined}
                                         onDetails={async () => {
                                             try {
@@ -350,7 +350,7 @@ export const Users = () => {
                                                     createdAt: fullUser.createdAt,
                                                 });
                                                 setIsDetailsOpen(true);
-                                            } catch { alert("BÅ‚Ä…d pobierania szczegÃ³Å‚Ã³w"); }
+                                            } catch { alert("B³¹d pobierania szczegó³ów"); }
                                         }}
                                     />
                                 )
@@ -381,7 +381,7 @@ export const Users = () => {
                                 { header: getText('columns.createdAt'), render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span> },
                                 { header: getText('columns.updatedAt'), render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.updatedAt)}</span> },
                                 { header: getText('columns.modifiedBy'), render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },
-                                { header: getText('columns.actions'), className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> {getText('actions.assign')}</button> }
+                                { header: getText('columns.actions'), className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> {'Przypisz'}</button> }
                             ]}
                         />
                     ) : (
@@ -398,7 +398,7 @@ export const Users = () => {
                                     header: getText('columns.actions'), className: 'text-right', render: (r) => (
                                         <ActionButtons
                                             onEdit={() => handleEditRelation(r.parentId)}
-                                            onDelete={() => handleAction(() => api.parentStudents.delete(r.id), getText('confirm.deleteRelation'))}
+                                            onDelete={() => handleAction(() => api.parentStudents.delete(r.id), 'Czy usun¹æ powi¹zanie?')}
                                         />
                                     )
                                 }
@@ -412,12 +412,12 @@ export const Users = () => {
                 <DetailsModal
                     isOpen={isDetailsOpen}
                     onClose={() => setIsDetailsOpen(false)}
-                    title={`SzczegÃ³Å‚y uÅ¼ytkownika: ${formatName(detailsUser)}`}
+                    title={`Szczegó³y u¿ytkownika: ${formatName(detailsUser)}`}
                     data={detailsUser}
                     labels={{
                         ...FIELDS_CONFIG,
                         roleNames: "Przypisane role",
-                        relatedContent: "PowiÄ…zania",
+                        relatedContent: "Powi¹zania",
                         createdAt: "Data utworzenia",
                         updatedAt: "Ostatnia modyfikacja"
                     }}

@@ -63,7 +63,7 @@ export const Grades = () => {
                     <SemesterSelector semesters={semesters} selectedOrder={filters.semesterOrder} onChange={v => setFilters(f => ({ ...f, semesterOrder: v }))} showAll />
                     <ClassSelector classes={classes} selectedClass={filters.classId} onChange={v => setFilters(f => ({ ...f, classId: v }))} showAll />
                     <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-                    <Button><Plus size={14} className="mr-1" />{getText('actions.add')}</Button>
+                    <Button><Plus size={14} className="mr-1" />{'Dodaj'}</Button>
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs">
@@ -74,7 +74,7 @@ export const Grades = () => {
                         sortOptions={[{ field: 'studentName', label: getText('sort.student') }, { field: 'subjectName', label: getText('sort.subject') }, { field: 'createdAt', label: getText('sort.date') }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'£adowanie...'}</div> : (
                     <DataTable data={data} columns={[
                         { header: getText('columns.student'), render: g => <span className="font-medium">{g.studentName}</span> },
                         { header: getText('columns.class'), render: g => g.className },
@@ -82,7 +82,7 @@ export const Grades = () => {
                         { header: getText('columns.grade'), render: g => <span className="font-bold text-primary">{g.gradeTypeName}</span> },
                         { header: getText('columns.category'), render: g => <span className="text-neutral-500 text-xs">{g.categoryName}</span> },
                         { header: getText('columns.date'), render: g => <span className="text-neutral-500 text-xs">{formatDate(g.createdAt)}</span> }
-                    ]} emptyMessage={getText('empty')} />
+                    ]} emptyMessage={'Brak danych'} />
                 )}
             </div>
         </div>

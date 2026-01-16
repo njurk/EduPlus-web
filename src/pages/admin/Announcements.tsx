@@ -12,8 +12,6 @@ import { TrashButton } from '../../components/ui/TrashButton';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
 const AnnouncementDetailsView = ({ announcement, onBack }: { announcement: Announcement, onBack: () => void }) => {
-    const { getText } = useCMSContent('announcements');
-
     return (
         <div className="max-w-4xl mx-auto">
             <button
@@ -21,17 +19,17 @@ const AnnouncementDetailsView = ({ announcement, onBack }: { announcement: Annou
                 className="flex items-center gap-2 text-neutral-600 hover:text-primary mb-6 transition-colors"
             >
                 <ArrowLeft size={18} />
-                <span className="text-sm font-medium">{getText('details.back')}</span>
+                <span className="text-sm font-medium">Powrót</span>
             </button>
 
             <article className="bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-primary to-primary-dark p-8 text-white">
+                <div className="bg-primary p-8 text-white">
                     <h1 className="text-2xl font-bold mb-4 leading-tight">{announcement.title}</h1>
 
                     <div className="flex flex-wrap items-center gap-6 text-sm opacity-90">
                         <div className="flex items-center gap-2">
                             <User size={16} />
-                            <span>{announcement.authorName || getText('details.unknownAuthor')}</span>
+                            <span>{announcement.authorName || 'Brak danych'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Calendar size={16} />
@@ -51,14 +49,6 @@ const AnnouncementDetailsView = ({ announcement, onBack }: { announcement: Annou
                         </p>
                     </div>
                 </div>
-
-                {announcement.updatedAt !== announcement.createdAt && (
-                    <div className="px-8 pb-6">
-                        <p className="text-xs text-neutral-400 italic">
-                            {getText('details.lastEdited')}: {formatDate(announcement.updatedAt)}
-                        </p>
-                    </div>
-                )}
             </article>
         </div>
     );
@@ -84,13 +74,13 @@ export const Announcements = () => {
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm(getText('confirm.delete'))) return;
+        if (!window.confirm('Czy na pewno chcesz usunąć to ogłoszenie?')) return;
         await api.announcements.delete(id);
         await loadData();
     };
 
     const handleRestore = async (id: number) => {
-        if (!window.confirm(getText('confirm.restore'))) return;
+        if (!window.confirm('Czy na pewno chcesz przywrócić to ogłoszenie?')) return;
         await api.announcements.restore(id);
         await loadData();
     };
@@ -105,7 +95,7 @@ export const Announcements = () => {
                 <h1 className="text-2xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2">
                     <TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} />
-                    <Button onClick={() => { setSelectedAnnouncement(null); setIsModalOpen(true); }}><Plus size={14} className="mr-1" />{getText('actions.new')}</Button>
+                    <Button onClick={() => { setSelectedAnnouncement(null); setIsModalOpen(true); }}><Plus size={14} className="mr-1" />Dodaj</Button>
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs">
@@ -116,7 +106,7 @@ export const Announcements = () => {
                         sortOptions={[{ field: 'createdAt', label: getText('sort.date') }, { field: 'authorName', label: getText('sort.author') }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />Ładowanie...</div> : (
                     <DataTable
                         data={data}
                         columns={[
@@ -127,7 +117,7 @@ export const Announcements = () => {
                             { header: getText('columns.modifiedBy'), render: a => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
                             { header: getText('columns.actions'), className: 'text-right', render: a => <ActionButtons isActive={a.isActive} onDelete={() => handleDelete(a.id)} onRestore={!a.isActive ? () => handleRestore(a.id) : undefined} /> }
                         ]}
-                        emptyMessage={getText('empty')}
+                        emptyMessage="Brak ogłoszeń"
                         onRowClick={(row) => setViewingAnnouncement(row)}
                     />
                 )}
