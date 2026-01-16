@@ -85,7 +85,7 @@ export const Users = () => {
 
     const handleAction = async (action: () => Promise<any>, msg?: string) => {
         if (msg && !window.confirm(msg)) return;
-        try { await action(); await loadData(); } catch (e: any) { console.error('handleAction error:', e); alert(e?.message || "Bd operacji"); }
+        try { await action(); await loadData(); } catch (e: any) { console.error('handleAction error:', e); alert(e?.message || "Błąd operacji"); }
     };
 
     const handleRestore = async (id: number) => {

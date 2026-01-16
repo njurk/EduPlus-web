@@ -65,7 +65,7 @@ export const Excuses = () => {
                         sortOptions={[{ field: 'studentName', label: 'Uczeń' }, { field: 'createdAt', label: 'Data' }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'�adowanie...'}</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'Ładowanie...'}</div> : (
                     <DataTable data={data} columns={[
                         { header: getText('columns.date'), render: e => <span className="text-xs">{formatDate(e.createdAt)}</span> },
                         { header: getText('columns.student'), render: e => <span className="font-medium">{e.studentName}</span> },

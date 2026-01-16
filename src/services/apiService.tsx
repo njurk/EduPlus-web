@@ -6,7 +6,7 @@ import type {
     PaginatedResponse, Ticket, CreateTicketDto, CloseTicketDto, PageContent, Page, Target, ScheduleLesson
 } from '../types';
 
-export const API_URL = 'https://localhost:7252/api';
+export const API_URL = 'http://localhost:5107/api';
 
 const getHeaders = () => {
     const token = localStorage.getItem('token');
