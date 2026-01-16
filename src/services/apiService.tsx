@@ -401,7 +401,7 @@ export const api = {
             return handleResponse(response);
         },
         removeStudentFromClass: async (relationId: number) => {
-            const response = await fetch(`${API_URL}/classStudent/${relationId}`, {
+            const response = await fetch(`${API_URL}/class/students/${relationId}`, {
                 method: 'DELETE',
                 headers: getHeaders()
             });
@@ -424,7 +424,7 @@ export const api = {
             return handleResponse(response);
         },
         removeSubjectFromClass: async (relationId: number) => {
-            const response = await fetch(`${API_URL}/classSubject/${relationId}`, {
+            const response = await fetch(`${API_URL}/class/subjects/${relationId}`, {
                 method: 'DELETE',
                 headers: getHeaders()
             });

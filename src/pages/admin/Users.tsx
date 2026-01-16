@@ -362,7 +362,7 @@ export const Users = () => {
                         data={data}
                         isLoading={loading}
                         columns={[
-                            { header: getText('columns.name'), accessor: 'name', className: 'font-medium text-neutral-900' },
+                            { header: getText('columns.roleName'), accessor: 'name', className: 'font-medium text-neutral-900' },
                             { header: getText('columns.level'), accessor: 'level', className: 'text-neutral-600' },
                             { header: getText('columns.description'), render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
                             { header: getText('columns.createdAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },

@@ -64,7 +64,7 @@ export const AnnouncementModal = ({ isOpen, onClose, announcement, onSaved }: An
                 </>
             }
         >
-            <div className="space-y-4">
+            <div className="space-y-4 px-6 py-4">
                 {error && (
                     <div className="p-3 bg-danger-light text-danger-text text-sm rounded flex items-center gap-2">
                         <AlertCircle size={16} /> {error}

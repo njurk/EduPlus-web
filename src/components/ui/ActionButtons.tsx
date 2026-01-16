@@ -19,20 +19,24 @@ export const ActionButtons = ({
   className
 }: ActionButtonsProps) => {
 
-  const stopPropagation = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent, handler?: () => void) => {
+    e.preventDefault();
     e.stopPropagation();
+    if (handler) {
+      handler();
+    }
   };
 
   if (!isActive) {
     return (
-      <div className={clsx("flex justify-end gap-1", className)} onClick={stopPropagation}>
+      <div className={clsx("flex justify-end gap-1", className)}>
         {onRestore && (
-          <button onClick={onRestore} title="Przywróć" className="p-1.5 text-success hover:bg-success-light rounded-xs">
+          <button type="button" onClick={(e) => handleClick(e, onRestore)} title="Przywróć" className="p-1.5 text-success hover:bg-success-light rounded-xs">
             <RefreshCcw size={16} />
           </button>
         )}
         {onDelete && (
-          <button onClick={onDelete} title="Usuń trwale" className="p-1.5 text-danger hover:bg-danger-light rounded-xs">
+          <button type="button" onClick={(e) => handleClick(e, onDelete)} title="Usuń trwale" className="p-1.5 text-danger hover:bg-danger-light rounded-xs">
             <Trash2 size={16} />
           </button>
         )}
@@ -41,19 +45,19 @@ export const ActionButtons = ({
   }
 
   return (
-    <div className={clsx("flex justify-end gap-1", className)} onClick={stopPropagation}>
+    <div className={clsx("flex justify-end gap-1", className)}>
       {onDetails && (
-        <button onClick={onDetails} title="Szczegóły" className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-xs">
+        <button type="button" onClick={(e) => handleClick(e, onDetails)} title="Szczegóły" className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-xs">
           <Eye size={16} />
         </button>
       )}
       {onEdit && (
-        <button onClick={onEdit} title="Edytuj" className="p-1.5 text-primary hover:bg-neutral-100 rounded-xs">
+        <button type="button" onClick={(e) => handleClick(e, onEdit)} title="Edytuj" className="p-1.5 text-primary hover:bg-neutral-100 rounded-xs">
           <Edit2 size={16} />
         </button>
       )}
       {onDelete && (
-        <button onClick={onDelete} title="Usuń" className="p-1.5 text-danger hover:bg-neutral-100 rounded-xs">
+        <button type="button" onClick={(e) => handleClick(e, onDelete)} title="Usuń" className="p-1.5 text-danger hover:bg-neutral-100 rounded-xs">
           <Trash2 size={16} />
         </button>
       )}

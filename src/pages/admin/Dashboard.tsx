@@ -40,11 +40,11 @@ export const Dashboard = () => {
   }, []);
 
   const stats = [
-    { label: getText('stats.users'), value: data?.stats.totalUsers ?? 0, link: '/users' },
-    { label: getText('stats.students'), value: data?.stats.totalStudents ?? 0, link: '/users?role=student' },
-    { label: getText('stats.teachers'), value: data?.stats.totalTeachers ?? 0, link: '/users?role=teacher' },
-    { label: getText('stats.parents'), value: data?.stats.totalParents ?? 0, link: '/users?role=parent' },
-    { label: getText('stats.classes'), value: data?.stats.totalClasses ?? 0, link: '/class-management' },
+    { id: 'users', label: getText('stats.users'), value: data?.stats.totalUsers ?? 0, link: '/users' },
+    { id: 'students', label: getText('stats.students'), value: data?.stats.totalStudents ?? 0, link: '/users?role=student' },
+    { id: 'teachers', label: getText('stats.teachers'), value: data?.stats.totalTeachers ?? 0, link: '/users?role=teacher' },
+    { id: 'parents', label: getText('stats.parents'), value: data?.stats.totalParents ?? 0, link: '/users?role=parent' },
+    { id: 'classes', label: getText('stats.classes'), value: data?.stats.totalClasses ?? 0, link: '/class-management' },
   ];
 
   return (
@@ -62,7 +62,7 @@ export const Dashboard = () => {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {stats.map((stat) => (
-          <a key={stat.label} href={stat.link} className="bg-white p-5 border border-neutral-300 flex flex-col hover:border-primary transition-colors group">
+          <a key={stat.id} href={stat.link} className="bg-white p-5 border border-neutral-300 flex flex-col hover:border-primary transition-colors group">
             <p className="text-xs font-bold text-neutral-500 mb-1 tracking-wider uppercase group-hover:text-primary transition-colors">{stat.label}</p>
             <h3 className="text-2xl font-bold text-neutral-800">{loading ? '-' : stat.value}</h3>
           </a>

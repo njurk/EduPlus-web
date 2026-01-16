@@ -41,8 +41,8 @@ export const Login = () => {
                 <div className="bg-neutral-900 p-8 text-center">
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <img
-                            src={getText('logoUrl')}
-                            alt={getText('logoAlt')}
+                            src={getText('logoUrl') || '/logo-512.png'}
+                            alt={getText('logoAlt') || 'Logo'}
                             className="w-14 h-14 object-contain"
                         />
                     </div>

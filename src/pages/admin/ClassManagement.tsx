@@ -162,7 +162,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
             <div className="flex border-b border-neutral-200 bg-white">
                 {[{ id: 'students', label: getText('tabs.students'), icon: Users }, { id: 'subjects', label: getText('tabs.subjects'), icon: BookOpen }].map(t => (
-                    <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={clsx("flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-none uppercase", activeTab === t.id ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-black")}>
+                    <button key={t.id} onClick={() => { setActiveTab(t.id as any); loadDetails(); }} className={clsx("flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-none uppercase", activeTab === t.id ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-black")}>
                         <t.icon size={16} /> {t.label}
                     </button>
                 ))}
