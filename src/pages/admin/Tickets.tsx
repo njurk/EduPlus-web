@@ -28,7 +28,7 @@ export const Tickets = () => {
             setData(response);
         } catch (error) {
             console.error(error);
-            alert("B≥πd pobierania zg≥oszeÒ");
+            alert("B≈ÇƒÖd pobierania zg≈Çosze≈Ñ");
         } finally {
             setLoading(false);
         }
@@ -78,7 +78,7 @@ export const Tickets = () => {
             <div className="flex-1 bg-white">
                 {loading && !data ? (
                     <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2">
-                        <RefreshCcw className="animate-spin" size={24} /> £adowanie...
+                        <RefreshCcw className="animate-spin" size={24} /> ≈Åadowanie...
                     </div>
                 ) : (
                     <>

@@ -5,8 +5,7 @@ import { PasswordInput } from '../components/ui/PasswordInput';
 import { AlertCircle, CheckCircle, ArrowLeft, Mail } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 import { isPasswordValid } from '../utils/validation';
-
-const API_URL = 'http://localhost:5107/api';
+import { API_URL } from '../services/apiService';
 
 export const ResetPassword = () => {
     const [searchParams] = useSearchParams();

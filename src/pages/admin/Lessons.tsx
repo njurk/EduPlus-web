@@ -81,7 +81,7 @@ export const Lessons = () => {
                         sortOptions={[{ field: 'date', label: 'Data' }, { field: 'subjectName', label: 'Przedmiot' }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'£adowanie...'}</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'≈Åadowanie...'}</div> : (
                     <DataTable data={data} columns={[
                         { header: getText('columns.date'), render: l => <span className="text-xs">{formatDate(l.date)}</span> },
                         { header: getText('columns.number'), render: l => l.orderNumber },

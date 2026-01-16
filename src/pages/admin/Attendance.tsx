@@ -77,7 +77,7 @@ export const Attendance = () => {
                         sortOptions={[{ field: 'studentName', label: getText('sort.student') }, { field: 'date', label: getText('sort.date') }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'£adowanie...'}</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'≈Åadowanie...'}</div> : (
                     <DataTable data={data} columns={[
                         { header: getText('columns.date'), render: a => <span className="text-xs">{formatDate(a.lessonDate)}</span> },
                         { header: getText('columns.student'), render: a => <span className="font-medium">{a.studentName}</span> },

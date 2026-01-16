@@ -81,7 +81,7 @@ export const Schedule = () => {
         return schedule.find(l => l.orderNumber === order && l.date.startsWith(dateStr));
     };
 
-    const days = ['Pn', 'Wt', '�r', 'Cz', 'Pt'];
+    const days = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek'];
 
     return (
         <div className="space-y-4">
@@ -102,7 +102,7 @@ export const Schedule = () => {
 
             <div className="bg-white border border-neutral-200 rounded-xs overflow-hidden">
                 {loading ? (
-                    <div className="flex items-center justify-center h-64 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'�adowanie...'}</div>
+                    <div className="flex items-center justify-center h-64 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'Ładowanie...'}</div>
                 ) : (
                     <table className="w-full border-collapse text-xs table-fixed">
                         <thead>

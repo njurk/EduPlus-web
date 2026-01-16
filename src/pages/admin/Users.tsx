@@ -16,7 +16,7 @@ import { DetailsModal } from '../../components/modals/DetailsModal';
 import { Modal } from '../../components/modals/Modal';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
-const FIELDS_CONFIG = { firstName: "Imiê", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
+const FIELDS_CONFIG = { firstName: "ImiÄ™", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
 
 export const Users = () => {
     const { getText } = useCMSContent('users');
@@ -85,11 +85,11 @@ export const Users = () => {
 
     const handleAction = async (action: () => Promise<any>, msg?: string) => {
         if (msg && !window.confirm(msg)) return;
-        try { await action(); await loadData(); } catch (e: any) { console.error('handleAction error:', e); alert(e?.message || "B³¹d operacji"); }
+        try { await action(); await loadData(); } catch (e: any) { console.error('handleAction error:', e); alert(e?.message || "Bd operacji"); }
     };
 
     const handleRestore = async (id: number) => {
-        await handleAction(() => api.users.restore(id), "Przywróciæ u¿ytkownika?");
+        await handleAction(() => api.users.restore(id), "PrzywrÃ³ciÄ‡ uÅ¼ytkownika?");
     };
 
     const handleEditRelation = async (userId: number) => {
@@ -97,8 +97,8 @@ export const Users = () => {
             const user = await api.users.get(userId);
             setAssignmentTarget(user);
 
-            const isStudent = user.userRoles?.some((ur: any) => ur.roleName === 'Uczeñ' || ur.role?.name === 'Uczeñ');
-            const targetRole = isStudent ? 'Rodzic' : 'Uczeñ';
+            const isStudent = user.userRoles?.some((ur: any) => ur.roleName === 'UczeÅ„' || ur.role?.name === 'UczeÅ„');
+            const targetRole = isStudent ? 'Rodzic' : 'UczeÅ„';
 
             const candidates = await api.users.getAll({ roleName: targetRole });
             setAssignmentCandidates(candidates);
@@ -107,7 +107,7 @@ export const Users = () => {
             setRelationSearch('');
             setViewMode('assign');
         } catch {
-            alert("B³¹d przygotowania przypisania");
+            alert("BÅ‚Ä…d przygotowania przypisania");
         }
     };
 
@@ -151,13 +151,13 @@ export const Users = () => {
             await (formData.id ? api.users.update(formData.id, payload) : api.users.create(payload));
             setViewMode('list');
             await loadData();
-        } catch (e: any) { setErrors({ general: e.message || "B³¹d zapisu" }); }
+        } catch (e: any) { setErrors({ general: e.message || "BÅ‚Ä…d zapisu" }); }
     };
 
     const handleSaveAssignment = async () => {
         if (!assignmentTarget) return;
         try {
-            const isStudent = assignmentTarget.userRoles?.some((ur: any) => ur.roleName === 'Uczeñ' || ur.role?.name === 'Uczeñ');
+            const isStudent = assignmentTarget.userRoles?.some((ur: any) => ur.roleName === 'UczeÅ„' || ur.role?.name === 'UczeÅ„');
             const payload: any = { ...assignmentTarget, roleIds: assignmentTarget.userRoles?.map((ur: any) => ur.roleId) };
 
             if (isStudent) {
@@ -170,7 +170,7 @@ export const Users = () => {
             setViewMode('list');
             await loadData();
         } catch {
-            alert("B³¹d zapisu powi¹zañ");
+            alert("BÅ‚Ä…d zapisu powiÄ…zaÅ„");
         }
     };
 
@@ -235,7 +235,7 @@ export const Users = () => {
             footer={
                 <>
                     <Button variant="secondary" onClick={() => setViewMode('list')}>{'Anuluj'}</Button>
-                    <Button onClick={handleSaveAssignment}>{'Zapisz powi¹zania'}</Button>
+                    <Button onClick={handleSaveAssignment}>{'Zapisz powiÄ…zania'}</Button>
                 </>
             }
         >
@@ -245,7 +245,7 @@ export const Users = () => {
                 </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-neutral-400" size={18} />
-                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder={'Szukaj u¿ytkownika...'} className="pl-10" />
+                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder={'Szukaj uÅ¼ytkownika...'} className="pl-10" />
                 </div>
 
                 <div className="border rounded-lg overflow-y-auto divide-y divide-neutral-100 max-h-[350px]">
@@ -258,14 +258,12 @@ export const Users = () => {
                             {selectedAssignmentIds.includes(c.id) ? <Check size={20} className="text-primary" /> : <Plus size={18} className="text-neutral-300" />}
                         </div>
                     ))}
-                    {!filteredCandidates.length && <div className="p-12 text-center text-neutral-400 text-sm">Nie znaleziono kandydatów</div>}
+                    {!filteredCandidates.length && <div className="p-12 text-center text-neutral-400 text-sm">Nie znaleziono kandydatw</div>}
                 </div>
-                <div className="text-sm text-neutral-600 font-medium">Zaznaczono elementów: {selectedAssignmentIds.length}</div>
+                <div className="text-sm text-neutral-600 font-medium">Zaznaczono elementÃ³w: {selectedAssignmentIds.length}</div>
             </div>
         </Modal>
     );
-
-    // if (viewMode === 'form') return renderForm();
 
     return (
         <div className="bg-white border border-neutral-200 shadow-sm font-sans flex flex-col min-h-[600px]">
@@ -331,9 +329,9 @@ export const Users = () => {
                                             try {
                                                 const fullUser = await api.users.get(u.id);
                                                 openForm(fullUser);
-                                            } catch { alert("B³¹d pobierania danych u¿ytkownika"); }
+                                            } catch { alert("BÅ‚Ä…d pobierania danych uÅ¼ytkownika"); }
                                         } : undefined}
-                                        onDelete={u.isActive ? () => handleAction(() => api.users.delete(u.id), "Usun¹æ?") : undefined}
+                                        onDelete={u.isActive ? () => handleAction(() => api.users.delete(u.id), "Usun?") : undefined}
                                         onRestore={!u.isActive ? () => handleRestore(u.id) : undefined}
                                         onDetails={async () => {
                                             try {
@@ -350,7 +348,7 @@ export const Users = () => {
                                                     createdAt: fullUser.createdAt,
                                                 });
                                                 setIsDetailsOpen(true);
-                                            } catch { alert("B³¹d pobierania szczegó³ów"); }
+                                            } catch { alert("BÅ‚Ä…d pobierania szczegÃ³Å‚Ã³w"); }
                                         }}
                                     />
                                 )
@@ -398,7 +396,7 @@ export const Users = () => {
                                     header: getText('columns.actions'), className: 'text-right', render: (r) => (
                                         <ActionButtons
                                             onEdit={() => handleEditRelation(r.parentId)}
-                                            onDelete={() => handleAction(() => api.parentStudents.delete(r.id), 'Czy usun¹æ powi¹zanie?')}
+                                            onDelete={() => handleAction(() => api.parentStudents.delete(r.id), 'Czy usunÄ…Ä‡ powiÄ…zanie?')}
                                         />
                                     )
                                 }
@@ -412,12 +410,12 @@ export const Users = () => {
                 <DetailsModal
                     isOpen={isDetailsOpen}
                     onClose={() => setIsDetailsOpen(false)}
-                    title={`Szczegó³y u¿ytkownika: ${formatName(detailsUser)}`}
+                    title={`SzczegÃ³Å‚y uÅ¼ytkownika: ${formatName(detailsUser)}`}
                     data={detailsUser}
                     labels={{
                         ...FIELDS_CONFIG,
-                        roleNames: "Przypisane role",
-                        relatedContent: "Powi¹zania",
+                        roleNames: "Role",
+                        relatedContent: "PowiÄ…zania",
                         createdAt: "Data utworzenia",
                         updatedAt: "Ostatnia modyfikacja"
                     }}
