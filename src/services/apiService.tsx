@@ -206,7 +206,29 @@ export const api = {
 
     userRoles: createCrudResource<UserRole>('userrole'),
     classes: createCrudResource<SchoolClass>('class'),
-    announcements: createCrudResource<Announcement>('announcement'),
+    announcements: {
+        ...createCrudResource<Announcement>('announcement'),
+        getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean }): Promise<Announcement[]> => {
+            const url = new URL(`${API_URL}/announcement`);
+            if (params) {
+                Object.keys(params).forEach(key => {
+                    const value = (params as any)[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        url.searchParams.append(key, value.toString());
+                    }
+                });
+            }
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse<Announcement[]>(response);
+        },
+        restore: async (id: number): Promise<void> => {
+            const response = await fetch(`${API_URL}/announcement/${id}/restore`, {
+                method: 'PATCH',
+                headers: getHeaders()
+            });
+            return handleResponse<void>(response);
+        }
+    },
 
     parentStudents: {
         getAll: async (search: string = '', sortBy?: string, sortDesc?: boolean): Promise<ParentStudents[]> => {
@@ -245,24 +267,34 @@ export const api = {
 
     attendanceTypes: {
         ...createCrudResource<AttendanceType>('AttendanceType'),
-        getAll: async (): Promise<AttendanceType[]> => {
-            const params = new URLSearchParams({
-                showInactive: 'false',
-                sortBy: 'name',
-                sortDesc: 'false'
-            });
-
-            const response = await fetch(`${API_URL}/attendancetype?${params}`, {
-                headers: getHeaders()
-            });
+        getAll: async (params?: Record<string, any>): Promise<AttendanceType[]> => {
+            const url = new URL(`${API_URL}/attendancetype`);
+            if (params) {
+                Object.keys(params).forEach(key => {
+                    const value = params[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        url.searchParams.append(key, value.toString());
+                    }
+                });
+            }
+            const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse(response);
         }
     },
 
     subjects: {
         ...createCrudResource<Subject>('subject'),
-        getAll: async (): Promise<Subject[]> => {
-            const response = await fetch(`${API_URL}/subject`, { headers: getHeaders() });
+        getAll: async (params?: Record<string, any>): Promise<Subject[]> => {
+            const url = new URL(`${API_URL}/subject`);
+            if (params) {
+                Object.keys(params).forEach(key => {
+                    const value = params[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        url.searchParams.append(key, value.toString());
+                    }
+                });
+            }
+            const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse(response);
         },
         getTeachers: async (subjectId: number): Promise<User[]> => {
@@ -524,6 +556,12 @@ export const api = {
             return handleResponse(response);
         }
     },
+    cms: {
+        getByPageLabel: async (pageLabel: string): Promise<{ key: string; value: string }[]> => {
+            const response = await fetch(`${API_URL}/PageContent/by-label/${encodeURIComponent(pageLabel)}`, { headers: getHeaders() });
+            return handleResponse(response);
+        }
+    },
     schedule: {
         getClassSchedule: async (classId: number, dateFrom: string, dateTo: string): Promise<ScheduleLesson[]> => {
             const url = new URL(`${API_URL}/WeeklySchedule/${classId}`);
@@ -547,6 +585,14 @@ export const api = {
             }
             const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse(response);
+        },
+        generateLessons: async (classId: number, schoolYearId: number, semesterId: number): Promise<{ generatedCount: number }> => {
+            const response = await fetch(`${API_URL}/lesson/generate`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ classId, schoolYearId, semesterId })
+            });
+            return handleResponse(response);
         }
     },
     excuses: {
@@ -562,6 +608,14 @@ export const api = {
                 });
             }
             const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse(response);
+        },
+        accept: async (id: number, isAccepted: boolean): Promise<void> => {
+            const response = await fetch(`${API_URL}/excuse/${id}/accept`, {
+                method: 'PATCH',
+                headers: getHeaders(),
+                body: JSON.stringify({ isAccepted })
+            });
             return handleResponse(response);
         }
     },

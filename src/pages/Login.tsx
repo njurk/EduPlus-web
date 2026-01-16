@@ -4,8 +4,10 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { api } from '../services/apiService';
 import { AlertCircle, Lock, Mail } from 'lucide-react';
+import { useCMSContent } from '../hooks/useCMSContent';
 
 export const Login = () => {
+    const { getText } = useCMSContent('login');
     const navigate = useNavigate();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export const Login = () => {
             navigate('/');
 
         } catch (err: any) {
-            setError(err.message || "Wystąpił błąd logowania");
+            setError(err.message || getText('error.login'));
         } finally {
             setLoading(false);
         }
@@ -39,12 +41,12 @@ export const Login = () => {
                 <div className="bg-neutral-900 p-8 text-center">
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <img
-                            src="/logo-512.png"
-                            alt="EduPlus Logo"
+                            src={getText('logoUrl')}
+                            alt={getText('logoAlt')}
                             className="w-14 h-14 object-contain"
                         />
                     </div>
-                    <h1 className="text-2xl font-bold text-white">EduPlus Admin</h1>
+                    <h1 className="text-2xl font-bold text-white">{getText('title')}</h1>
                 </div>
                 <div className="p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -55,7 +57,7 @@ export const Login = () => {
                             </div>
                         )}
                         <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-1 ml-1">Email</label>
+                            <label className="block text-sm font-medium text-neutral-700 mb-1 ml-1">{getText('form.email')}</label>
                             <div className="relative">
                                 <div className="absolute left-3 top-2.5 text-neutral-400">
                                     <Mail size={18} />
@@ -71,7 +73,7 @@ export const Login = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-1 ml-1">Hasło</label>
+                            <label className="block text-sm font-medium text-neutral-700 mb-1 ml-1">{getText('form.password')}</label>
                             <div className="relative">
                                 <div className="absolute left-3 top-2.5 text-neutral-400">
                                     <Lock size={18} />
@@ -87,7 +89,7 @@ export const Login = () => {
                             </div>
                             <div className="text-right mt-1">
                                 <Link to="/reset-password" className="text-xs text-primary hover:text-primary-hover hover:underline">
-                                    Zapomniałeś hasła?
+                                    {getText('form.forgotPassword')}
                                 </Link>
                             </div>
                         </div>
@@ -95,13 +97,13 @@ export const Login = () => {
                             className="w-full py-3 text-base justify-center mt-4"
                             disabled={loading}
                         >
-                            {loading ? 'Logowanie...' : 'Zaloguj się'}
+                            {loading ? getText('button.loading') : getText('button.login')}
                         </Button>
                     </form>
                 </div>
                 <div className="bg-neutral-50 p-4 text-center border-t border-neutral-100">
                     <p className="text-xs text-neutral-500">
-                        &copy; {new Date().getFullYear()} EduPlus v1.0.0
+                        &copy; {new Date().getFullYear()} {getText('footer')}
                     </p>
                 </div>
             </div>

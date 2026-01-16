@@ -9,8 +9,10 @@ import { TrashButton } from '../../components/ui/TrashButton';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import type { SchoolYear, SemesterDto } from '../../types';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
 export const Excuses = () => {
+    const { getText } = useCMSContent('excuses');
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [years, setYears] = useState<SchoolYear[]>([]);
@@ -47,12 +49,12 @@ export const Excuses = () => {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-neutral-800">Usprawiedliwienia</h1>
+                <h1 className="text-2xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2">
                     <YearSelector years={years} selectedYear={filters.yearId} onChange={v => setFilters(f => ({ ...f, yearId: v, semesterOrder: null }))} />
                     <SemesterSelector semesters={semesters} selectedOrder={filters.semesterOrder} onChange={v => setFilters(f => ({ ...f, semesterOrder: v }))} showAll />
                     <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-                    <Button><Plus size={14} className="mr-1" />Dodaj</Button>
+                    <Button><Plus size={14} className="mr-1" />{getText('actions.add')}</Button>
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs">
@@ -63,23 +65,23 @@ export const Excuses = () => {
                         sortOptions={[{ field: 'studentName', label: 'Uczeń' }, { field: 'createdAt', label: 'Data' }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />Ładowanie...</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div> : (
                     <DataTable data={data} columns={[
-                        { header: 'Data', render: e => <span className="text-xs">{formatDate(e.createdAt)}</span> },
-                        { header: 'Uczeń', render: e => <span className="font-medium">{e.studentName}</span> },
-                        { header: 'Rodzic', render: e => e.parentName },
-                        { header: 'Okres', render: e => <span className="text-xs">{formatDate(e.dateFrom)} - {formatDate(e.dateTo)}</span> },
-                        { header: 'Powód', render: e => <div className="truncate max-w-xs text-sm" title={e.reason}>{e.reason}</div> },
-                        { header: 'Status', render: e => <span className={e.isAccepted === true ? 'text-success' : e.isAccepted === false ? 'text-danger' : 'text-warning'}>{e.isAccepted === true ? 'OK' : e.isAccepted === false ? 'Odrzucone' : 'Oczekuje'}</span> },
+                        { header: getText('columns.date'), render: e => <span className="text-xs">{formatDate(e.createdAt)}</span> },
+                        { header: getText('columns.student'), render: e => <span className="font-medium">{e.studentName}</span> },
+                        { header: getText('columns.parent'), render: e => e.parentName },
+                        { header: getText('columns.period'), render: e => <span className="text-xs">{formatDate(e.dateFrom)} - {formatDate(e.dateTo)}</span> },
+                        { header: getText('columns.reason'), render: e => <div className="truncate max-w-xs text-sm" title={e.reason}>{e.reason}</div> },
+                        { header: getText('columns.status'), render: e => <span className={e.isAccepted === true ? 'text-success' : e.isAccepted === false ? 'text-danger' : 'text-warning'}>{e.isAccepted === true ? getText('status.accepted') : e.isAccepted === false ? getText('status.rejected') : getText('status.pending')}</span> },
                         {
-                            header: 'Akcje', className: 'text-right', render: e => e.isAccepted === null ? (
+                            header: getText('columns.actions'), className: 'text-right', render: e => e.isAccepted === null ? (
                                 <div className="flex justify-end gap-1">
                                     <Button variant="ghost" onClick={() => handleAccept(e.id, true)} className="p-1 text-success"><Check size={14} /></Button>
                                     <Button variant="ghost" onClick={() => handleAccept(e.id, false)} className="p-1 text-danger"><X size={14} /></Button>
                                 </div>
-                            ) : <Button variant="ghost" onClick={() => handleDelete(e.id)} className="p-1 text-danger text-xs">Usuń</Button>
+                            ) : <Button variant="ghost" onClick={() => handleDelete(e.id)} className="p-1 text-danger text-xs">{getText('actions.delete')}</Button>
                         }
-                    ]} emptyMessage="Brak" />
+                    ]} emptyMessage={getText('empty')} />
                 )}
             </div>
         </div>

@@ -11,8 +11,10 @@ import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
 import { TrashButton } from '../../components/ui/TrashButton';
 import type { SchoolYear, SemesterDto, ClassEntity } from '../../types';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
 export const Lessons = () => {
+    const { getText } = useCMSContent('lessons');
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [years, setYears] = useState<SchoolYear[]>([]);
@@ -62,13 +64,13 @@ export const Lessons = () => {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-neutral-800">Lekcje</h1>
+                <h1 className="text-2xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2">
                     <YearSelector years={years} selectedYear={filters.yearId} onChange={v => setFilters(f => ({ ...f, yearId: v, semesterOrder: null, classId: null }))} />
                     <SemesterSelector semesters={semesters} selectedOrder={filters.semesterOrder} onChange={v => setFilters(f => ({ ...f, semesterOrder: v }))} showAll />
                     <ClassSelector classes={classes} selectedClass={filters.classId} onChange={v => setFilters(f => ({ ...f, classId: v }))} showAll />
                     <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-                    <Button><Plus size={14} className="mr-1" />Generuj</Button>
+                    <Button><Plus size={14} className="mr-1" />{getText('actions.generate')}</Button>
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs">
@@ -79,15 +81,15 @@ export const Lessons = () => {
                         sortOptions={[{ field: 'date', label: 'Data' }, { field: 'subjectName', label: 'Przedmiot' }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />Ładowanie...</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div> : (
                     <DataTable data={data} columns={[
-                        { header: 'Data', render: l => <span className="text-xs">{formatDate(l.date)}</span> },
-                        { header: 'Nr', render: l => l.orderNumber },
-                        { header: 'Klasa', render: l => l.className },
-                        { header: 'Przedmiot', render: l => <span className="font-medium">{l.subjectName}</span> },
-                        { header: 'Nauczyciel', render: l => l.teacherName },
-                        { header: 'Akcje', className: 'text-right', render: l => <ActionButtons onDelete={() => handleDelete(l.id)} /> }
-                    ]} emptyMessage="Brak lekcji" />
+                        { header: getText('columns.date'), render: l => <span className="text-xs">{formatDate(l.date)}</span> },
+                        { header: getText('columns.number'), render: l => l.orderNumber },
+                        { header: getText('columns.class'), render: l => l.className },
+                        { header: getText('columns.subject'), render: l => <span className="font-medium">{l.subjectName}</span> },
+                        { header: getText('columns.teacher'), render: l => l.teacherName },
+                        { header: getText('columns.actions'), className: 'text-right', render: l => <ActionButtons onDelete={() => handleDelete(l.id)} /> }
+                    ]} emptyMessage={getText('empty')} />
                 )}
             </div>
         </div>

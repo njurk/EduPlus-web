@@ -7,8 +7,10 @@ import { DataTable } from '../../components/ui/DataTable';
 import { formatDate } from '../../utils/formatters';
 import { Pagination } from '../../components/ui/Pagination';
 import { TicketDetailsModal } from '../../components/modals/TicketDetailsModal';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
 export const Tickets = () => {
+    const { getText } = useCMSContent('tickets');
     const [data, setData] = useState<PaginatedResponse<Ticket> | null>(null);
     const [loading, setLoading] = useState(false);
     const [pageNumber, setPageNumber] = useState(1);
@@ -40,7 +42,7 @@ export const Tickets = () => {
     return (
         <div className="bg-white border border-neutral-200 shadow-sm font-sans flex flex-col min-h-[600px]">
             <div className="border-b px-6 py-4 flex justify-between items-center pb-4 bg-neutral-50/30">
-                <h2 className="text-xl font-bold text-neutral-800">Zgłoszenia</h2>
+                <h2 className="text-xl font-bold text-neutral-800">{getText('title')}</h2>
             </div>
 
             <div className="flex items-center justify-between gap-4 py-4 border-b bg-white">
@@ -55,9 +57,9 @@ export const Tickets = () => {
                         else { setSortBy(field); setSortDesc(true); }
                     }}
                     sortOptions={[
-                        { field: 'createdAt', label: 'Data utworzenia' },
-                        { field: 'subject', label: 'Temat' },
-                        { field: 'userFullName', label: 'Użytkownik' }
+                        { field: 'createdAt', label: getText('sort.createdAt') },
+                        { field: 'subject', label: getText('sort.subject') },
+                        { field: 'userFullName', label: getText('sort.user') }
                     ]}
                 />
                 <div className="flex items-center gap-2 px-4 border-l">
@@ -68,7 +70,7 @@ export const Tickets = () => {
                             onChange={(e) => { setShowClosed(e.target.checked); setPageNumber(1); }}
                             className="rounded border-neutral-300 text-primary focus:ring-primary"
                         />
-                        Pokaż zamknięte
+                        {getText('filter.showClosed')}
                     </label>
                 </div>
             </div>
@@ -84,13 +86,13 @@ export const Tickets = () => {
                             data={data?.data || []}
                             onRowClick={(ticket) => { setSelectedTicket(ticket); setIsDetailsOpen(true); }}
                             columns={[
-                                { header: 'Status', className: 'w-12', render: (t) => t.isClosed ? <CheckCircle size={18} className="text-neutral-400" /> : <Clock size={18} className="text-warning" /> },
-                                { header: 'Temat', accessor: 'subject', className: 'font-medium text-neutral-900 w-1/3' },
-                                { header: 'Zgłaszający', render: (t) => <div><div className="text-neutral-900">{t.userFullName}</div><div className="text-xs text-neutral-500">{t.userEmail}</div></div> },
-                                { header: 'Utworzono', render: (t) => <span className="text-neutral-600 text-sm">{formatDate(t.createdAt)}</span> },
-                                { header: 'Zamknięto', render: (t) => t.closedAt ? <span className="text-neutral-500 text-sm">{formatDate(t.closedAt)}</span> : <span className="text-neutral-300">-</span> }
+                                { header: getText('columns.status'), className: 'w-12', render: (t) => t.isClosed ? <CheckCircle size={18} className="text-neutral-400" /> : <Clock size={18} className="text-warning" /> },
+                                { header: getText('columns.subject'), accessor: 'subject', className: 'font-medium text-neutral-900 w-1/3' },
+                                { header: getText('columns.submitter'), render: (t) => <div><div className="text-neutral-900">{t.userFullName}</div><div className="text-xs text-neutral-500">{t.userEmail}</div></div> },
+                                { header: getText('columns.createdAt'), render: (t) => <span className="text-neutral-600 text-sm">{formatDate(t.createdAt)}</span> },
+                                { header: getText('columns.closedAt'), render: (t) => t.closedAt ? <span className="text-neutral-500 text-sm">{formatDate(t.closedAt)}</span> : <span className="text-neutral-300">-</span> }
                             ]}
-                            emptyMessage="Brak zgłoszeń spełniających kryteria"
+                            emptyMessage={getText('empty')}
                         />
 
                         {data && (

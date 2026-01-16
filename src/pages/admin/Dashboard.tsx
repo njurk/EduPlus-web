@@ -6,6 +6,7 @@ import type { DashboardSummary, AttendanceChartData } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { UptimeCounter } from '../../components/ui/UptimeCounter';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
 const formatDate = (date?: string) => date ? new Date(date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
@@ -16,6 +17,7 @@ export const Dashboard = () => {
   const [uptimeSeconds, setUptimeSeconds] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { getText } = useCMSContent('dashboard');
 
   useEffect(() => {
     const load = async () => {
@@ -38,20 +40,20 @@ export const Dashboard = () => {
   }, []);
 
   const stats = [
-    { label: 'Użytkownicy', value: data?.stats.totalUsers ?? 0, link: '/users' },
-    { label: 'Uczniowie', value: data?.stats.totalStudents ?? 0, link: '/users?role=student' },
-    { label: 'Nauczyciele', value: data?.stats.totalTeachers ?? 0, link: '/users?role=teacher' },
-    { label: 'Rodzice', value: data?.stats.totalParents ?? 0, link: '/users?role=parent' },
-    { label: 'Klasy', value: data?.stats.totalClasses ?? 0, link: '/class-management' },
+    { label: getText('stats.users'), value: data?.stats.totalUsers ?? 0, link: '/users' },
+    { label: getText('stats.students'), value: data?.stats.totalStudents ?? 0, link: '/users?role=student' },
+    { label: getText('stats.teachers'), value: data?.stats.totalTeachers ?? 0, link: '/users?role=teacher' },
+    { label: getText('stats.parents'), value: data?.stats.totalParents ?? 0, link: '/users?role=parent' },
+    { label: getText('stats.classes'), value: data?.stats.totalClasses ?? 0, link: '/class-management' },
   ];
 
   return (
     <div className="space-y-6 font-sans">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-800">Pulpit</h1>
+          <h1 className="text-2xl font-bold text-neutral-800">{getText('title')}</h1>
           <p className="text-neutral-500 text-sm mt-1">
-            Rok szkolny: <span className="font-semibold text-neutral-700">{data?.status.schoolYear ?? '-'}</span>,
+            {getText('schoolYear')}: <span className="font-semibold text-neutral-700">{data?.status.schoolYear ?? '-'}</span>,
             <span className="font-semibold text-neutral-700 ml-1">{data?.status.semester ?? '-'}</span>
           </p>
         </div>
@@ -70,7 +72,7 @@ export const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-6 lg:col-span-2">
           <div className="bg-white border border-neutral-300 p-6">
-            <h3 className="text-lg font-bold text-neutral-800 mb-6">Frekwencja (ostatnie 7 dni)</h3>
+            <h3 className="text-lg font-bold text-neutral-800 mb-6">{getText('chart.title')}</h3>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -83,7 +85,7 @@ export const Dashboard = () => {
                     dy={10}
                   />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#737373', fontSize: 12 }} domain={[0, 100]} />
-                  <Tooltip cursor={{ fill: '#f5f5f5' }} formatter={(value) => [`${value}%`, 'Frekwencja']} />
+                  <Tooltip cursor={{ fill: '#f5f5f5' }} formatter={(value) => [`${value}%`, getText('chart.attendance')]} />
                   <Bar dataKey="attendancePercentage" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={40}>
                     <LabelList dataKey="attendancePercentage" position="top" formatter={(value: any) => (typeof value === 'number' ? `${value}%` : '')} fill="#737373" fontSize={12} />
                   </Bar>
@@ -94,11 +96,11 @@ export const Dashboard = () => {
 
           <div className="bg-white border border-neutral-300 p-6">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-neutral-100">
-              <h3 className="text-lg font-bold text-neutral-800">Ostatnie zgłoszenia</h3>
-              <a href="/tickets" className="text-xs font-medium text-primary hover:text-primary-hover hover:underline">Zobacz wszystkie</a>
+              <h3 className="text-lg font-bold text-neutral-800">{getText('tickets.title')}</h3>
+              <a href="/tickets" className="text-xs font-medium text-primary hover:text-primary-hover hover:underline">{getText('tickets.viewAll')}</a>
             </div>
             <div className="space-y-3">
-              {!data?.recentTickets?.length && !loading && <p className="text-sm text-neutral-400 p-4 text-center border border-dashed border-neutral-200">Brak otwartych zgłoszeń</p>}
+              {!data?.recentTickets?.length && !loading && <p className="text-sm text-neutral-400 p-4 text-center border border-dashed border-neutral-200">{getText('tickets.empty')}</p>}
               {data?.recentTickets?.map((ticket) => (
                 <button
                   key={ticket.id}
@@ -118,15 +120,15 @@ export const Dashboard = () => {
 
         <div className="bg-white border border-neutral-300 p-6 h-fit">
           <div className="flex flex-col gap-3">
-            <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wide mb-2">Szybkie akcje</h3>
+            <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wide mb-2">{getText('quickActions.title')}</h3>
             <Button variant="secondary" className="justify-start text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:border-primary hover:text-primary transition-all" onClick={() => navigate('/users')}>
-              <Users size={16} className="mr-2" /> Zarządzaj użytkownikami
+              <Users size={16} className="mr-2" /> {getText('quickActions.manageUsers')}
             </Button>
             <Button variant="secondary" className="justify-start text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:border-primary hover:text-primary transition-all" onClick={() => navigate('/announcements')}>
-              <Plus size={16} className="mr-2" /> Nowe ogłoszenie
+              <Plus size={16} className="mr-2" /> {getText('quickActions.newAnnouncement')}
             </Button>
             <Button variant="secondary" className="justify-start text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:border-primary hover:text-primary transition-all" onClick={() => navigate('/tickets')}>
-              <Megaphone size={16} className="mr-2" /> Zgłoszenia
+              <Megaphone size={16} className="mr-2" /> {getText('quickActions.tickets')}
             </Button>
           </div>
         </div>

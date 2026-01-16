@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, FileCheck } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useCMSContent } from '../hooks/useCMSContent';
 
 const Clock = () => {
   const [time, setTime] = useState(new Date());
@@ -20,6 +21,7 @@ const Clock = () => {
 };
 
 export const AdminLayout = () => {
+  const { getText } = useCMSContent('layout');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -31,7 +33,7 @@ export const AdminLayout = () => {
   const handleNavClick = () => setSidebarOpen(false);
 
   const handleLogout = () => {
-    if (window.confirm("Na pewno chcesz się wylogować?")) {
+    if (window.confirm(getText('confirm.logout'))) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       navigate('/login');
@@ -42,33 +44,33 @@ export const AdminLayout = () => {
     {
       title: null,
       items: [
-        { label: 'Pulpit', path: '/', icon: Home },
+        { label: getText('nav.dashboard'), path: '/', icon: Home },
       ]
     },
     {
-      title: 'Zarządzanie',
+      title: getText('nav.section.management'),
       items: [
-        { label: 'Użytkownicy', path: '/users', icon: Users },
-        { label: 'Klasy', path: '/class-management', icon: Folder },
-        { label: 'Ogłoszenia', path: '/announcements', icon: Megaphone },
-        { label: 'Zgłoszenia', path: '/tickets', icon: HelpCircle },
+        { label: getText('nav.users'), path: '/users', icon: Users },
+        { label: getText('nav.classes'), path: '/class-management', icon: Folder },
+        { label: getText('nav.announcements'), path: '/announcements', icon: Megaphone },
+        { label: getText('nav.tickets'), path: '/tickets', icon: HelpCircle },
       ]
     },
     {
-      title: 'Nauczanie',
+      title: getText('nav.section.teaching'),
       items: [
-        { label: 'Plany lekcji', path: '/schedule', icon: Calendar },
-        { label: 'Lekcje', path: '/lessons', icon: BookOpen },
-        { label: 'Oceny', path: '/grades', icon: GraduationCap },
-        { label: 'Frekwencja', path: '/attendance', icon: ClipboardCheck },
-        { label: 'Usprawiedliwienia', path: '/excuses', icon: FileCheck },
+        { label: getText('nav.schedule'), path: '/schedule', icon: Calendar },
+        { label: getText('nav.lessons'), path: '/lessons', icon: BookOpen },
+        { label: getText('nav.grades'), path: '/grades', icon: GraduationCap },
+        { label: getText('nav.attendance'), path: '/attendance', icon: ClipboardCheck },
+        { label: getText('nav.excuses'), path: '/excuses', icon: FileCheck },
       ]
     },
     {
-      title: 'System',
+      title: getText('nav.section.system'),
       items: [
-        { label: 'Konfiguracja', path: '/system-config', icon: FilePenIcon },
-        { label: 'CMS', path: '/cms', icon: Layout },
+        { label: getText('nav.config'), path: '/system-config', icon: FilePenIcon },
+        { label: getText('nav.cms'), path: '/cms', icon: Layout },
       ]
     }
   ];
@@ -88,7 +90,7 @@ export const AdminLayout = () => {
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex items-center justify-between h-14 px-4 bg-primary border-b border-primary-hover">
-          <span className="font-bold text-lg tracking-tight text-white">EduPlus</span>
+          <span className="font-bold text-lg tracking-tight text-white">{getText('systemName')}</span>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white hover:text-neutral-200">
             <X size={20} />
           </button>
@@ -119,7 +121,7 @@ export const AdminLayout = () => {
         </nav>
 
         <div className="absolute bottom-0 w-full p-4 bg-neutral-950 border-t border-neutral-800">
-          <p className="text-xs text-neutral-500 font-mono">v1.0.0 EduPlus</p>
+          <p className="text-xs text-neutral-500 font-mono">{getText('version')}</p>
         </div>
       </aside>
 
@@ -137,22 +139,22 @@ export const AdminLayout = () => {
             <Clock />
             <div className="flex items-center gap-4 pl-6 border-l border-neutral-200 h-8">
               <span className="text-sm font-medium text-neutral-600 hidden md:block">
-                Witaj, <span className="text-neutral-900 font-semibold">
-                  {user?.name || "Użytkownik"}
-                </span>!
+                {getText('greeting.prefix')} <span className="text-neutral-900 font-semibold">
+                  {user?.name || getText('greeting.defaultUser')}
+                </span>{getText('greeting.suffix')}
               </span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate('/settings')}
                   className="p-2 text-neutral-500 hover:text-primary hover:bg-neutral-50 transition-all rounded-full"
-                  title="Ustawienia"
+                  title={getText('nav.settings')}
                 >
                   <Settings size={20} />
                 </button>
                 <button
                   onClick={handleLogout}
                   className="p-2 text-neutral-500 hover:text-danger hover:bg-neutral-50 transition-all rounded-full"
-                  title="Wyloguj"
+                  title={getText('nav.logout')}
                 >
                   <LogOut size={20} />
                 </button>

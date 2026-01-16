@@ -10,8 +10,10 @@ import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
 import { TrashButton } from '../../components/ui/TrashButton';
 import type { SchoolYear, SemesterDto, ClassEntity } from '../../types';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
 export const Grades = () => {
+    const { getText } = useCMSContent('grades');
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [years, setYears] = useState<SchoolYear[]>([]);
@@ -55,13 +57,13 @@ export const Grades = () => {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-neutral-800">Oceny</h1>
+                <h1 className="text-2xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2">
                     <YearSelector years={years} selectedYear={filters.yearId} onChange={v => setFilters(f => ({ ...f, yearId: v, semesterOrder: null, classId: null }))} />
                     <SemesterSelector semesters={semesters} selectedOrder={filters.semesterOrder} onChange={v => setFilters(f => ({ ...f, semesterOrder: v }))} showAll />
                     <ClassSelector classes={classes} selectedClass={filters.classId} onChange={v => setFilters(f => ({ ...f, classId: v }))} showAll />
                     <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-                    <Button><Plus size={14} className="mr-1" />Dodaj</Button>
+                    <Button><Plus size={14} className="mr-1" />{getText('actions.add')}</Button>
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs">
@@ -69,20 +71,21 @@ export const Grades = () => {
                     <SortToolbar search={filters.search} onSearchChange={v => setFilters(f => ({ ...f, search: v }))}
                         sortBy={filters.sortBy} sortDesc={filters.sortDesc}
                         onSortChange={field => setFilters(f => ({ ...f, sortBy: field, sortDesc: f.sortBy === field ? !f.sortDesc : true }))}
-                        sortOptions={[{ field: 'studentName', label: 'Uczeń' }, { field: 'subjectName', label: 'Przedmiot' }, { field: 'createdAt', label: 'Data' }]}
+                        sortOptions={[{ field: 'studentName', label: getText('sort.student') }, { field: 'subjectName', label: getText('sort.subject') }, { field: 'createdAt', label: getText('sort.date') }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />Ładowanie...</div> : (
+                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div> : (
                     <DataTable data={data} columns={[
-                        { header: 'Uczeń', render: g => <span className="font-medium">{g.studentName}</span> },
-                        { header: 'Klasa', render: g => g.className },
-                        { header: 'Przedmiot', render: g => g.subjectName },
-                        { header: 'Ocena', render: g => <span className="font-bold text-primary">{g.gradeTypeName}</span> },
-                        { header: 'Kategoria', render: g => <span className="text-neutral-500 text-xs">{g.categoryName}</span> },
-                        { header: 'Data', render: g => <span className="text-neutral-500 text-xs">{formatDate(g.createdAt)}</span> }
-                    ]} emptyMessage="Brak ocen" />
+                        { header: getText('columns.student'), render: g => <span className="font-medium">{g.studentName}</span> },
+                        { header: getText('columns.class'), render: g => g.className },
+                        { header: getText('columns.subject'), render: g => g.subjectName },
+                        { header: getText('columns.grade'), render: g => <span className="font-bold text-primary">{g.gradeTypeName}</span> },
+                        { header: getText('columns.category'), render: g => <span className="text-neutral-500 text-xs">{g.categoryName}</span> },
+                        { header: getText('columns.date'), render: g => <span className="text-neutral-500 text-xs">{formatDate(g.createdAt)}</span> }
+                    ]} emptyMessage={getText('empty')} />
                 )}
             </div>
         </div>
     );
 };
+

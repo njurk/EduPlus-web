@@ -6,6 +6,7 @@ import { ExportButton } from '../../components/ui/ExportButton';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
 const getWeekRange = () => {
     const date = new Date();
@@ -20,6 +21,7 @@ const getWeekRange = () => {
 };
 
 export const Schedule = () => {
+    const { getText } = useCMSContent('schedule');
     const [years, setYears] = useState<SchoolYear[]>([]);
     const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
     const [semesters, setSemesters] = useState<SemesterDto[]>([]);
@@ -84,7 +86,7 @@ export const Schedule = () => {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-neutral-800">Plan lekcji</h1>
+                <h1 className="text-2xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2">
                     <YearSelector years={years} selectedYear={selectedYearId} onChange={id => { setSelectedYearId(id); setSelectedSemesterOrder(null); setSelectedClassId(null); }} />
                     <SemesterSelector semesters={semesters} selectedOrder={selectedSemesterOrder} onChange={setSelectedSemesterOrder} showAll />
@@ -100,7 +102,7 @@ export const Schedule = () => {
 
             <div className="bg-white border border-neutral-200 rounded-xs overflow-hidden">
                 {loading ? (
-                    <div className="flex items-center justify-center h-64 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />Ładowanie...</div>
+                    <div className="flex items-center justify-center h-64 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{getText('loading')}</div>
                 ) : (
                     <table className="w-full border-collapse text-xs table-fixed">
                         <thead>

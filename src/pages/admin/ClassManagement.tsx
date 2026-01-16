@@ -13,6 +13,7 @@ import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear } from '..
 import { validateClassForm } from '../../utils/validation';
 import { formatDate, formatName } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
 const CandidateRow = memo(({ student, index, isSelected, onToggle }: { student: User, index: number, isSelected: boolean, onToggle: (id: number) => void }) => (
     <div onClick={() => onToggle(student.id)} className={clsx("flex items-center justify-between p-2 border-b cursor-pointer text-sm select-none hover:bg-neutral-100", isSelected && "bg-primary-light text-primary-text")}>
@@ -28,6 +29,7 @@ const CandidateRow = memo(({ student, index, isSelected, onToggle }: { student: 
 ));
 
 const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => void }) => {
+    const { getText } = useCMSContent('classManagement');
     const [activeTab, setActiveTab] = useState<'students' | 'subjects'>('students');
     const [details, setDetails] = useState<ClassDetailsDto | null>(null);
     const [, setLoading] = useState(false);
@@ -92,7 +94,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
     const handleAction = async (action: () => Promise<any>, confirmMsg?: string) => {
         if (confirmMsg && !window.confirm(confirmMsg)) return;
-        try { await action(); loadDetails(); } catch { alert("Wystąpił błąd"); }
+        try { await action(); loadDetails(); } catch { alert(getText('error.general')); }
     };
 
     const saveStudents = () => handleAction(async () => {
@@ -117,37 +119,37 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
     return (
         <div className="font-sans h-full">
-            <Modal isOpen={modals.student} onClose={() => setModals({ ...modals, student: false })} title="Przypisz uczniów" maxWidth="xl"
-                footer={<><Button variant="secondary" onClick={() => setModals({ ...modals, student: false })}>Anuluj</Button><Button onClick={saveStudents} disabled={!selections.candidates.length}>Przypisz</Button></>}>
+            <Modal isOpen={modals.student} onClose={() => setModals({ ...modals, student: false })} title={getText('modal.assignStudents')} maxWidth="xl"
+                footer={<><Button variant="secondary" onClick={() => setModals({ ...modals, student: false })}>{getText('actions.cancel')}</Button><Button onClick={saveStudents} disabled={!selections.candidates.length}>{getText('actions.assign')}</Button></>}>
                 <div className="flex flex-col h-[50vh]">
-                    <div className="p-3 border-b bg-white"><div className="relative"><Search className="absolute left-2 top-2.5 text-neutral-400" size={16} /><Input value={candidateSearch} onChange={e => setCandidateSearch(e.target.value)} placeholder="Szukaj..." className="pl-8 text-sm" autoFocus /></div></div>
+                    <div className="p-3 border-b bg-white"><div className="relative"><Search className="absolute left-2 top-2.5 text-neutral-400" size={16} /><Input value={candidateSearch} onChange={e => setCandidateSearch(e.target.value)} placeholder={getText('placeholder.search')} className="pl-8 text-sm" autoFocus /></div></div>
                     <div className="overflow-y-auto flex-1">{availableCandidates.slice(0, 50).map((s, idx) => <CandidateRow key={s.id} index={idx} student={s} isSelected={selections.candidates.includes(s.id)} onToggle={(id: number) => setSelections(p => ({ ...p, candidates: p.candidates.includes(id) ? p.candidates.filter(x => x !== id) : [...p.candidates, id] }))} />)}</div>
                 </div>
             </Modal>
 
-            <Modal isOpen={modals.subject} onClose={() => setModals({ ...modals, subject: false })} title="Przypisz przedmiot" maxWidth="md"
-                footer={<><Button variant="secondary" onClick={() => setModals({ ...modals, subject: false })}>Anuluj</Button><Button onClick={saveSubject} disabled={!selections.subject || !selections.teacher}>Zapisz</Button></>}>
+            <Modal isOpen={modals.subject} onClose={() => setModals({ ...modals, subject: false })} title={getText('modal.assignSubject')} maxWidth="md"
+                footer={<><Button variant="secondary" onClick={() => setModals({ ...modals, subject: false })}>{getText('actions.cancel')}</Button><Button onClick={saveSubject} disabled={!selections.subject || !selections.teacher}>{getText('actions.save')}</Button></>}>
                 <div className="p-6 space-y-4">
                     <div>
-                        <label className="label-text">Przedmiot</label>
+                        <label className="label-text">{getText('form.subject')}</label>
                         <select className="w-full border border-neutral-300 px-3 py-2 rounded-md text-sm focus:outline-none focus:border-primary bg-white" value={selections.subject} onChange={e => setSelections({ ...selections, subject: e.target.value })}>
-                            <option value="">Wybierz...</option>
+                            <option value="">{getText('form.selectOption')}</option>
                             {dicts.subjects.filter(s => !details.subjects.some(ds => ds.subjectId === s.id)).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className="label-text">Nauczyciel</label>
+                        <label className="label-text">{getText('form.teacher')}</label>
                         <select
                             className="w-full border border-neutral-300 px-3 py-2 rounded-md text-sm focus:outline-none focus:border-primary bg-white disabled:bg-neutral-100"
                             value={selections.teacher}
                             onChange={e => setSelections({ ...selections, teacher: e.target.value })}
                             disabled={!selections.subject || teachersLoading}
                         >
-                            <option value="">{teachersLoading ? "Ładowanie..." : (selections.subject ? "Wybierz nauczyciela..." : "Najpierw wybierz przedmiot")}</option>
+                            <option value="">{teachersLoading ? getText('loading') : (selections.subject ? getText('form.selectTeacher') : getText('form.selectSubjectFirst'))}</option>
                             {dicts.teachers.map(t => <option key={t.id} value={t.id}>{t.lastName} {t.firstName}</option>)}
                         </select>
                         {selections.subject && !teachersLoading && dicts.teachers.length === 0 && (
-                            <p className="text-xs text-danger mt-1">Brak nauczycieli przypisanych do tego przedmiotu.</p>
+                            <p className="text-xs text-danger mt-1">{getText('error.noTeachers')}</p>
                         )}
                     </div>
                 </div>
@@ -159,7 +161,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
             </div>
 
             <div className="flex border-b border-neutral-200 bg-white">
-                {[{ id: 'students', label: 'uczniowie', icon: Users }, { id: 'subjects', label: 'przedmioty', icon: BookOpen }].map(t => (
+                {[{ id: 'students', label: getText('tabs.students'), icon: Users }, { id: 'subjects', label: getText('tabs.subjects'), icon: BookOpen }].map(t => (
                     <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={clsx("flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-none uppercase", activeTab === t.id ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-black")}>
                         <t.icon size={16} /> {t.label}
                     </button>
@@ -175,21 +177,21 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                 search={filters.studentSearch}
                                 onSearchChange={v => setFilters({ ...filters, studentSearch: v })}
                                 sortBy={studentSort.sortBy} sortDesc={studentSort.sortDesc} onSortChange={f => setStudentSort(p => ({ sortBy: f, sortDesc: f === p.sortBy ? !p.sortDesc : false }))}
-                                sortOptions={[{ field: 'lastName', label: 'Nazwisko' }, { field: 'email', label: 'Email' }, { field: 'createdat', label: 'Data dodania' }, { field: 'id', label: 'Lp.' }]}
+                                sortOptions={[{ field: 'lastName', label: getText('sort.lastName') }, { field: 'email', label: getText('sort.email') }, { field: 'createdat', label: getText('sort.createdAt') }, { field: 'id', label: getText('sort.ordinal') }]}
                             />
-                            <div className="pl-4 border-l"><Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button></div>
+                            <div className="pl-4 border-l"><Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> {getText('actions.assign')}</Button></div>
                         </div>
                         <DataTable data={details.students} columns={[
-                            { header: 'Lp.', accessor: 'orderNumber', className: 'w-12 text-center' },
-                            { header: 'Uczeń', render: (row) => formatName(row.student), className: 'font-medium' },
-                            { header: 'Email', render: (row) => row.student?.email },
-                            { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+                            { header: getText('columns.ordinal'), accessor: 'orderNumber', className: 'w-12 text-center' },
+                            { header: getText('columns.student'), render: (row) => formatName(row.student), className: 'font-medium' },
+                            { header: getText('columns.email'), render: (row) => row.student?.email },
+                            { header: getText('columns.createdAt'), accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
                             {
-                                header: 'Akcje',
+                                header: getText('columns.actions'),
                                 className: 'text-right',
-                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), "Czy na pewno chcesz usunąć tego ucznia z klasy?")} />
+                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), getText('confirm.removeStudent'))} />
                             }
-                        ]} emptyMessage="Brak uczniów" />
+                        ]} emptyMessage={getText('empty.students')} />
                     </div>
                 ) : (
                     <div className="flex flex-col h-full">
@@ -199,20 +201,20 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                 search={filters.subjectSearch}
                                 onSearchChange={v => setFilters({ ...filters, subjectSearch: v })}
                                 sortBy={subjectSort.sortBy} sortDesc={subjectSort.sortDesc} onSortChange={f => setSubjectSort(p => ({ sortBy: f, sortDesc: f === p.sortBy ? !p.sortDesc : false }))}
-                                sortOptions={[{ field: 'subjectName', label: 'Przedmiot' }, { field: 'teacherName', label: 'Nauczyciel' }, { field: 'createdat', label: 'Data dodania' }]}
+                                sortOptions={[{ field: 'subjectName', label: getText('sort.subject') }, { field: 'teacherName', label: getText('sort.teacher') }, { field: 'createdat', label: getText('sort.createdAt') }]}
                             />
-                            <div className="pl-4 border-l"><Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button></div>
+                            <div className="pl-4 border-l"><Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> {getText('actions.assign')}</Button></div>
                         </div>
                         <DataTable data={details.subjects} columns={[
-                            { header: 'Przedmiot', accessor: 'subjectName', className: 'font-medium pl-4' },
-                            { header: 'Nauczyciel', accessor: 'teacherName' },
-                            { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+                            { header: getText('columns.subject'), accessor: 'subjectName', className: 'font-medium pl-4' },
+                            { header: getText('columns.teacher'), accessor: 'teacherName' },
+                            { header: getText('columns.createdAt'), accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
                             {
-                                header: 'Akcje',
+                                header: getText('columns.actions'),
                                 className: 'text-right',
-                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), "Czy na pewno chcesz usunąć ten przedmiot z klasy? Spowoduje to utratę powiązanych danych (np. planu lekcji).")} />
+                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), getText('confirm.removeSubject'))} />
                             }
-                        ]} emptyMessage="Brak przedmiotów" />
+                        ]} emptyMessage={getText('empty.subjects')} />
                     </div>
                 )}
             </div>
@@ -221,6 +223,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 };
 
 export const ClassManagement = () => {
+    const { getText } = useCMSContent('classManagement');
     const [years, setYears] = useState<SchoolYear[]>([]);
     const [classes, setClasses] = useState<ClassEntity[]>([]);
     const [selected, setSelected] = useState<{ year: number | null, class: number | null }>({ year: null, class: null });
@@ -254,18 +257,18 @@ export const ClassManagement = () => {
         try {
             await (form.data.id ? api.classManagement.updateClass(form.data.id, form.data) : api.classManagement.createClass({ ...form.data, schoolYearId: selected.year! }));
             setForm({ open: false, data: {}, errors: {} }); loadClasses();
-        } catch (e: any) { alert(e.message || "Błąd zapisu"); }
+        } catch (e: any) { alert(e.message || getText('error.save')); }
     };
 
-    const delClass = (id: number) => { if (confirm("Usunąć?")) api.classManagement.deleteClass(id).then(loadClasses).catch(() => alert("Błąd usuwania")); };
-    const restoreClass = (item: ClassEntity) => { if (confirm("Przywrócić?")) api.classManagement.updateClass(item.id, { ...item, isActive: true }).then(loadClasses).catch(() => alert("Błąd")); };
+    const delClass = (id: number) => { if (confirm(getText('confirm.delete'))) api.classManagement.deleteClass(id).then(loadClasses).catch(() => alert(getText('error.delete'))); };
+    const restoreClass = (item: ClassEntity) => { if (confirm(getText('confirm.restore'))) api.classManagement.updateClass(item.id, { ...item, isActive: true }).then(loadClasses).catch(() => alert(getText('error.general'))); };
 
     const classColumns: Column<ClassEntity>[] = [
-        { header: 'Klasa', accessor: 'level', className: 'text-neutral-800 font-medium', render: (row) => `${row.level}${row.letter}` },
-        { header: 'Liczba uczniów', accessor: 'studentCount', render: (row) => row.studentCount || 0 },
-        { header: 'Utworzono', accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
-        { header: 'Edytowano', accessor: 'updatedAt', render: (row) => formatDate(row.updatedAt), className: 'text-xs text-neutral-500' },
-        { header: 'Akcje', className: 'text-right', render: (row) => (<div onClick={e => e.stopPropagation()}><ActionButtons isActive={row.isActive} onEdit={() => setForm({ open: true, data: { ...row }, errors: {} })} onDelete={() => delClass(row.id)} onRestore={() => restoreClass(row)} /></div>) }
+        { header: getText('columns.class'), accessor: 'level', className: 'text-neutral-800 font-medium', render: (row) => `${row.level}${row.letter}` },
+        { header: getText('columns.studentCount'), accessor: 'studentCount', render: (row) => row.studentCount || 0 },
+        { header: getText('columns.createdAt'), accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+        { header: getText('columns.updatedAt'), accessor: 'updatedAt', render: (row) => formatDate(row.updatedAt), className: 'text-xs text-neutral-500' },
+        { header: getText('columns.actions'), className: 'text-right', render: (row) => (<div onClick={e => e.stopPropagation()}><ActionButtons isActive={row.isActive} onEdit={() => setForm({ open: true, data: { ...row }, errors: {} })} onDelete={() => delClass(row.id)} onRestore={() => restoreClass(row)} /></div>) }
     ];
 
     const filteredClasses = useMemo(() => {
@@ -288,16 +291,16 @@ export const ClassManagement = () => {
 
     return (
         <div className="font-sans max-w-6xl mx-auto space-y-4">
-            <Modal isOpen={form.open} onClose={() => setForm({ ...form, open: false })} title={form.data.id ? 'Edycja klasy' : 'Nowa klasa'} maxWidth="sm"
-                footer={<><Button variant="secondary" onClick={() => setForm({ ...form, open: false })}>Anuluj</Button><Button onClick={saveClass}>Zapisz</Button></>}>
+            <Modal isOpen={form.open} onClose={() => setForm({ ...form, open: false })} title={form.data.id ? getText('modal.editClass') : getText('modal.newClass')} maxWidth="sm"
+                footer={<><Button variant="secondary" onClick={() => setForm({ ...form, open: false })}>{getText('actions.cancel')}</Button><Button onClick={saveClass}>{getText('actions.save')}</Button></>}>
                 <div className="grid grid-cols-2 gap-4 p-4">
-                    <div><label className="label-text">Poziom</label><Input type="number" min={1} max={8} value={form.data.level || ''} onChange={e => setForm({ ...form, data: { ...form.data, level: +e.target.value } })} /></div>
-                    <div><label className="label-text">Oddział</label><Input value={form.data.letter || ''} onChange={e => setForm({ ...form, data: { ...form.data, letter: e.target.value.toUpperCase() } })} /></div>
+                    <div><label className="label-text">{getText('form.level')}</label><Input type="number" min={1} max={8} value={form.data.level || ''} onChange={e => setForm({ ...form, data: { ...form.data, level: +e.target.value } })} /></div>
+                    <div><label className="label-text">{getText('form.section')}</label><Input value={form.data.letter || ''} onChange={e => setForm({ ...form, data: { ...form.data, letter: e.target.value.toUpperCase() } })} /></div>
                 </div>
             </Modal>
 
             <div className="flex justify-between items-center pb-4 border-b">
-                <h1 className="text-xl font-bold text-neutral-800">Zarządzanie klasami</h1>
+                <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2"><YearSelector years={years} selectedYear={selected.year} onChange={id => setSelected(p => ({ ...p, year: id }))} /><TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} /></div>
             </div>
 
@@ -306,11 +309,11 @@ export const ClassManagement = () => {
                     <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
                         <SortToolbar className="flex-1" search={filters.search} onSearchChange={v => setFilters({ ...filters, search: v })}
                             sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSortChange={f => setFilters({ ...filters, sortBy: f, sortDesc: f === filters.sortBy ? !filters.sortDesc : false })}
-                            sortOptions={[{ field: 'level', label: 'Klasa' }, { field: 'updatedAt', label: 'Edytowano' }, { field: 'createdAt', label: 'Utworzono' }]} />
-                        {!showInactive && <div className="pl-4 border-l"><Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button></div>}
+                            sortOptions={[{ field: 'level', label: getText('sort.class') }, { field: 'updatedAt', label: getText('sort.updatedAt') }, { field: 'createdAt', label: getText('sort.createdAt') }]} />
+                        {!showInactive && <div className="pl-4 border-l"><Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> {getText('actions.add')}</Button></div>}
                     </div>
-                    {loading ? <div className="text-center p-12 text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" /> Ładowanie...</div> : (
-                        <DataTable data={filteredClasses} columns={classColumns} emptyMessage="Brak klas w wybranym roku szkolnym" onRowClick={(row) => setSelected(p => ({ ...p, class: row.id }))} />
+                    {loading ? <div className="text-center p-12 text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" /> {getText('loading')}</div> : (
+                        <DataTable data={filteredClasses} columns={classColumns} emptyMessage={getText('empty')} onRowClick={(row) => setSelected(p => ({ ...p, class: row.id }))} />
                     )}
                 </div>
             </div>

@@ -14,10 +14,12 @@ import { DataTable } from '../../components/ui/DataTable';
 import { formatDate, formatName } from '../../utils/formatters';
 import { DetailsModal } from '../../components/modals/DetailsModal';
 import { Modal } from '../../components/modals/Modal';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
 const FIELDS_CONFIG = { firstName: "Imię", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
 
 export const Users = () => {
+    const { getText } = useCMSContent('users');
     const [mainTab, setMainTab] = useState<'users' | 'relations' | 'roles'>('users');
     const [data, setData] = useState<any[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
@@ -180,12 +182,12 @@ export const Users = () => {
         <Modal
             isOpen={viewMode === 'form'}
             onClose={() => setViewMode('list')}
-            title={`${formData.id ? 'Edycja' : 'Nowy'} użytkownika`}
+            title={formData.id ? getText('modal.editUser') : getText('modal.newUser')}
             maxWidth="lg"
             footer={
                 <>
-                    <Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button>
-                    <Button onClick={handleSave}>Zapisz</Button>
+                    <Button variant="secondary" onClick={() => setViewMode('list')}>{getText('actions.cancel')}</Button>
+                    <Button onClick={handleSave}>{getText('actions.save')}</Button>
                 </>
             }
         >
@@ -206,7 +208,7 @@ export const Users = () => {
                     </div>
                 </div>
                 <div className="border-t pt-4">
-                    <label className="label-text block mb-2">Rola <span className="text-danger">*</span></label>
+                    <label className="label-text block mb-2">{getText('form.role')} <span className="text-danger">*</span></label>
                     <div className="flex gap-2 flex-wrap">
                         {roles.map(r => (
                             <button
@@ -228,22 +230,22 @@ export const Users = () => {
         <Modal
             isOpen={viewMode === 'assign'}
             onClose={() => setViewMode('list')}
-            title="Zarządzaj powiązaniami"
+            title={getText('modal.manageRelations')}
             maxWidth="lg"
             footer={
                 <>
-                    <Button variant="secondary" onClick={() => setViewMode('list')}>Anuluj</Button>
-                    <Button onClick={handleSaveAssignment}>Zapisz powiązania</Button>
+                    <Button variant="secondary" onClick={() => setViewMode('list')}>{getText('actions.cancel')}</Button>
+                    <Button onClick={handleSaveAssignment}>{getText('actions.saveRelations')}</Button>
                 </>
             }
         >
             <div className="p-6 flex flex-col gap-4">
                 <div className="mb-2">
-                    <p className="text-sm text-neutral-500">Użytkownik: <span className="font-medium text-neutral-800">{formatName(assignmentTarget!)}</span></p>
+                    <p className="text-sm text-neutral-500">{getText('modal.user')}: <span className="font-medium text-neutral-800">{formatName(assignmentTarget!)}</span></p>
                 </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-neutral-400" size={18} />
-                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder="Szukaj użytkownika..." className="pl-10" />
+                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder={getText('placeholder.searchUser')} className="pl-10" />
                 </div>
 
                 <div className="border rounded-lg overflow-y-auto divide-y divide-neutral-100 max-h-[350px]">
@@ -269,11 +271,11 @@ export const Users = () => {
         <div className="bg-white border border-neutral-200 shadow-sm font-sans flex flex-col min-h-[600px]">
             <div className="border-b px-4 flex justify-between items-end bg-neutral-50/30">
                 <div className="flex gap-6">
-                    <button onClick={() => setMainTab('users')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'users' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><UsersIcon size={18} /> Użytkownicy</button>
-                    <button onClick={() => setMainTab('roles')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'roles' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><Shield size={18} /> Role</button>
-                    <button onClick={() => setMainTab('relations')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'relations' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><LinkIcon size={18} /> Powiązania</button>
+                    <button onClick={() => setMainTab('users')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'users' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><UsersIcon size={18} /> {getText('tabs.users')}</button>
+                    <button onClick={() => setMainTab('roles')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'roles' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><Shield size={18} /> {getText('tabs.roles')}</button>
+                    <button onClick={() => setMainTab('relations')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'relations' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><LinkIcon size={18} /> {getText('tabs.relations')}</button>
                 </div>
-                {mainTab === 'users' && <div className="py-3"><Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> Dodaj</Button></div>}
+                {mainTab === 'users' && <div className="py-3"><Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {getText('actions.add')}</Button></div>}
             </div>
 
             <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
@@ -283,9 +285,9 @@ export const Users = () => {
                     sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSortChange={f => setFilters(p => ({ ...p, sortBy: f, sortDesc: p.sortBy === f ? !p.sortDesc : false }))}
                     sortOptions={
                         mainTab === 'users' ? [
-                            { field: 'lastName', label: 'Nazwisko' }, { field: 'email', label: 'Email' }, { field: 'role', label: 'Rola' }, { field: 'created', label: 'Utworzono' }, { field: 'updated', label: 'Edytowano' }
+                            { field: 'lastName', label: getText('sort.lastName') }, { field: 'email', label: getText('sort.email') }, { field: 'role', label: getText('sort.role') }, { field: 'created', label: getText('sort.created') }, { field: 'updated', label: getText('sort.updated') }
                         ] : mainTab === 'roles' ? [] : [
-                            { field: 'parentName', label: 'Rodzic' }, { field: 'studentName', label: 'Uczeń' }, { field: 'created', label: 'Utworzono' }
+                            { field: 'parentName', label: getText('sort.parent') }, { field: 'studentName', label: getText('sort.student') }, { field: 'created', label: getText('sort.created') }
                         ]
                     }
                 />
@@ -299,7 +301,7 @@ export const Users = () => {
                         }}
                     />
                 )}
-                {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> Pokaż rodziców bez powiązań</label>}
+                {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> {getText('filter.unassignedParents')}</label>}
             </div>
 
             <div className="flex-1 bg-white">
@@ -308,21 +310,21 @@ export const Users = () => {
                         data={data}
                         isLoading={loading}
                         columns={[
-                            { header: 'Użytkownik', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
-                            { header: 'Telefon', render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
+                            { header: getText('columns.user'), render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
+                            { header: getText('columns.phone'), render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
                             {
-                                header: 'Rola', render: (u) =>
+                                header: getText('columns.role'), render: (u) =>
                                     <div className="flex gap-1 flex-wrap">
                                         {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
                                             <span key={idx} className="text-neutral-500 text-xs">{r}</span>
                                         )) : <span className="text-neutral-400 text-xs">-</span>}
                                     </div>
                             },
-                            { header: 'Utworzono', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.createdAt)}</span> },
-                            { header: 'Edytowano', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.updatedAt)}</span> },
-                            { header: 'Edytowane przez', render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
+                            { header: getText('columns.createdAt'), render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.createdAt)}</span> },
+                            { header: getText('columns.updatedAt'), render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.updatedAt)}</span> },
+                            { header: getText('columns.modifiedBy'), render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
                             {
-                                header: 'Akcje', className: 'text-right', render: (u) => (
+                                header: getText('columns.actions'), className: 'text-right', render: (u) => (
                                     <ActionButtons
                                         isActive={u.isActive}
                                         onEdit={u.isActive ? async () => {
@@ -360,12 +362,12 @@ export const Users = () => {
                         data={data}
                         isLoading={loading}
                         columns={[
-                            { header: 'Nazwa', accessor: 'name', className: 'font-medium text-neutral-900' },
-                            { header: 'Poziom', accessor: 'level', className: 'text-neutral-600' },
-                            { header: 'Opis', render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
-                            { header: 'Utworzono', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
-                            { header: 'Edytowano', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt)}</span> },
-                            { header: 'Edytowane przez', render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> }
+                            { header: getText('columns.name'), accessor: 'name', className: 'font-medium text-neutral-900' },
+                            { header: getText('columns.level'), accessor: 'level', className: 'text-neutral-600' },
+                            { header: getText('columns.description'), render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
+                            { header: getText('columns.createdAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
+                            { header: getText('columns.updatedAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt)}</span> },
+                            { header: getText('columns.modifiedBy'), render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> }
                         ]}
                     />
                 ) : (
@@ -374,12 +376,12 @@ export const Users = () => {
                             data={data}
                             isLoading={loading}
                             columns={[
-                                { header: 'Rodzic', render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
-                                { header: 'Status', render: () => <span className="italic text-neutral-500">brak powiązań</span> },
-                                { header: 'Utworzono', render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span> },
-                                { header: 'Edytowano', render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.updatedAt)}</span> },
-                                { header: 'Edytowane przez', render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },
-                                { header: 'Akcje', className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> Przypisz</button> }
+                                { header: getText('columns.parent'), render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
+                                { header: getText('columns.status'), render: () => <span className="italic text-neutral-500">{getText('status.noRelations')}</span> },
+                                { header: getText('columns.createdAt'), render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span> },
+                                { header: getText('columns.updatedAt'), render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.updatedAt)}</span> },
+                                { header: getText('columns.modifiedBy'), render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },
+                                { header: getText('columns.actions'), className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> {getText('actions.assign')}</button> }
                             ]}
                         />
                     ) : (
@@ -387,16 +389,16 @@ export const Users = () => {
                             data={data}
                             isLoading={loading}
                             columns={[
-                                { header: 'Rodzic', render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
-                                { header: 'Uczeń', accessor: 'studentName', className: 'font-medium text-neutral-900' },
-                                { header: 'Utworzono', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
-                                { header: 'Edytowano', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt || r.createdAt)}</span> },
-                                { header: 'Edytowane przez', render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
+                                { header: getText('columns.parent'), render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
+                                { header: getText('columns.student'), accessor: 'studentName', className: 'font-medium text-neutral-900' },
+                                { header: getText('columns.createdAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
+                                { header: getText('columns.updatedAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt || r.createdAt)}</span> },
+                                { header: getText('columns.modifiedBy'), render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
                                 {
-                                    header: 'Akcje', className: 'text-right', render: (r) => (
+                                    header: getText('columns.actions'), className: 'text-right', render: (r) => (
                                         <ActionButtons
                                             onEdit={() => handleEditRelation(r.parentId)}
-                                            onDelete={() => handleAction(() => api.parentStudents.delete(r.id), "Usunąć powiązanie?")}
+                                            onDelete={() => handleAction(() => api.parentStudents.delete(r.id), getText('confirm.deleteRelation'))}
                                         />
                                     )
                                 }

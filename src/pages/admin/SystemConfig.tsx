@@ -12,6 +12,7 @@ import { DataTable, type Column } from "../../components/ui/DataTable";
 import { ActionButtons } from "../../components/ui/ActionButtons";
 import type { BaseEntity, GradeType, GradeCategory, AttendanceType, LessonHour } from "../../types";
 import { formatDate } from "../../utils/formatters";
+import { useCMSContent } from "../../hooks/useCMSContent";
 
 
 const TABS = [
@@ -148,6 +149,7 @@ const ConfigFormContent = ({
 };
 
 export const SystemConfig = () => {
+    const { getText } = useCMSContent('systemConfig');
     const [activeTab, setActiveTab] =
         useState<(typeof TABS)[number]["id"]>("classrooms");
 
@@ -261,27 +263,27 @@ export const SystemConfig = () => {
             await loadData();
             setIsModalOpen(false);
         } catch {
-            alert("Błąd zapisu");
+            alert(getText('error.save'));
         }
     };
 
     const handleStatusChange = async (item: BaseEntity, isActive: boolean) => {
-        if (!window.confirm(isActive ? "Przywrócić element?" : "Przenieść do kosza?")) return;
+        if (!window.confirm(isActive ? getText('confirm.restore') : getText('confirm.moveToTrash'))) return;
         try {
             await getCurrentApi().update(item.id, { ...item, isActive });
             await loadData();
         } catch {
-            alert("Błąd zmiany statusu");
+            alert(getText('error.status'));
         }
     };
 
     const handleHardDelete = async (id: number) => {
-        if (!window.confirm("Usunąć trwale?")) return;
+        if (!window.confirm(getText('confirm.permanentDelete'))) return;
         try {
             await getCurrentApi().delete(id);
             await loadData();
         } catch {
-            alert("Błąd usuwania");
+            alert(getText('error.delete'));
         }
     };
 
@@ -299,42 +301,47 @@ export const SystemConfig = () => {
     };
 
     const columns = useMemo(() => {
-        const cols: Column<any>[] = [];
+        const tabColumns: Record<string, Column<any>[]> = {
+            lessonHours: [
+                { header: getText('columns.number'), accessor: "orderNumber", className: "text-center w-16" },
+                { header: getText('columns.hours'), render: (row) => `${row.startTime?.slice(0, 5)} - ${row.endTime?.slice(0, 5)}` }
+            ],
+            gradeTypes: [
+                { header: getText('columns.symbol'), accessor: "numeric" },
+                { header: getText('columns.name'), accessor: "name" },
+                { header: getText('columns.value'), render: (row) => Number(row.value).toFixed(2) }
+            ],
+            gradeCategories: [
+                { header: getText('columns.name'), accessor: "name" },
+                { header: getText('columns.weight'), accessor: "weight" }
+            ],
+            attendance: [
+                { header: getText('columns.name'), accessor: "name" },
+                { header: getText('columns.shortCode'), accessor: "shortCode", className: "font-mono" }
+            ]
+        };
 
-        if (activeTab === "lessonHours") {
-            cols.push({ header: "Nr", accessor: "orderNumber", className: "text-center w-16" });
-            cols.push({ header: "Godziny", render: (row) => `${row.startTime?.slice(0, 5)} - ${row.endTime?.slice(0, 5)}` });
-        } else if (activeTab === "gradeTypes") {
-            cols.push({ header: "Symbol", accessor: "numeric" });
-            cols.push({ header: "Nazwa", accessor: "name" });
-            cols.push({ header: "Wartość", render: (row) => Number(row.value).toFixed(2) });
-        } else if (activeTab === "gradeCategories") {
-            cols.push({ header: "Nazwa", accessor: "name" });
-            cols.push({ header: "Waga", accessor: "weight" });
-        } else if (activeTab === "attendance") {
-            cols.push({ header: "Nazwa", accessor: "name" });
-            cols.push({ header: "Skrót", accessor: "shortCode", className: "font-mono" });
-        } else {
-            cols.push({ header: "Nazwa", accessor: "name", className: "w-1/3" });
-        }
+        const specificCols = tabColumns[activeTab] || [
+            { header: getText('columns.name'), accessor: "name", className: "w-1/3" }
+        ];
 
-        cols.push({ header: "Utworzono", render: (row) => formatDate(row.createdAt), className: "text-neutral-500 text-xs" });
-        cols.push({ header: "Edytowano", render: (row) => formatDate(row.updatedAt), className: "text-neutral-500 text-xs" });
-
-        cols.push({
-            header: "Akcje",
-            className: "text-right",
-            render: (row) => (
-                <ActionButtons
-                    isActive={!filters.showInactive}
-                    onEdit={() => openForm(row)}
-                    onDelete={() => filters.showInactive ? handleHardDelete(row.id) : handleStatusChange(row, false)}
-                    onRestore={() => handleStatusChange(row, true)}
-                />
-            ),
-        });
-
-        return cols;
+        return [
+            ...specificCols,
+            { header: getText('columns.createdAt'), render: (row) => formatDate(row.createdAt), className: "text-neutral-500 text-xs" },
+            { header: getText('columns.updatedAt'), render: (row) => formatDate(row.updatedAt), className: "text-neutral-500 text-xs" },
+            {
+                header: getText('columns.actions'),
+                className: "text-right",
+                render: (row) => (
+                    <ActionButtons
+                        isActive={!filters.showInactive}
+                        onEdit={() => openForm(row)}
+                        onDelete={() => filters.showInactive ? handleHardDelete(row.id) : handleStatusChange(row, false)}
+                        onRestore={() => handleStatusChange(row, true)}
+                    />
+                ),
+            }
+        ];
     }, [activeTab, filters.showInactive]);
 
     return (
@@ -342,12 +349,12 @@ export const SystemConfig = () => {
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={formData.id ? "Edycja elementu" : "Nowy element"}
+                title={formData.id ? getText('modal.edit') : getText('modal.new')}
                 maxWidth="md"
                 footer={
                     <>
-                        <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Anuluj</Button>
-                        <Button onClick={handleSave}>Zapisz</Button>
+                        <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{getText('actions.cancel')}</Button>
+                        <Button onClick={handleSave}>{getText('actions.save')}</Button>
                     </>
                 }
             >

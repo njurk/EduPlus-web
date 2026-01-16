@@ -112,7 +112,7 @@ const ClassAttendanceView = ({ classId, onBack, className, yearName }: { classId
             try {
                 const [details, attendanceData, typesData] = await Promise.all([
                     api.classManagement.getClassDetails(classId),
-                    api.attendance.getAllAdmin(false),
+                    api.attendance.getAllAdmin({ includeInactive: false }),
                     api.attendanceTypes.getAll()
                 ]);
                 const subjectsMap = details.subjects.map(s => ({ id: s.subjectId, name: s.subjectName, teacherId: s.teacherId, teacherName: s.teacherName }));
