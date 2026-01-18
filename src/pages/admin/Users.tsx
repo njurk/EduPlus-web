@@ -283,9 +283,9 @@ export const Users = () => {
                     sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSortChange={f => setFilters(p => ({ ...p, sortBy: f, sortDesc: p.sortBy === f ? !p.sortDesc : false }))}
                     sortOptions={
                         mainTab === 'users' ? [
-                            { field: 'lastName', label: getText('sort.lastName') }, { field: 'email', label: getText('sort.email') }, { field: 'role', label: getText('sort.role') }, { field: 'created', label: getText('sort.created') }, { field: 'updated', label: getText('sort.updated') }
+                            { field: 'lastName', label: 'Nazwisko' }, { field: 'email', label: 'Email' }, { field: 'role', label: 'Rola' }, { field: 'created', label: 'Data utworzenia' }, { field: 'updated', label: 'Data modyfikacji' }
                         ] : mainTab === 'roles' ? [] : [
-                            { field: 'parentName', label: getText('sort.parent') }, { field: 'studentName', label: getText('sort.student') }, { field: 'created', label: getText('sort.created') }
+                            { field: 'parentName', label: 'Rodzic' }, { field: 'studentName', label: 'Uczeń' }, { field: 'created', label: 'Data utworzenia' }
                         ]
                     }
                 />
@@ -299,7 +299,7 @@ export const Users = () => {
                         }}
                     />
                 )}
-                {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> {getText('filter.unassignedParents')}</label>}
+                {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> Pokaż niepowiązanych</label>}
             </div>
 
             <div className="flex-1 bg-white">
@@ -375,7 +375,7 @@ export const Users = () => {
                             isLoading={loading}
                             columns={[
                                 { header: getText('columns.parent'), render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
-                                { header: getText('columns.status'), render: () => <span className="italic text-neutral-500">{getText('status.noRelations')}</span> },
+                                { header: getText('columns.status'), render: () => <span className="italic text-neutral-500">Brak powiązań</span> },
                                 { header: getText('columns.createdAt'), render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span> },
                                 { header: getText('columns.updatedAt'), render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.updatedAt)}</span> },
                                 { header: getText('columns.modifiedBy'), render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },

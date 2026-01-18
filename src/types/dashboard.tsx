@@ -45,12 +45,6 @@ export interface DashboardSummary {
   recentTickets: DashboardTicket[];
 }
 
-export interface AttendanceChartData {
-  date: string;
-  dayName: string;
-  attendancePercentage: number;
-}
-
 export interface UptimeInfo {
   startedAt: string;
   uptime: string;

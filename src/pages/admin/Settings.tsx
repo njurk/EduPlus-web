@@ -197,7 +197,6 @@ export const Settings = () => {
                 <div className="bg-white border border-neutral-200 rounded shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex items-center gap-2">
                         <User className="text-primary" size={20} />
-                        <h2 className="text-lg font-semibold text-neutral-800">{getText('sections.personalData')}</h2>
                     </div>
                     <form onSubmit={handleProfileUpdate} className="p-6 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -223,9 +222,7 @@ export const Settings = () => {
                             </div>
                         </div>
                         <div>
-                            <label htmlFor="email" className="label-text">Email</label>
-                            <p className='text-xs mb-1 text-neutral-400'>brak możliwości zmiany</p>
-                            <Input id="email" value={profileData.email || ''} disabled className="bg-neutral-50 text-neutral-500 cursor-not-allowed" />
+                            <label htmlFor="email" className="label-text">Email</label>                            <Input id="email" value={profileData.email || ''} disabled className="bg-neutral-50 text-neutral-500 cursor-not-allowed" />
                         </div>
                         <div>
                             <label htmlFor="phone" className="label-text">Telefon</label>
@@ -274,7 +271,6 @@ export const Settings = () => {
                 <div className="bg-white border border-neutral-200 rounded shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex items-center gap-2">
                         <Lock className="text-primary" size={20} />
-                        <h2 className="text-lg font-semibold text-neutral-800">{getText('sections.changePassword')}</h2>
                     </div>
                     <form onSubmit={handleChangePassword} className="p-6 space-y-6">
                         <div>

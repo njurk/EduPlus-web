@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Dashboard } from './pages/admin/Dashboard';
 import { AdminLayout } from './layouts/AdminLayout';
 import { Users } from './pages/admin/Users';
@@ -17,8 +18,21 @@ import { Grades } from './pages/admin/Grades';
 import { Attendance } from './pages/admin/Attendance';
 import { Lessons } from './pages/admin/Lessons';
 import { Excuses } from './pages/admin/Excuses';
+import { useCMSContent } from './hooks/useCMSContent';
 
 export default function App() {
+  const { getText } = useCMSContent('system');
+
+  useEffect(() => {
+    const pageTitle = getText('pageTitle');
+    const faviconUrl = getText('faviconUrl');
+    if (pageTitle) document.title = pageTitle;
+    if (faviconUrl) {
+      const link = document.getElementById('favicon') as HTMLLinkElement;
+      if (link) link.href = '/' + faviconUrl + '?v=' + Date.now();
+    }
+  }, [getText]);
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -45,5 +59,3 @@ export default function App() {
     </Routes>
   );
 }
-
-

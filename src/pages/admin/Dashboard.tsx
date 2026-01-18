@@ -2,9 +2,8 @@
 import { Plus, Users, Megaphone } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../services/apiService';
-import type { DashboardSummary, AttendanceChartData } from '../../types';
+import type { DashboardSummary } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { UptimeCounter } from '../../components/ui/UptimeCounter';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
@@ -13,7 +12,6 @@ const formatDate = (date?: string) => date ? new Date(date).toLocaleString('pl-P
 
 export const Dashboard = () => {
   const [data, setData] = useState<DashboardSummary | null>(null);
-  const [chartData, setChartData] = useState<AttendanceChartData[]>([]);
   const [uptimeSeconds, setUptimeSeconds] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -22,13 +20,11 @@ export const Dashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [summaryResult, chartResult, uptimeResult] = await Promise.all([
+        const [summaryResult, uptimeResult] = await Promise.all([
           api.dashboard.getSummary(),
-          api.dashboard.getAttendanceChart(),
           api.dashboard.getUptime().catch(() => null)
         ]);
         setData(summaryResult);
-        setChartData(chartResult);
         if (uptimeResult?.uptimeSeconds) setUptimeSeconds(uptimeResult.uptimeSeconds);
       } catch (e) {
         console.error(e);
@@ -70,30 +66,7 @@ export const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="space-y-6 lg:col-span-2">
-          <div className="bg-white border border-neutral-300 p-6">
-            <h3 className="text-lg font-bold text-neutral-800 mb-6">{getText('chart.title')}</h3>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
-                  <XAxis
-                    dataKey="date"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#737373', fontSize: 12 }}
-                    dy={10}
-                  />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#737373', fontSize: 12 }} domain={[0, 100]} />
-                  <Tooltip cursor={{ fill: '#f5f5f5' }} formatter={(value) => [`${value}%`, getText('chart.attendance')]} />
-                  <Bar dataKey="attendancePercentage" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={40}>
-                    <LabelList dataKey="attendancePercentage" position="top" formatter={(value: any) => (typeof value === 'number' ? `${value}%` : '')} fill="#737373" fontSize={12} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
+        <div className="lg:col-span-2">
           <div className="bg-white border border-neutral-300 p-6">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-neutral-100">
               <h3 className="text-lg font-bold text-neutral-800">{getText('tickets.title')}</h3>
@@ -136,3 +109,4 @@ export const Dashboard = () => {
     </div>
   );
 };
+

@@ -74,7 +74,7 @@ export const Attendance = () => {
                     <SortToolbar search={filters.search} onSearchChange={v => setFilters(f => ({ ...f, search: v }))}
                         sortBy={filters.sortBy} sortDesc={filters.sortDesc}
                         onSortChange={field => setFilters(f => ({ ...f, sortBy: field, sortDesc: f.sortBy === field ? !f.sortDesc : true }))}
-                        sortOptions={[{ field: 'studentName', label: getText('sort.student') }, { field: 'date', label: getText('sort.date') }]}
+                        sortOptions={[{ field: 'studentName', label: 'Uczeń' }, { field: 'date', label: 'Data' }]}
                     />
                 </div>
                 {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'Ładowanie...'}</div> : (

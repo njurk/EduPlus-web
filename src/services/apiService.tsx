@@ -1,5 +1,5 @@
 import type {
-    User, UserRole, Announcement, SchoolClass, DashboardSummary, AttendanceChartData, ParentStudents, Role,
+    User, UserRole, Announcement, SchoolClass, DashboardSummary, ParentStudents, Role,
     Classroom, LessonHour, LessonStatus, GradeType, GradeCategory, AttendanceType, Subject, ChangePasswordDto,
     SchoolYear, ClassEntity, ClassDetailsDto, StudentGradesRowDto,
     SemesterDto, GradeDto, Grade, AttendanceAdminDto, UptimeInfo,
@@ -309,12 +309,6 @@ export const api = {
                 headers: getHeaders()
             });
             return handleResponse<DashboardSummary>(response);
-        },
-        getAttendanceChart: async (): Promise<AttendanceChartData[]> => {
-            const response = await fetch(`${API_URL}/dashboard/attendance-chart`, {
-                headers: getHeaders()
-            });
-            return handleResponse<AttendanceChartData[]>(response);
         },
         getUptime: async (): Promise<UptimeInfo> => {
             const response = await fetch(`${API_URL}/dashboard/uptime`);

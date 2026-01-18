@@ -97,7 +97,7 @@ export const Login = () => {
                             className="w-full py-3 text-base justify-center mt-4"
                             disabled={loading}
                         >
-                            {loading ? 'Logowanie...' : getText('button.login')}
+                            {loading ? 'Logowanie...' : 'Zaloguj się'}
                         </Button>
                     </form>
                 </div>

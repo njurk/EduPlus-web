@@ -177,7 +177,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                 search={filters.studentSearch}
                                 onSearchChange={v => setFilters({ ...filters, studentSearch: v })}
                                 sortBy={studentSort.sortBy} sortDesc={studentSort.sortDesc} onSortChange={f => setStudentSort(p => ({ sortBy: f, sortDesc: f === p.sortBy ? !p.sortDesc : false }))}
-                                sortOptions={[{ field: 'lastName', label: getText('sort.lastName') }, { field: 'email', label: getText('sort.email') }, { field: 'createdat', label: getText('sort.createdAt') }, { field: 'id', label: getText('sort.ordinal') }]}
+                                sortOptions={[{ field: 'lastName', label: 'Nazwisko' }, { field: 'email', label: 'Email' }, { field: 'createdat', label: 'Utworzono' }, { field: 'id', label: 'Lp.' }]}
                             />
                             <div className="pl-4 border-l"><Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button></div>
                         </div>
@@ -201,7 +201,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                 search={filters.subjectSearch}
                                 onSearchChange={v => setFilters({ ...filters, subjectSearch: v })}
                                 sortBy={subjectSort.sortBy} sortDesc={subjectSort.sortDesc} onSortChange={f => setSubjectSort(p => ({ sortBy: f, sortDesc: f === p.sortBy ? !p.sortDesc : false }))}
-                                sortOptions={[{ field: 'subjectName', label: getText('sort.subject') }, { field: 'teacherName', label: getText('sort.teacher') }, { field: 'createdat', label: getText('sort.createdAt') }]}
+                                sortOptions={[{ field: 'subjectName', label: 'Przedmiot' }, { field: 'teacherName', label: 'Nauczyciel' }, { field: 'createdat', label: 'Utworzono' }]}
                             />
                             <div className="pl-4 border-l"><Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button></div>
                         </div>
