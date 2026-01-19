@@ -5,6 +5,10 @@ import { Input } from '../ui/Input';
 import type { Announcement } from '../../types';
 import { api } from '../../services/apiService';
 import { AlertCircle } from 'lucide-react';
+import { Editor } from 'primereact/editor';
+import 'primereact/resources/themes/lara-light-blue/theme.css';
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css';
 
 interface AnnouncementModalProps {
     isOpen: boolean;
@@ -45,7 +49,7 @@ export const AnnouncementModal = ({ isOpen, onClose, announcement, onSaved }: An
             onSaved();
             onClose();
         } catch (e: any) {
-            setError(e.message || "Błąd zapisu ogłoszenia");
+            setError(e.message || "Błąd zapisu");
         } finally {
             setLoading(false);
         }
@@ -56,7 +60,7 @@ export const AnnouncementModal = ({ isOpen, onClose, announcement, onSaved }: An
             isOpen={isOpen}
             onClose={onClose}
             title={announcement ? "Edycja ogłoszenia" : "Nowe ogłoszenie"}
-            maxWidth="md"
+            maxWidth="lg"
             footer={
                 <>
                     <Button variant="secondary" onClick={onClose} disabled={loading}>Anuluj</Button>
@@ -76,11 +80,20 @@ export const AnnouncementModal = ({ isOpen, onClose, announcement, onSaved }: An
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">Treść <span className="text-danger">*</span></label>
-                    <textarea
-                        className="w-full p-3 border border-neutral-300 rounded-md shadow-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all min-h-[150px]"
+                    <Editor
                         value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Treść ogłoszenia..."
+                        onTextChange={(e) => setDescription(e.htmlValue || '')}
+                        style={{ height: '250px' }}
+                        headerTemplate={
+                            <span className="ql-formats">
+                                <button className="ql-bold" aria-label="Bold"></button>
+                                <button className="ql-italic" aria-label="Italic"></button>
+                                <button className="ql-underline" aria-label="Underline"></button>
+                                <button className="ql-list" value="ordered" aria-label="Ordered List"></button>
+                                <button className="ql-list" value="bullet" aria-label="Bullet List"></button>
+                                <button className="ql-link" aria-label="Link"></button>
+                            </span>
+                        }
                     />
                 </div>
             </div>

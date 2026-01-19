@@ -229,6 +229,10 @@ export const api = {
                 headers: getHeaders()
             });
             return handleResponse<void>(response);
+        },
+        getAuthors: async (): Promise<string[]> => {
+            const response = await fetch(`${API_URL}/announcement/authors`, { headers: getHeaders() });
+            return handleResponse<string[]>(response);
         }
     },
 
@@ -527,6 +531,10 @@ export const api = {
                 body: JSON.stringify(data)
             });
             return handleResponse<void>(response);
+        },
+        getSubmitters: async (): Promise<string[]> => {
+            const response = await fetch(`${API_URL}/Ticket/submitters`, { headers: getHeaders() });
+            return handleResponse<string[]>(response);
         }
     },
     pageContent: {
@@ -564,10 +572,9 @@ export const api = {
         }
     },
     schedule: {
-        getClassSchedule: async (classId: number, dateFrom: string, dateTo: string): Promise<ScheduleLesson[]> => {
+        getClassSchedule: async (classId: number, semesterId?: number): Promise<ScheduleLesson[]> => {
             const url = new URL(`${API_URL}/WeeklySchedule/${classId}`);
-            url.searchParams.append('dateFrom', dateFrom);
-            url.searchParams.append('dateTo', dateTo);
+            if (semesterId) url.searchParams.append('semesterId', semesterId.toString());
             const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse(response);
         }

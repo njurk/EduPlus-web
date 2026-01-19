@@ -101,7 +101,8 @@ export interface ScheduleLesson {
   teacherName: string;
   classroomId?: number;
   classroomName?: string;
-  date: string;
+  date?: string;
+  dayOfWeek: number;
   orderNumber: number;
   startTime: string;
   endTime: string;

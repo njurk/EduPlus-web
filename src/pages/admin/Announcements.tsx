@@ -5,7 +5,7 @@ import { api } from '../../services/apiService';
 import { Plus, RefreshCcw, User } from 'lucide-react';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { DataTable } from '../../components/ui/DataTable';
-import { formatDate, formatFullDate, formatTime } from '../../utils/formatters';
+import { formatDate, formatTime } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { AnnouncementModal } from '../../components/modals/AnnouncementModal';
 import { TrashButton } from '../../components/ui/TrashButton';
@@ -23,14 +23,21 @@ export const Announcements = () => {
     const [detailsAnnouncement, setDetailsAnnouncement] = useState<Announcement | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+    const stripHtml = (html: string) => {
+        const tmp = document.createElement('DIV');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
+    };
+
+    useEffect(() => {
+        api.announcements.getAuthors().then(setAllAuthors).catch(console.error);
+    }, []);
+
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const result = await api.announcements.getAll({ search: filters.search, sortBy: filters.sortBy, sortDesc: filters.sortDesc, showInactive: filters.showInactive, authorName: filters.authorName });
             setData(result);
-            if (!filters.authorName && !filters.search) {
-                setAllAuthors([...new Set(result.map(a => a.authorName).filter(Boolean))] as string[]);
-            }
         } finally { setLoading(false); }
     }, [filters]);
 
@@ -78,50 +85,60 @@ export const Announcements = () => {
                         sortDesc={filters.sortDesc}
                         onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
                         columns={[
-                            { header: getText('columns.title'), render: a => <span className="font-medium">{a.title}</span> },
-                            { header: getText('columns.content'), render: a => <div className="truncate max-w-xs text-sm" title={a.description}>{a.description}</div> },
-                            { header: getText('columns.author'), sortKey: 'author', render: a => a.authorName ? <span className="text-xs flex items-center gap-1"><User size={12} />{a.authorName}</span> : '-' },
-                            { header: 'Utworzono', sortKey: 'created', render: a => <span className="text-xs">{formatDate(a.createdAt)}</span> },
-                            { header: 'Edytowano', sortKey: 'updated', render: a => <span className="text-xs">{formatDate(a.updatedAt)}</span> },
-                            { header: getText('columns.modifiedBy'), render: a => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
+                            { header: getText('columns.date'), sortKey: 'created', render: (a) => <div className="text-xs w-24 text-neutral-600">{formatDate(a.createdAt)}</div> },
+                            { header: getText('columns.title'), className: 'w-1/4', render: (a) => <span className="text-neutral-900 font-medium">{a.title}</span> },
+                            { header: getText('columns.content'), render: (a) => <span className="text-neutral-700 text-sm line-clamp-2">{stripHtml(a.description)}</span> },
+                            { header: getText('columns.author'), sortKey: 'author', className: 'w-40', render: (a) => <div className="flex items-center gap-2 text-sm text-neutral-600"><User size={14} />{a.authorName}</div> },
+                            { header: 'Edytowano', sortKey: 'updated', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{formatDate(a.updatedAt)}</span> },
+                            { header: getText('columns.modifiedBy'), className: 'w-40', render: (a) => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
                             {
-                                header: getText('columns.actions'), className: 'text-right', render: a => (
+                                header: getText('columns.actions'), className: 'w-20 text-right', render: (a) => filters.showInactive ? (
+                                    <button className="text-sm text-primary hover:underline" onClick={() => handleRestore(a.id)}>Przywróć</button>
+                                ) : (
                                     <ActionButtons
-                                        isActive={a.isActive}
-                                        onDetails={() => { setDetailsAnnouncement(a); setIsDetailsOpen(true); }}
                                         onEdit={() => { setSelectedAnnouncement(a); setIsModalOpen(true); }}
                                         onDelete={() => handleDelete(a.id)}
-                                        onRestore={!a.isActive ? () => handleRestore(a.id) : undefined}
+                                        onDetails={() => { setDetailsAnnouncement(a); setIsDetailsOpen(true); }}
                                     />
                                 )
                             }
                         ]}
-                        emptyMessage="Brak ogłoszeń"
+                        emptyMessage={'Brak danych'}
                     />
                 )}
             </div>
-            <AnnouncementModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} announcement={selectedAnnouncement} onSaved={loadData} />
-            {detailsAnnouncement && (
-                <DetailsModal
-                    isOpen={isDetailsOpen}
-                    onClose={() => setIsDetailsOpen(false)}
-                    title={detailsAnnouncement.title}
-                    data={{
-                        description: detailsAnnouncement.description,
-                        authorName: detailsAnnouncement.authorName,
-                        createdAt: formatFullDate(detailsAnnouncement.createdAt) + ' ' + formatTime(detailsAnnouncement.createdAt),
-                        updatedAt: formatFullDate(detailsAnnouncement.updatedAt) + ' ' + formatTime(detailsAnnouncement.updatedAt),
-                        modifiedByName: detailsAnnouncement.modifiedByName || 'System'
-                    }}
-                    labels={{
-                        description: 'Treść',
-                        authorName: 'Autor',
-                        createdAt: 'Data utworzenia',
-                        updatedAt: 'Data edycji',
-                        modifiedByName: 'Edytowane przez'
-                    }}
-                />
-            )}
+
+            <AnnouncementModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                announcement={selectedAnnouncement}
+                onSaved={async () => { await loadData(); setIsModalOpen(false); }}
+            />
+
+            <DetailsModal
+                isOpen={isDetailsOpen}
+                onClose={() => setIsDetailsOpen(false)}
+                title="Szczegóły ogłoszenia"
+                data={detailsAnnouncement ? {
+                    title: detailsAnnouncement.title,
+                    description: detailsAnnouncement.description,
+                    authorName: detailsAnnouncement.authorName,
+                    createdAt: detailsAnnouncement.createdAt,
+                    updatedAt: detailsAnnouncement.updatedAt,
+                    modifiedByName: detailsAnnouncement.modifiedByName || 'System'
+                } : {}}
+                labels={{
+                    title: 'Tytuł',
+                    description: 'Treść',
+                    authorName: 'Autor',
+                    createdAt: 'Utworzono',
+                    updatedAt: 'Edytowano',
+                    modifiedByName: 'Edytowane przez'
+                }}
+                excludeKeys={['id']}
+                maxWidth="lg"
+                htmlFields={['description']}
+            />
         </div>
     );
 };

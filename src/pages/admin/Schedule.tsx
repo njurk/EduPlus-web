@@ -8,17 +8,7 @@ import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
-const getWeekRange = () => {
-    const date = new Date();
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(date);
-    monday.setDate(diff);
-    monday.setHours(0, 0, 0, 0);
-    const friday = new Date(monday);
-    friday.setDate(monday.getDate() + 4);
-    return { monday, friday };
-};
+
 
 export const Schedule = () => {
     const { getText } = useCMSContent('schedule');
@@ -32,7 +22,6 @@ export const Schedule = () => {
     const [lessonHours, setLessonHours] = useState<LessonHour[]>([]);
     const [loading, setLoading] = useState(false);
 
-    const weekRange = getWeekRange();
 
     useEffect(() => {
         const loadInitial = async () => {
@@ -41,9 +30,9 @@ export const Schedule = () => {
                 api.lessonHours ? api.lessonHours.getAll() : Promise.resolve([])
             ]);
             setYears(yearsData);
-            const active = yearsData.find(y => y.isActive);
-            if (active) setSelectedYearId(active.id);
-            else if (yearsData.length > 0) setSelectedYearId(yearsData[0].id);
+            const today = new Date().toISOString().split('T')[0];
+            const current = yearsData.find(y => y.startDate <= today && y.endDate >= today) || yearsData.find(y => y.isActive) || yearsData[0];
+            if (current) setSelectedYearId(current.id);
             setLessonHours(hoursData.sort((a, b) => a.orderNumber - b.orderNumber));
         };
         loadInitial();
@@ -53,32 +42,36 @@ export const Schedule = () => {
         if (!selectedYearId) return;
         Promise.all([
             api.classManagement.getSemesters(selectedYearId),
-            api.classManagement.getClassesByYear(selectedYearId)
-        ]).then(([sem, cls]) => {
+            api.classManagement.getClassesByYear(selectedYearId),
+            api.grades.getCurrentSemester(selectedYearId).catch(() => 1)
+        ]).then(([sem, cls, currentSem]) => {
             setSemesters(sem);
-            setClasses(cls);
-            if (sem.length > 0) setSelectedSemesterOrder(sem[0].order);
-            if (cls.length > 0) setSelectedClassId(cls[0].id);
-            else setSelectedClassId(null);
+            setClasses(cls.filter(c => c.isActive));
+
+            const semToSelect = sem.find(s => s.order === currentSem) || sem[0];
+            if (semToSelect) setSelectedSemesterOrder(semToSelect.order);
+            else if (sem.length > 0) setSelectedSemesterOrder(sem[0].order);
+
+            setSelectedClassId(null);
         });
     }, [selectedYearId]);
 
     useEffect(() => {
-        if (selectedClassId) {
-            setLoading(true);
-            const from = weekRange.monday.toISOString().split('T')[0];
-            const to = weekRange.friday.toISOString().split('T')[0];
-            api.schedule.getClassSchedule(selectedClassId, from, to)
-                .then(setSchedule)
-                .finally(() => setLoading(false));
-        }
-    }, [selectedClassId]);
+        setSchedule([]);
+        if (!selectedClassId || !selectedSemesterOrder) return;
+
+        const semester = semesters.find(s => s.order === selectedSemesterOrder);
+        if (!semester) return;
+
+        setLoading(true);
+        api.schedule.getClassSchedule(selectedClassId, semester.id)
+            .then(setSchedule)
+            .finally(() => setLoading(false));
+    }, [selectedClassId, selectedSemesterOrder, semesters]);
 
     const getLesson = (dayIndex: number, order: number) => {
-        const dayDate = new Date(weekRange.monday);
-        dayDate.setDate(weekRange.monday.getDate() + dayIndex);
-        const dateStr = dayDate.toISOString().split('T')[0];
-        return schedule.find(l => l.orderNumber === order && l.date.startsWith(dateStr));
+        const dayOfWeek = dayIndex + 1;
+        return schedule.find(l => l.orderNumber === order && l.dayOfWeek === dayOfWeek);
     };
 
     const days = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek'];
@@ -89,8 +82,8 @@ export const Schedule = () => {
                 <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2">
                     <YearSelector years={years} selectedYear={selectedYearId} onChange={id => { setSelectedYearId(id); setSelectedSemesterOrder(null); setSelectedClassId(null); }} />
-                    <SemesterSelector semesters={semesters} selectedOrder={selectedSemesterOrder} onChange={setSelectedSemesterOrder} showAll />
-                    <ClassSelector classes={classes} selectedClass={selectedClassId} onChange={v => v && setSelectedClassId(v)} />
+                    <SemesterSelector semesters={semesters} selectedOrder={selectedSemesterOrder} onChange={setSelectedSemesterOrder} />
+                    <ClassSelector classes={classes} selectedClass={selectedClassId} onChange={setSelectedClassId} showAll />
                     <ExportButton disabled={!selectedClassId} onExport={(format) => {
                         if (!selectedClassId) return;
                         if (format === 'pdf') api.export.downloadSchedulePdf(selectedClassId, selectedYearId || undefined);
@@ -117,15 +110,17 @@ export const Schedule = () => {
                                     <td className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center align-middle">
                                         <div className="font-bold text-neutral-700">{hour.orderNumber}</div>
                                         <div className="text-[10px] text-neutral-400">{String(hour.startTime).slice(0, 5)}</div>
+                                        <div className="text-[10px] text-neutral-400">{String(hour.endTime).slice(0, 5)}</div>
                                     </td>
                                     {days.map((_, di) => {
                                         const lesson = getLesson(di, hour.orderNumber);
                                         return (
                                             <td key={di} className="border-b border-r border-neutral-200 p-2 align-middle h-14">
                                                 {lesson ? (
-                                                    <div className="border-l-2 border-primary pl-2">
+                                                    <div className="pl-1">
                                                         <div className="font-medium text-neutral-900 truncate">{lesson.subjectName}</div>
-                                                        <div className="text-neutral-500 truncate">{lesson.teacherName}</div>
+                                                        {lesson.classroomName && <div className="text-[10px] text-neutral-400 truncate">{lesson.classroomName}</div>}
+                                                        <div className="text-neutral-500 truncate text-[11px]">{lesson.teacherName}</div>
                                                     </div>
                                                 ) : <div className="text-center text-neutral-300">-</div>}
                                             </td>
