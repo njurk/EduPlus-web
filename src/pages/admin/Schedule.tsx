@@ -86,7 +86,7 @@ export const Schedule = () => {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-neutral-800">{getText('title')}</h1>
+                <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2">
                     <YearSelector years={years} selectedYear={selectedYearId} onChange={id => { setSelectedYearId(id); setSelectedSemesterOrder(null); setSelectedClassId(null); }} />
                     <SemesterSelector semesters={semesters} selectedOrder={selectedSemesterOrder} onChange={setSelectedSemesterOrder} showAll />

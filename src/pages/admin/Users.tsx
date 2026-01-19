@@ -6,7 +6,7 @@ import { api } from '../../services/apiService';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { Check, AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus } from 'lucide-react';
 import { clsx } from 'clsx';
-import { SortToolbar } from '../../components/ui/SortToolbar';
+import { SearchBar } from '../../components/ui/SearchBar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { validateUserField, validateUserForm } from '../../utils/validation';
@@ -35,7 +35,8 @@ export const Users = () => {
         sortBy: 'created',
         sortDesc: true,
         showInactive: false,
-        onlyUnassignedParents: false
+        onlyUnassignedParents: false,
+        roleName: ''
     });
 
     const [formData, setFormData] = useState<Partial<User>>({});
@@ -55,7 +56,7 @@ export const Users = () => {
                 setData(users);
                 if (!roles.length) setRoles(fetchedRoles);
             } else if (mainTab === 'roles') {
-                const r = await api.roles.getAll({ search: filters.search });
+                const r = await api.roles.getAll({ search: filters.search, sortBy: filters.sortBy, sortDesc: filters.sortDesc });
                 setData(r);
             } else {
                 if (filters.onlyUnassignedParents) {
@@ -273,31 +274,27 @@ export const Users = () => {
                     <button onClick={() => setMainTab('roles')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'roles' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><Shield size={18} /> {getText('tabs.roles')}</button>
                     <button onClick={() => setMainTab('relations')} className={clsx("py-4 text-sm font-bold uppercase border-b-2 flex gap-2 transition-colors", mainTab === 'relations' ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700")}><LinkIcon size={18} /> {getText('tabs.relations')}</button>
                 </div>
-                {mainTab === 'users' && <div className="py-3"><Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {'Dodaj'}</Button></div>}
             </div>
 
             <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
-                <SortToolbar
-                    className="flex-1"
-                    search={filters.search} onSearchChange={v => setFilters(p => ({ ...p, search: v }))}
-                    sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSortChange={f => setFilters(p => ({ ...p, sortBy: f, sortDesc: p.sortBy === f ? !p.sortDesc : false }))}
-                    sortOptions={
-                        mainTab === 'users' ? [
-                            { field: 'lastName', label: 'Nazwisko' }, { field: 'email', label: 'Email' }, { field: 'role', label: 'Rola' }, { field: 'created', label: 'Data utworzenia' }, { field: 'updated', label: 'Data modyfikacji' }
-                        ] : mainTab === 'roles' ? [] : [
-                            { field: 'parentName', label: 'Rodzic' }, { field: 'studentName', label: 'Uczeń' }, { field: 'created', label: 'Data utworzenia' }
-                        ]
-                    }
-                />
+                <div className="flex items-center gap-4 flex-1">
+                    <SearchBar value={filters.search} onChange={v => setFilters(p => ({ ...p, search: v }))} className="max-w-xs" />
+                    {mainTab === 'users' && roles.length > 0 && (
+                        <select
+                            value={filters.roleName}
+                            onChange={e => setFilters(p => ({ ...p, roleName: e.target.value }))}
+                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[120px]"
+                        >
+                            <option value="">Wszystkie role</option>
+                            {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                        </select>
+                    )}
+                </div>
                 {mainTab === 'users' && (
-                    <TrashButton
-                        isTrashActive={filters.showInactive || false}
-                        onToggle={() => {
-                            setLoading(true);
-                            setData([]);
-                            setFilters(p => ({ ...p, showInactive: !p.showInactive }));
-                        }}
-                    />
+                    <div className="flex gap-2">
+                        <TrashButton isTrashActive={filters.showInactive || false} onToggle={() => { setLoading(true); setData([]); setFilters(p => ({ ...p, showInactive: !p.showInactive })); }} />
+                        {!filters.showInactive && <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {'Dodaj'}</Button>}
+                    </div>
                 )}
                 {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> Pokaż niepowiązanych</label>}
             </div>
@@ -307,8 +304,11 @@ export const Users = () => {
                     <DataTable
                         data={data}
                         isLoading={loading}
+                        sortBy={filters.sortBy}
+                        sortDesc={filters.sortDesc}
+                        onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                         columns={[
-                            { header: getText('columns.user'), render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
+                            { header: getText('columns.user'), sortKey: 'name', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
                             { header: getText('columns.phone'), render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
                             {
                                 header: getText('columns.role'), render: (u) =>
@@ -318,8 +318,8 @@ export const Users = () => {
                                         )) : <span className="text-neutral-400 text-xs">-</span>}
                                     </div>
                             },
-                            { header: getText('columns.createdAt'), render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.createdAt)}</span> },
-                            { header: getText('columns.updatedAt'), render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.updatedAt)}</span> },
+                            { header: getText('columns.createdAt'), sortKey: 'created', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.createdAt)}</span> },
+                            { header: getText('columns.updatedAt'), sortKey: 'updated', render: (u) => <span className="text-neutral-500 text-xs">{formatDate(u.updatedAt)}</span> },
                             { header: getText('columns.modifiedBy'), render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
                             {
                                 header: getText('columns.actions'), className: 'text-right', render: (u) => (
@@ -359,12 +359,15 @@ export const Users = () => {
                     <DataTable
                         data={data}
                         isLoading={loading}
+                        sortBy={filters.sortBy}
+                        sortDesc={filters.sortDesc}
+                        onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                         columns={[
-                            { header: getText('columns.roleName'), accessor: 'name', className: 'font-medium text-neutral-900' },
-                            { header: getText('columns.level'), accessor: 'level', className: 'text-neutral-600' },
+                            { header: getText('columns.roleName'), accessor: 'name', sortKey: 'name', className: 'font-medium text-neutral-900' },
+                            { header: getText('columns.level'), accessor: 'level', sortKey: 'level', className: 'text-neutral-600' },
                             { header: getText('columns.description'), render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
-                            { header: getText('columns.createdAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
-                            { header: getText('columns.updatedAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt)}</span> },
+                            { header: getText('columns.createdAt'), sortKey: 'created', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
+                            { header: getText('columns.updatedAt'), sortKey: 'updated', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt)}</span> },
                             { header: getText('columns.modifiedBy'), render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> }
                         ]}
                     />
@@ -373,11 +376,14 @@ export const Users = () => {
                         <DataTable
                             data={data}
                             isLoading={loading}
+                            sortBy={filters.sortBy}
+                            sortDesc={filters.sortDesc}
+                            onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                             columns={[
-                                { header: getText('columns.parent'), render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
+                                { header: getText('columns.parent'), sortKey: 'name', render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
                                 { header: getText('columns.status'), render: () => <span className="italic text-neutral-500">Brak powiązań</span> },
-                                { header: getText('columns.createdAt'), render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span> },
-                                { header: getText('columns.updatedAt'), render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.updatedAt)}</span> },
+                                { header: getText('columns.createdAt'), sortKey: 'created', render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.createdAt)}</span> },
+                                { header: getText('columns.updatedAt'), sortKey: 'updated', render: (p) => <span className="text-xs text-neutral-500">{formatDate(p.updatedAt)}</span> },
                                 { header: getText('columns.modifiedBy'), render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },
                                 { header: getText('columns.actions'), className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> {'Przypisz'}</button> }
                             ]}
@@ -386,11 +392,14 @@ export const Users = () => {
                         <DataTable
                             data={data}
                             isLoading={loading}
+                            sortBy={filters.sortBy}
+                            sortDesc={filters.sortDesc}
+                            onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                             columns={[
-                                { header: getText('columns.parent'), render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
-                                { header: getText('columns.student'), accessor: 'studentName', className: 'font-medium text-neutral-900' },
-                                { header: getText('columns.createdAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
-                                { header: getText('columns.updatedAt'), render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt || r.createdAt)}</span> },
+                                { header: getText('columns.parent'), sortKey: 'parentName', render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
+                                { header: getText('columns.student'), accessor: 'studentName', sortKey: 'studentName', className: 'font-medium text-neutral-900' },
+                                { header: getText('columns.createdAt'), sortKey: 'created', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.createdAt)}</span> },
+                                { header: getText('columns.updatedAt'), sortKey: 'updated', render: (r) => <span className="text-xs text-neutral-500">{formatDate(r.updatedAt || r.createdAt)}</span> },
                                 { header: getText('columns.modifiedBy'), render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
                                 {
                                     header: getText('columns.actions'), className: 'text-right', render: (r) => (

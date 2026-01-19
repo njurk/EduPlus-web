@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { clsx } from 'clsx';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 
 export interface Column<T> {
     header: string;
@@ -9,6 +9,7 @@ export interface Column<T> {
     render?: (item: T, index: number) => ReactNode;
     className?: string;
     headerClassName?: string;
+    sortKey?: string;
 }
 
 interface DataTableProps<T> {
@@ -18,6 +19,9 @@ interface DataTableProps<T> {
     emptyMessage?: string;
     onRowClick?: (item: T) => void;
     pageSize?: number;
+    sortBy?: string;
+    sortDesc?: boolean;
+    onSort?: (field: string) => void;
 }
 
 export const DataTable = <T extends { id: number | string }>({
@@ -26,7 +30,10 @@ export const DataTable = <T extends { id: number | string }>({
     isLoading,
     emptyMessage = "Brak danych",
     onRowClick,
-    pageSize = 20
+    pageSize = 20,
+    sortBy,
+    sortDesc,
+    onSort
 }: DataTableProps<T>) => {
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -58,8 +65,23 @@ export const DataTable = <T extends { id: number | string }>({
                     <thead className="bg-neutral-50 text-neutral-600 uppercase text-xs font-semibold border-b">
                         <tr>
                             {columns.map((col, idx) => (
-                                <th key={idx} className={clsx("px-4 py-3", col.headerClassName || col.className)}>
-                                    {col.header}
+                                <th
+                                    key={idx}
+                                    className={clsx(
+                                        "px-4 py-3",
+                                        col.headerClassName || col.className,
+                                        col.sortKey && onSort && "cursor-pointer hover:bg-neutral-100 select-none"
+                                    )}
+                                    onClick={() => col.sortKey && onSort && onSort(col.sortKey)}
+                                >
+                                    <span className="flex items-center gap-1">
+                                        {col.header}
+                                        {col.sortKey && onSort && (
+                                            sortBy === col.sortKey
+                                                ? (sortDesc ? <ArrowDown size={14} /> : <ArrowUp size={14} />)
+                                                : <ArrowUpDown size={14} className="opacity-40" />
+                                        )}
+                                    </span>
                                 </th>
                             ))}
                         </tr>

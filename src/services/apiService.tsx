@@ -195,9 +195,11 @@ export const api = {
     },
 
     roles: {
-        getAll: async (params?: { search?: string }): Promise<Role[]> => {
+        getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean }): Promise<Role[]> => {
             const query = new URLSearchParams();
             if (params?.search) query.append('search', params.search);
+            if (params?.sortBy) query.append('sortBy', params.sortBy);
+            if (params?.sortDesc !== undefined) query.append('sortDesc', String(params.sortDesc));
 
             const response = await fetch(`${API_URL}/role?${query.toString()}`, { headers: getHeaders() });
             return handleResponse<Role[]>(response);
@@ -208,7 +210,7 @@ export const api = {
     classes: createCrudResource<SchoolClass>('class'),
     announcements: {
         ...createCrudResource<Announcement>('announcement'),
-        getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean }): Promise<Announcement[]> => {
+        getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, authorName?: string }): Promise<Announcement[]> => {
             const url = new URL(`${API_URL}/announcement`);
             if (params) {
                 Object.keys(params).forEach(key => {
@@ -325,8 +327,12 @@ export const api = {
             const response = await fetch(`${API_URL}/schoolyear/${yearId}/semesters`, { headers: getHeaders() });
             return handleResponse(response);
         },
-        getClassesByYear: async (yearId: number): Promise<ClassEntity[]> => {
-            const response = await fetch(`${API_URL}/class?schoolYearId=${yearId}`, { headers: getHeaders() });
+        getClassesByYear: async (yearId: number, params?: { sortBy?: string; sortDesc?: boolean; level?: number }): Promise<ClassEntity[]> => {
+            const query = new URLSearchParams({ schoolYearId: String(yearId) });
+            if (params?.sortBy) query.append('sortBy', params.sortBy);
+            if (params?.sortDesc !== undefined) query.append('sortDesc', String(params.sortDesc));
+            if (params?.level !== undefined) query.append('level', String(params.level));
+            const response = await fetch(`${API_URL}/class?${query.toString()}`, { headers: getHeaders() });
             return handleResponse(response);
         },
         getClassDetails: async (
@@ -493,7 +499,7 @@ export const api = {
         },
     },
     tickets: {
-        getAll: async (pageNumber: number = 1, pageSize: number = 10, showClosed?: boolean, search?: string, sortBy?: string, sortDesc?: boolean): Promise<PaginatedResponse<Ticket>> => {
+        getAll: async (pageNumber: number = 1, pageSize: number = 10, showClosed?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, userFullName?: string): Promise<PaginatedResponse<Ticket>> => {
             const url = new URL(`${API_URL}/Ticket`);
             url.searchParams.append('pageNumber', pageNumber.toString());
             url.searchParams.append('pageSize', pageSize.toString());
@@ -501,6 +507,7 @@ export const api = {
             if (search) url.searchParams.append('search', search);
             if (sortBy) url.searchParams.append('sortBy', sortBy);
             if (sortDesc !== undefined) url.searchParams.append('sortDesc', sortDesc.toString());
+            if (userFullName) url.searchParams.append('userFullName', userFullName);
 
             const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse<PaginatedResponse<Ticket>>(response);

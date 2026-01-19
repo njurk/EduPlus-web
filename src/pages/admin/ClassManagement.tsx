@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/modals/Modal';
 import { DataTable, type Column } from '../../components/ui/DataTable';
-import { SortToolbar } from '../../components/ui/SortToolbar';
+import { SearchBar } from '../../components/ui/SearchBar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { api } from '../../services/apiService';
@@ -157,7 +157,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
             <div className="flex items-center gap-4 mb-4">
                 <button onClick={onBack} className="p-1 hover:bg-neutral-100 rounded text-neutral-600"><ArrowLeft size={20} /></button>
-                <h2 className="text-xl font-bold text-neutral-800">Klasa {details.classInfo.level}{details.classInfo.letter}</h2>
+                <h2 className="text-xl font-bold text-neutral-800">klasa {details.classInfo.level}{details.classInfo.letter}</h2>
             </div>
 
             <div className="flex border-b border-neutral-200 bg-white">
@@ -171,50 +171,52 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
             <div className="bg-white border border-neutral-200 border-t-0 min-h-[500px]">
                 {activeTab === 'students' ? (
                     <div className="flex flex-col h-full">
-                        <div className="p-3 border-b flex justify-between gap-4 bg-neutral-50/30">
-                            <SortToolbar
-                                className="p-0 border-0 flex-1"
-                                search={filters.studentSearch}
-                                onSearchChange={v => setFilters({ ...filters, studentSearch: v })}
-                                sortBy={studentSort.sortBy} sortDesc={studentSort.sortDesc} onSortChange={f => setStudentSort(p => ({ sortBy: f, sortDesc: f === p.sortBy ? !p.sortDesc : false }))}
-                                sortOptions={[{ field: 'lastName', label: 'Nazwisko' }, { field: 'email', label: 'Email' }, { field: 'createdat', label: 'Utworzono' }, { field: 'id', label: 'Lp.' }]}
-                            />
-                            <div className="pl-4 border-l"><Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button></div>
+                        <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
+                            <SearchBar value={filters.studentSearch} onChange={v => setFilters({ ...filters, studentSearch: v })} className="max-w-xs" />
+                            <Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button>
                         </div>
-                        <DataTable data={details.students} columns={[
-                            { header: getText('columns.ordinal'), accessor: 'orderNumber', className: 'w-12 text-center' },
-                            { header: getText('columns.student'), render: (row) => formatName(row.student), className: 'font-medium' },
-                            { header: getText('columns.email'), render: (row) => row.student?.email },
-                            { header: getText('columns.createdAt'), accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
-                            {
-                                header: getText('columns.actions'),
-                                className: 'text-right',
-                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), 'Czy na pewno chcesz usunąć tego ucznia z klasy?')} />
-                            }
-                        ]} emptyMessage="Brak uczniów" />
+                        <DataTable
+                            data={details.students}
+                            sortBy={studentSort.sortBy}
+                            sortDesc={studentSort.sortDesc}
+                            onSort={f => setStudentSort(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { sortBy: f, sortDesc: true })}
+                            columns={[
+                                { header: getText('columns.ordinal'), sortKey: 'id', accessor: 'orderNumber', className: 'w-12 text-center' },
+                                { header: getText('columns.student'), sortKey: 'lastName', render: (row) => formatName(row.student), className: 'font-medium' },
+                                { header: getText('columns.email'), sortKey: 'email', render: (row) => row.student?.email },
+                                { header: getText('columns.createdAt'), sortKey: 'createdat', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+                                {
+                                    header: getText('columns.actions'),
+                                    className: 'text-right',
+                                    render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), 'Czy na pewno chcesz usunąć tego ucznia z klasy?')} />
+                                }
+                            ]}
+                            emptyMessage="Brak uczniów"
+                        />
                     </div>
                 ) : (
                     <div className="flex flex-col h-full">
-                        <div className="p-3 border-b flex justify-between gap-4 bg-neutral-50/30">
-                            <SortToolbar
-                                className="p-0 border-0 flex-1"
-                                search={filters.subjectSearch}
-                                onSearchChange={v => setFilters({ ...filters, subjectSearch: v })}
-                                sortBy={subjectSort.sortBy} sortDesc={subjectSort.sortDesc} onSortChange={f => setSubjectSort(p => ({ sortBy: f, sortDesc: f === p.sortBy ? !p.sortDesc : false }))}
-                                sortOptions={[{ field: 'subjectName', label: 'Przedmiot' }, { field: 'teacherName', label: 'Nauczyciel' }, { field: 'createdat', label: 'Utworzono' }]}
-                            />
-                            <div className="pl-4 border-l"><Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button></div>
+                        <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
+                            <SearchBar value={filters.subjectSearch} onChange={v => setFilters({ ...filters, subjectSearch: v })} className="max-w-xs" />
+                            <Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button>
                         </div>
-                        <DataTable data={details.subjects} columns={[
-                            { header: getText('columns.subject'), accessor: 'subjectName', className: 'font-medium pl-4' },
-                            { header: getText('columns.teacher'), accessor: 'teacherName' },
-                            { header: getText('columns.createdAt'), accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
-                            {
-                                header: getText('columns.actions'),
-                                className: 'text-right',
-                                render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), 'Czy na pewno chcesz usunąć ten przedmiot z klasy?')} />
-                            }
-                        ]} emptyMessage="Brak przedmiotów" />
+                        <DataTable
+                            data={details.subjects}
+                            sortBy={subjectSort.sortBy}
+                            sortDesc={subjectSort.sortDesc}
+                            onSort={f => setSubjectSort(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { sortBy: f, sortDesc: true })}
+                            columns={[
+                                { header: getText('columns.subject'), sortKey: 'subjectName', accessor: 'subjectName', className: 'font-medium pl-4' },
+                                { header: getText('columns.teacher'), sortKey: 'teacherName', accessor: 'teacherName' },
+                                { header: getText('columns.createdAt'), sortKey: 'createdat', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+                                {
+                                    header: getText('columns.actions'),
+                                    className: 'text-right',
+                                    render: (row) => <ActionButtons onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), 'Czy na pewno chcesz usunąć ten przedmiot z klasy?')} />
+                                }
+                            ]}
+                            emptyMessage="Brak przedmiotów"
+                        />
                     </div>
                 )}
             </div>
@@ -230,7 +232,7 @@ export const ClassManagement = () => {
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState<{ open: boolean, data: Partial<ClassEntity>, errors: Record<string, string> }>({ open: false, data: {}, errors: {} });
     const [showInactive, setShowInactive] = useState(false);
-    const [filters, setFilters] = useState({ search: '', sortBy: 'level', sortDesc: false });
+    const [filters, setFilters] = useState({ search: '', sortBy: 'class', sortDesc: false, level: '' });
 
     useEffect(() => {
         api.classManagement.getYears().then(res => {
@@ -244,10 +246,19 @@ export const ClassManagement = () => {
     const loadClasses = useCallback(() => {
         if (!selected.year) return;
         setLoading(true);
-        api.classManagement.getClassesByYear(selected.year).then(res => {
-            setClasses(res.filter(c => showInactive ? !c.isActive : c.isActive));
+        api.classManagement.getClassesByYear(selected.year, {
+            sortBy: filters.sortBy,
+            sortDesc: filters.sortDesc,
+            level: filters.level ? parseInt(filters.level) : undefined
+        }).then(res => {
+            let result = res.filter(c => showInactive ? !c.isActive : c.isActive);
+            if (filters.search) {
+                const q = filters.search.toLowerCase();
+                result = result.filter(c => `${c.level}${c.letter}`.toLowerCase().includes(q));
+            }
+            setClasses(result);
         }).catch(console.error).finally(() => setLoading(false));
-    }, [selected.year, showInactive]);
+    }, [selected.year, showInactive, filters]);
 
     useEffect(() => { loadClasses(); }, [loadClasses]);
 
@@ -264,28 +275,13 @@ export const ClassManagement = () => {
     const restoreClass = (item: ClassEntity) => { if (confirm('Przywrócić?')) api.classManagement.updateClass(item.id, { ...item, isActive: true }).then(loadClasses).catch(() => alert('Wystąpił błąd')); };
 
     const classColumns: Column<ClassEntity>[] = [
-        { header: getText('columns.class'), accessor: 'level', className: 'text-neutral-800 font-medium', render: (row) => `${row.level}${row.letter}` },
-        { header: getText('columns.studentCount'), accessor: 'studentCount', render: (row) => row.studentCount || 0 },
-        { header: getText('columns.createdAt'), accessor: 'createdAt', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
-        { header: getText('columns.updatedAt'), accessor: 'updatedAt', render: (row) => formatDate(row.updatedAt), className: 'text-xs text-neutral-500' },
+        { header: getText('columns.class'), sortKey: 'class', className: 'text-neutral-800 font-medium', render: (row) => `${row.level}${row.letter}` },
+        { header: getText('columns.studentCount'), sortKey: 'studentCount', render: (row) => row.studentCount || 0 },
+        { header: getText('columns.createdAt'), sortKey: 'created', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+        { header: getText('columns.updatedAt'), sortKey: 'updated', render: (row) => formatDate(row.updatedAt), className: 'text-xs text-neutral-500' },
         { header: getText('columns.actions'), className: 'text-right', render: (row) => (<div onClick={e => e.stopPropagation()}><ActionButtons isActive={row.isActive} onEdit={() => setForm({ open: true, data: { ...row }, errors: {} })} onDelete={() => delClass(row.id)} onRestore={() => restoreClass(row)} /></div>) }
     ];
 
-    const filteredClasses = useMemo(() => {
-        let result = [...classes];
-        if (filters.search) {
-            const q = filters.search.toLowerCase();
-            result = result.filter(c => `${c.level}${c.letter}`.toLowerCase().includes(q));
-        }
-        result.sort((a, b) => {
-            const valA = filters.sortBy === 'level' ? a.level : (a as any)[filters.sortBy];
-            const valB = filters.sortBy === 'level' ? b.level : (b as any)[filters.sortBy];
-            if (valA < valB) return filters.sortDesc ? 1 : -1;
-            if (valA > valB) return filters.sortDesc ? -1 : 1;
-            return 0;
-        });
-        return result;
-    }, [classes, filters]);
 
     if (selected.class) return <ClassDetailsView classId={selected.class} onBack={() => setSelected(p => ({ ...p, class: null }))} />;
 
@@ -299,21 +295,40 @@ export const ClassManagement = () => {
                 </div>
             </Modal>
 
-            <div className="flex justify-between items-center pb-4 border-b">
+            <div className="flex justify-between items-center">
                 <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
-                <div className="flex gap-2"><YearSelector years={years} selectedYear={selected.year} onChange={id => setSelected(p => ({ ...p, year: id }))} /><TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} /></div>
+                <YearSelector years={years} selectedYear={selected.year} onChange={id => setSelected(p => ({ ...p, year: id }))} />
             </div>
 
             <div className="bg-white border border-neutral-200 min-h-[400px]">
                 <div className="flex flex-col h-full">
                     <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
-                        <SortToolbar className="flex-1" search={filters.search} onSearchChange={v => setFilters({ ...filters, search: v })}
-                            sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSortChange={f => setFilters({ ...filters, sortBy: f, sortDesc: f === filters.sortBy ? !filters.sortDesc : false })}
-                            sortOptions={[{ field: 'level', label: getText('sort.class') }, { field: 'updatedAt', label: getText('sort.updatedAt') }, { field: 'createdAt', label: getText('sort.createdAt') }]} />
-                        {!showInactive && <div className="pl-4 border-l"><Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button></div>}
+                        <div className="flex items-center gap-4 flex-1">
+                            <SearchBar value={filters.search} onChange={v => setFilters({ ...filters, search: v })} className="max-w-xs" />
+                            <select
+                                value={filters.level}
+                                onChange={e => setFilters({ ...filters, level: e.target.value })}
+                                className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[100px]"
+                            >
+                                <option value="">Wszystkie</option>
+                                {[1, 2, 3, 4, 5, 6, 7, 8].map(l => <option key={l} value={l}>klasa {l}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex gap-2 pl-4 border-l">
+                            <TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} />
+                            {!showInactive && <Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button>}
+                        </div>
                     </div>
                     {loading ? <div className="text-center p-12 text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" /> Ładowanie...</div> : (
-                        <DataTable data={filteredClasses} columns={classColumns} emptyMessage="Brak klas" onRowClick={(row) => setSelected(p => ({ ...p, class: row.id }))} />
+                        <DataTable
+                            data={classes}
+                            columns={classColumns}
+                            emptyMessage="Brak klas"
+                            onRowClick={(row) => setSelected(p => ({ ...p, class: row.id }))}
+                            sortBy={filters.sortBy}
+                            sortDesc={filters.sortDesc}
+                            onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
+                        />
                     )}
                 </div>
             </div>

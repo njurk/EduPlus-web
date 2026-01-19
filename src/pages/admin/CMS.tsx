@@ -119,11 +119,11 @@ export const CMS = () => {
                             {loadingContents && <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2 max-w-sm mx-auto"><RefreshCcw className="animate-spin" size={24} /> Ładowanie treści...</div>}
 
                             {!selectedPageId && !loadingContents && (
-                                <div className="p-4 text-center text-sm text-neutral-400">Wybierz stronę aby edytować treści</div>
+                                <div className="p-4 text-center text-sm text-neutral-400">Wybierz stronę</div>
                             )}
 
                             {selectedPageId && !loadingContents && contents.length === 0 && (
-                                <div className="text-center text-neutral-400 mt-12">Brak edytowalnych elementów na tej stronie</div>
+                                <div className="text-center text-neutral-400 mt-12">Brak</div>
                             )}
 
                             <div className="space-y-6 max-w-3xl">

@@ -185,7 +185,7 @@ export const Settings = () => {
     return (
         <div className="max-w-2xl mx-auto font-sans space-y-8">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-neutral-800">{getText('title')}</h1>
+                <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
             </div>
             {message && (
                 <div className={`p-4 rounded-md flex items-center gap-2 text-sm ${message.type === 'success' ? 'bg-success-light text-success-text' : 'bg-danger-light text-danger-text'}`}>

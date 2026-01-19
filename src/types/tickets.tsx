@@ -9,6 +9,7 @@ export interface Ticket {
     adminResponse?: string;
     createdAt: string;
     updatedAt: string;
+    modifiedByName?: string;
 }
 
 export interface CreateTicketDto {
