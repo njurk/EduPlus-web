@@ -33,8 +33,8 @@ export interface DashboardAnnouncement {
 
 export interface DashboardTicket {
   id: number;
-  subject: string;
-  userName: string;
+  reasonName: string;
+  email: string;
   createdAt: string;
   isClosed: boolean;
 }

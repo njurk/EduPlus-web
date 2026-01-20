@@ -1,13 +1,15 @@
-import { Edit2, Trash2, RefreshCcw, Eye } from 'lucide-react';
+import { Edit2, Trash2, RefreshCcw, Eye, type LucideIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
-interface ActionButtonsProps {
+export interface ActionButtonsProps {
   isActive?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
   onRestore?: () => void;
   onDetails?: () => void;
   className?: string;
+  editLabel?: string;
+  editIcon?: LucideIcon;
 }
 
 export const ActionButtons = ({
@@ -16,7 +18,9 @@ export const ActionButtons = ({
   onDelete,
   onRestore,
   onDetails,
-  className
+  className,
+  editLabel = 'Edytuj',
+  editIcon: EditIcon = Edit2
 }: ActionButtonsProps) => {
 
   const handleClick = (e: React.MouseEvent, handler?: () => void) => {
@@ -52,8 +56,8 @@ export const ActionButtons = ({
         </button>
       )}
       {onEdit && (
-        <button type="button" onClick={(e) => handleClick(e, onEdit)} title="Edytuj" className="p-1.5 text-primary hover:bg-neutral-100 rounded-xs">
-          <Edit2 size={16} />
+        <button type="button" onClick={(e) => handleClick(e, onEdit)} title={editLabel} className="p-1.5 text-primary hover:bg-neutral-100 rounded-xs">
+          <EditIcon size={16} />
         </button>
       )}
       {onDelete && (

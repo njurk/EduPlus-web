@@ -4,7 +4,7 @@ import { Input } from "../../components/ui/Input";
 import { TrashButton } from "../../components/ui/TrashButton";
 import { Modal } from "../../components/modals/Modal";
 import { api } from "../../services/apiService";
-import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus } from "lucide-react";
+import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus, HelpCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { SortToolbar } from "../../components/ui/SortToolbar";
 import { validateSystemConfig } from "../../utils/validation";
@@ -23,6 +23,7 @@ const TABS = [
     { id: "gradeTypes", label: "Skala ocen", icon: GraduationCap },
     { id: "gradeCategories", label: "Kategorie ocen", icon: ListOrdered },
     { id: "attendance", label: "Frekwencja", icon: CalendarCheck },
+    { id: "ticketReasons", label: "Powody zgłoszeń", icon: HelpCircle },
 ] as const;
 
 const ConfigFormContent = ({
@@ -199,6 +200,7 @@ export const SystemConfig = () => {
             case "gradeTypes": return api.gradeTypes;
             case "gradeCategories": return api.gradeCategories;
             case "attendance": return api.attendanceTypes;
+            case "ticketReasons": return api.ticketReasons;
             default: return api.classrooms;
         }
     }, [activeTab]);

@@ -3,7 +3,7 @@ import type {
     Classroom, LessonHour, LessonStatus, GradeType, GradeCategory, AttendanceType, Subject, ChangePasswordDto,
     SchoolYear, ClassEntity, ClassDetailsDto, StudentGradesRowDto,
     SemesterDto, GradeDto, Grade, AttendanceAdminDto, UptimeInfo,
-    PaginatedResponse, Ticket, CreateTicketDto, CloseTicketDto, PageContent, Page, Target, ScheduleLesson
+    PaginatedResponse, Ticket, CreateTicketDto, CloseTicketDto, TicketReason, PageContent, Page, Target, ScheduleLesson
 } from '../types';
 
 export const API_URL = 'http://localhost:5107/api';
@@ -503,7 +503,7 @@ export const api = {
         },
     },
     tickets: {
-        getAll: async (pageNumber: number = 1, pageSize: number = 10, showClosed?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, userFullName?: string): Promise<PaginatedResponse<Ticket>> => {
+        getAll: async (pageNumber: number = 1, pageSize: number = 10, showClosed?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, reasonId?: number): Promise<PaginatedResponse<Ticket>> => {
             const url = new URL(`${API_URL}/Ticket`);
             url.searchParams.append('pageNumber', pageNumber.toString());
             url.searchParams.append('pageSize', pageSize.toString());
@@ -511,7 +511,7 @@ export const api = {
             if (search) url.searchParams.append('search', search);
             if (sortBy) url.searchParams.append('sortBy', sortBy);
             if (sortDesc !== undefined) url.searchParams.append('sortDesc', sortDesc.toString());
-            if (userFullName) url.searchParams.append('userFullName', userFullName);
+            if (reasonId !== undefined) url.searchParams.append('reasonId', reasonId.toString());
 
             const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse<PaginatedResponse<Ticket>>(response);
@@ -519,7 +519,7 @@ export const api = {
         create: async (data: CreateTicketDto): Promise<Ticket> => {
             const response = await fetch(`${API_URL}/Ticket`, {
                 method: 'POST',
-                headers: getHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
             return handleResponse<Ticket>(response);
@@ -531,10 +531,44 @@ export const api = {
                 body: JSON.stringify(data)
             });
             return handleResponse<void>(response);
+        }
+    },
+    ticketReasons: {
+        getAll: async (filters?: { search?: string; sortBy?: string; sortDesc?: boolean; showInactive?: boolean }): Promise<TicketReason[]> => {
+            const url = new URL(`${API_URL}/TicketReason`);
+            if (filters?.search) url.searchParams.append('search', filters.search);
+            if (filters?.sortBy) url.searchParams.append('sortBy', filters.sortBy);
+            if (filters?.sortDesc !== undefined) url.searchParams.append('sortDesc', filters.sortDesc.toString());
+            if (filters?.showInactive !== undefined) url.searchParams.append('showInactive', filters.showInactive.toString());
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse<TicketReason[]>(response);
         },
-        getSubmitters: async (): Promise<string[]> => {
-            const response = await fetch(`${API_URL}/Ticket/submitters`, { headers: getHeaders() });
-            return handleResponse<string[]>(response);
+        getActive: async (): Promise<TicketReason[]> => {
+            const response = await fetch(`${API_URL}/TicketReason/active`);
+            return handleResponse<TicketReason[]>(response);
+        },
+        create: async (data: Partial<TicketReason>): Promise<TicketReason> => {
+            const response = await fetch(`${API_URL}/TicketReason`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            return handleResponse<TicketReason>(response);
+        },
+        update: async (id: number, data: Partial<TicketReason>): Promise<TicketReason> => {
+            const response = await fetch(`${API_URL}/TicketReason/${id}`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            return handleResponse<TicketReason>(response);
+        },
+        delete: async (id: number): Promise<void> => {
+            const response = await fetch(`${API_URL}/TicketReason/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            return handleResponse<void>(response);
         }
     },
     pageContent: {

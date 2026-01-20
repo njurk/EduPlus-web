@@ -1,9 +1,9 @@
 export interface Ticket {
     id: number;
-    userId: number;
-    userFullName: string;
-    userEmail: string;
-    subject: string;
+    email: string;
+    reasonId: number;
+    reasonName: string;
+    content: string;
     isClosed: boolean;
     closedAt?: string;
     adminResponse?: string;
@@ -12,10 +12,18 @@ export interface Ticket {
     modifiedByName?: string;
 }
 
+export interface TicketReason {
+    id: number;
+    name: string;
+}
+
 export interface CreateTicketDto {
-    subject: string;
+    email: string;
+    reasonId: number;
+    content: string;
 }
 
 export interface CloseTicketDto {
     adminResponse: string;
 }
+

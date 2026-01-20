@@ -18,6 +18,7 @@ import { Grades } from './pages/admin/Grades';
 import { Attendance } from './pages/admin/Attendance';
 import { Lessons } from './pages/admin/Lessons';
 import { Excuses } from './pages/admin/Excuses';
+import { SubmitTicket } from './pages/SubmitTicket';
 import { useCMSContent } from './hooks/useCMSContent';
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/submit-ticket" element={<SubmitTicket />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route element={<ProtectedRoute requiredLevel={1} />}>
         <Route element={<AdminLayout />}>

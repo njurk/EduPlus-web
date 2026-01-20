@@ -80,10 +80,10 @@ export const Dashboard = () => {
                   onClick={() => navigate(`/tickets?id=${ticket.id}`)}
                   className="w-full text-left block pb-3 border-b border-neutral-100 last:border-0 last:pb-0 hover:bg-neutral-50 px-2 -mx-2 py-2 rounded transition-colors"
                 >
-                  <h4 className="text-sm font-semibold text-neutral-800">{ticket.subject}</h4>
+                  <h4 className="text-sm font-semibold text-neutral-800">{ticket.reasonName}</h4>
                   <div className="flex justify-between items-center mt-1.5">
                     <span className="text-xs text-neutral-400">{formatDate(ticket.createdAt)}</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-neutral-100 text-neutral-600 border border-neutral-200 uppercase font-bold tracking-wide">{ticket.userName}</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-neutral-100 text-neutral-600 border border-neutral-200 uppercase font-bold tracking-wide">{ticket.email}</span>
                   </div>
                 </button>
               ))}

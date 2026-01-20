@@ -5,7 +5,7 @@ import { api } from '../../services/apiService';
 import { Plus, RefreshCcw, User } from 'lucide-react';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { DataTable } from '../../components/ui/DataTable';
-import { formatDate, formatTime } from '../../utils/formatters';
+import { formatDate } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { AnnouncementModal } from '../../components/modals/AnnouncementModal';
 import { TrashButton } from '../../components/ui/TrashButton';

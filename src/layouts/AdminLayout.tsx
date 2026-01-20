@@ -14,8 +14,8 @@ const Clock = () => {
 
   return (
     <div className="text-right hidden sm:block">
-      <div className="text-sm font-bold text-neutral-800">{time.toLocaleTimeString()}</div>
-      <div className="text-xs text-neutral-500">{time.toLocaleDateString()}</div>
+      <div className="text-sm font-bold text-neutral-800">{time.toLocaleTimeString('pl-PL')}</div>
+      <div className="text-xs text-neutral-600">{time.toLocaleDateString('pl-PL')}</div>
     </div>
   );
 };
