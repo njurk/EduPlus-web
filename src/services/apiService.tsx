@@ -210,7 +210,7 @@ export const api = {
     classes: createCrudResource<SchoolClass>('class'),
     announcements: {
         ...createCrudResource<Announcement>('announcement'),
-        getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, authorName?: string }): Promise<Announcement[]> => {
+        getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, authorName?: string, targetRoleId?: number }): Promise<Announcement[]> => {
             const url = new URL(`${API_URL}/announcement`);
             if (params) {
                 Object.keys(params).forEach(key => {
@@ -233,6 +233,13 @@ export const api = {
         getAuthors: async (): Promise<string[]> => {
             const response = await fetch(`${API_URL}/announcement/authors`, { headers: getHeaders() });
             return handleResponse<string[]>(response);
+        },
+        markAsRead: async (id: number): Promise<void> => {
+            const response = await fetch(`${API_URL}/announcement/${id}/read`, {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            return handleResponse<void>(response);
         }
     },
 
@@ -572,8 +579,11 @@ export const api = {
         }
     },
     pageContent: {
-        getByPageId: async (pageId: number): Promise<PageContent[]> => {
-            const response = await fetch(`${API_URL}/PageContent?pageId=${pageId}`, { headers: getHeaders() });
+        getByPageId: async (pageId: number, search?: string): Promise<PageContent[]> => {
+            const url = new URL(`${API_URL}/PageContent`);
+            url.searchParams.append('pageId', pageId.toString());
+            if (search) url.searchParams.append('search', search);
+            const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse<PageContent[]>(response);
         },
         update: async (id: number, newValue: string): Promise<PageContent> => {

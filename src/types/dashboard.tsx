@@ -8,6 +8,8 @@ export interface Announcement extends BaseEntity {
   author?: User;
   authorName?: string;
   modifiedByName?: string;
+  targetRoles?: string;
+  isRead?: boolean;
 }
 
 export interface DashboardStats {

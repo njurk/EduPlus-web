@@ -5,6 +5,22 @@ import { Button } from '../../components/ui/Button';
 import { Edit2, Save, X, Layout, FileText, Type } from 'lucide-react';
 import clsx from 'clsx';
 import { RefreshCcw } from 'lucide-react';
+import { SearchBar } from '../../components/ui/SearchBar';
+
+const LINK_TO_NAV_KEY: Record<string, string> = {
+    'dashboard': 'nav.dashboard',
+    'users': 'nav.users',
+    'classManagement': 'nav.classes',
+    'announcements': 'nav.announcements',
+    'tickets': 'nav.tickets',
+    'schedule': 'nav.schedule',
+    'lessons': 'nav.lessons',
+    'grades': 'nav.grades',
+    'attendance': 'nav.attendance',
+    'excuses': 'nav.excuses',
+    'systemConfig': 'nav.config',
+    'cms': 'nav.cms'
+};
 
 export const CMS = () => {
     const [targets, setTargets] = useState<Target[]>([]);
@@ -21,6 +37,8 @@ export const CMS = () => {
     const [loadingPages, setLoadingPages] = useState(false);
     const [loadingContents, setLoadingContents] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [search, setSearch] = useState('');
+    const [pageTitles, setPageTitles] = useState<Record<number, string>>({});
 
     useEffect(() => {
         setLoadingTargets(true);
@@ -36,22 +54,63 @@ export const CMS = () => {
         setPages([]);
         setSelectedPageId(null);
         setContents([]);
-        api.pages.getAll(selectedTargetId).then(p => {
-            setPages(p.sort((a, b) => a.position - b.position));
+        setPageTitles({});
+        api.pages.getAll(selectedTargetId).then(async p => {
+            const sortedPages = p.sort((a, b) => a.position - b.position);
+            setPages(sortedPages);
+
+            let layoutPageContents: any[] = [];
+            try {
+                layoutPageContents = await api.pageContent.getByPageId(14);
+            } catch (err) {
+                console.error('Błąd pobierania layout PageContent', err);
+            }
+
+            const titles: Record<number, string> = {};
+            for (const page of sortedPages) {
+                try {
+                    const navKey = LINK_TO_NAV_KEY[page.link];
+                    if (navKey) {
+                        const navContent = layoutPageContents.find(pc => pc.key === navKey);
+                        if (navContent) {
+                            titles[page.id] = navContent.value;
+                        }
+                    } else {
+                        const pageContents = await api.pageContent.getByPageId(page.id);
+                        const titleContent = pageContents.find(pc => pc.key === 'title');
+                        if (titleContent) {
+                            titles[page.id] = titleContent.value;
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Błąd pobierania tytułu strony o ID: ${page.id}`, err);
+                }
+            }
+            setPageTitles(titles);
         }).catch(console.error).finally(() => setLoadingPages(false));
     }, [selectedTargetId]);
 
     useEffect(() => {
         if (!selectedPageId) return;
         setLoadingContents(true);
-        api.pageContent.getByPageId(selectedPageId).then(setContents).catch(console.error).finally(() => setLoadingContents(false));
-    }, [selectedPageId]);
+        api.pageContent.getByPageId(selectedPageId, search).then(setContents).catch(console.error).finally(() => setLoadingContents(false));
+    }, [selectedPageId, search]);
 
     const handleSaveContent = async (id: number) => {
         setSaving(true);
         try {
             const updated = await api.pageContent.update(id, editValue);
             setContents(prev => prev.map(c => c.id === id ? updated : c));
+
+            if (updated.key.startsWith('nav.') && updated.pageId === 14) {
+                const affectedPage = pages.find(p => LINK_TO_NAV_KEY[p.link] === updated.key);
+                if (affectedPage) {
+                    setPageTitles(prev => ({ ...prev, [affectedPage.id]: updated.value }));
+                }
+            } else if (updated.key === 'title' && selectedPageId) {
+                setPageTitles(prev => ({ ...prev, [selectedPageId]: updated.value }));
+            }
+
             setEditingContentId(null);
         } catch {
             alert("Błąd zapisu");
@@ -62,8 +121,11 @@ export const CMS = () => {
 
     return (
         <div>
-            <div className="pb-4 bg-neutral-50/30">
+            <div className="pb-4 bg-neutral-50/30 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-neutral-800">Zarządzanie treściami</h2>
+                <Button variant="primary" onClick={() => window.location.reload()} className="flex items-center gap-2">
+                    <RefreshCcw size={16} /> Odśwież
+                </Button>
             </div>
             <div className="font-sans flex flex-col h-[calc(100vh-200px)] border border-neutral-200 shadow-sm rounded-xs overflow-hidden">
                 <div className="flex flex-1 overflow-hidden">
@@ -105,15 +167,25 @@ export const CMS = () => {
                                         selectedPageId === p.id ? "bg-primary-light text-primary font-medium" : "text-neutral-700 hover:bg-neutral-50"
                                     )}
                                 >
-                                    {p.title}
+                                    {pageTitles[p.id] || p.title}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     <div className="flex-1 bg-white flex flex-col">
-                        <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
-                            <Type size={14} /> treść
+                        <div className="p-3 border-b">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="font-semibold text-xs uppercase text-neutral-500 flex items-center gap-2">
+                                    <Type size={14} /> treść
+                                </div>
+                            </div>
+                            <SearchBar
+                                value={search}
+                                onChange={setSearch}
+                                placeholder="Szukaj po key lub value..."
+                                className="max-w-md"
+                            />
                         </div>
                         <div className="overflow-y-auto flex-1 p-2">
                             {loadingContents && <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2 max-w-sm mx-auto"><RefreshCcw className="animate-spin" size={24} /> Ładowanie treści...</div>}
