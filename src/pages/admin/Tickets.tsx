@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Ticket, PaginatedResponse, TicketReason } from '../../types';
 import { api } from '../../services/apiService';
-import { RefreshCcw, CheckCircle, Clock, ArrowLeft, Mail, Tag, MessageSquare, Calendar } from 'lucide-react';
+import { CheckCircle, Clock, ArrowLeft, Mail, Tag, MessageSquare, Calendar } from 'lucide-react';
 import { SearchBar } from '../../components/ui/SearchBar';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
-import { formatDate } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 import { Pagination } from '../../components/ui/Pagination';
 import { DetailsModal } from '../../components/modals/DetailsModal';
 import { Button } from '../../components/ui/Button';
@@ -123,7 +124,7 @@ export const Tickets = () => {
                             <Calendar size={16} className="text-neutral-400 mt-0.5" />
                             <div>
                                 <p className="text-xs text-neutral-500">Data zamknięcia</p>
-                                <p className="text-sm font-medium text-neutral-800">{selectedTicket.closedAt ? formatDate(selectedTicket.closedAt) : '-'}</p>
+                                <p className="text-sm font-medium text-neutral-800">{selectedTicket.closedAt ? formatDateTime(selectedTicket.closedAt) : '-'}</p>
                             </div>
                         </div>
 
@@ -182,7 +183,7 @@ export const Tickets = () => {
                                 <Calendar size={16} className="text-neutral-400 mt-0.5" />
                                 <div>
                                     <p className="text-xs text-neutral-500">Data zgłoszenia</p>
-                                    <p className="text-sm font-medium text-neutral-800">{formatDate(selectedTicket.createdAt)}</p>
+                                    <p className="text-sm font-medium text-neutral-800">{formatDateTime(selectedTicket.createdAt)}</p>
                                 </div>
                             </div>
                         </div>
@@ -280,9 +281,7 @@ export const Tickets = () => {
 
                 <div className="flex-1 bg-white">
                     {loading && !data ? (
-                        <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2">
-                            <RefreshCcw className="animate-spin" size={24} /> Ładowanie...
-                        </div>
+                        <LoadingSpinner className="py-12" />
                     ) : (
                         <>
                             <DataTable
@@ -294,8 +293,8 @@ export const Tickets = () => {
                                     { header: getText('columns.email'), sortKey: 'email', render: (t) => <div className="text-neutral-900 font-medium">{t.email}</div> },
                                     { header: getText('columns.reason'), sortKey: 'reason', render: (t) => <span className="text-neutral-900">{t.reasonName}</span> },
                                     { header: getText('columns.status'), className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-xs text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-xs text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },
-                                    { header: getText('columns.closedAt'), sortKey: 'closedat', render: (t) => t.closedAt ? <span className="text-neutral-500 text-xs">{formatDate(t.closedAt)}</span> : <span className="text-neutral-300">-</span> },
-                                    { header: getText('columns.createdAt'), sortKey: 'created', render: (t) => <span className="text-neutral-600 text-xs">{formatDate(t.createdAt)}</span> },
+                                    { header: getText('columns.closedAt'), sortKey: 'closedat', render: (t) => t.closedAt ? <span className="text-neutral-500 text-xs">{formatDateTime(t.closedAt)}</span> : <span className="text-neutral-300">-</span> },
+                                    { header: getText('columns.createdAt'), sortKey: 'created', render: (t) => <span className="text-neutral-600 text-xs">{formatDateTime(t.createdAt)}</span> },
                                     { header: getText('columns.modifiedBy'), render: (t) => <span className="text-neutral-500 text-xs">{t.modifiedByName || 'System'}</span> },
                                     {
                                         header: getText('columns.actions'), className: 'w-32 text-right', render: (t) => (

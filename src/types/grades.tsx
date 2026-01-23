@@ -5,6 +5,7 @@ export interface GradeType extends BaseEntity {
   name: string;
   numeric: string;
   value: number;
+  colorHex: string;
 }
 
 export interface GradeCategory extends BaseEntity {
@@ -24,14 +25,14 @@ export interface Grade {
   updatedAt: string;
   isActive: boolean;
   teacherName?: string;
-    gradeType?: {
-        numeric: string;
-        name: string;
-        value: number;
-    };
-    gradeCategory?: {
-        name: string;
-    };
+  gradeType?: {
+    numeric: string;
+    name: string;
+    value: number;
+  };
+  gradeCategory?: {
+    name: string;
+  };
 }
 
 export interface GradeDto {

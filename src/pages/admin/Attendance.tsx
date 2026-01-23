@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/apiService';
-import { RefreshCcw, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { SortToolbar } from '../../components/ui/SortToolbar';
 import { DataTable } from '../../components/ui/DataTable';
-import { formatDate } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
@@ -77,9 +78,9 @@ export const Attendance = () => {
                         sortOptions={[{ field: 'studentName', label: 'Uczeń' }, { field: 'date', label: 'Data' }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'Ładowanie...'}</div> : (
+                {loading ? <LoadingSpinner /> : (
                     <DataTable data={data} columns={[
-                        { header: getText('columns.date'), render: a => <span className="text-xs">{formatDate(a.lessonDate)}</span> },
+                        { header: getText('columns.date'), render: a => <span className="text-xs">{formatDateTime(a.lessonDate)}</span> },
                         { header: getText('columns.student'), render: a => <span className="font-medium">{a.studentName}</span> },
                         { header: getText('columns.subject'), render: a => a.subjectName },
                         { header: getText('columns.status'), render: a => <span className={a.attendanceTypeName === 'Obecny' ? 'text-success' : a.attendanceTypeName === 'Nieobecny' ? 'text-danger' : 'text-warning'}>{a.attendanceTypeName}</span> }

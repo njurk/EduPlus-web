@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/apiService';
-import { RefreshCcw, Check, X, Plus } from 'lucide-react';
+import { Check, X, Plus } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { SortToolbar } from '../../components/ui/SortToolbar';
 import { DataTable } from '../../components/ui/DataTable';
-import { formatDate } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
@@ -65,12 +66,12 @@ export const Excuses = () => {
                         sortOptions={[{ field: 'studentName', label: 'Uczeń' }, { field: 'createdAt', label: 'Data' }]}
                     />
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'Ładowanie...'}</div> : (
+                {loading ? <LoadingSpinner /> : (
                     <DataTable data={data} columns={[
-                        { header: getText('columns.date'), render: e => <span className="text-xs">{formatDate(e.createdAt)}</span> },
+                        { header: getText('columns.date'), render: e => <span className="text-xs">{formatDateTime(e.createdAt)}</span> },
                         { header: getText('columns.student'), render: e => <span className="font-medium">{e.studentName}</span> },
                         { header: getText('columns.parent'), render: e => e.parentName },
-                        { header: getText('columns.period'), render: e => <span className="text-xs">{formatDate(e.dateFrom)} - {formatDate(e.dateTo)}</span> },
+                        { header: getText('columns.period'), render: e => <span className="text-xs">{formatDateTime(e.dateFrom)} - {formatDateTime(e.dateTo)}</span> },
                         { header: getText('columns.reason'), render: e => <div className="truncate max-w-xs text-sm" title={e.reason}>{e.reason}</div> },
                         { header: getText('columns.status'), render: e => <span className={e.isAccepted === true ? 'text-success' : e.isAccepted === false ? 'text-danger' : 'text-warning'}>{e.isAccepted === true ? getText('status.accepted') : e.isAccepted === false ? getText('status.rejected') : getText('status.pending')}</span> },
                         {

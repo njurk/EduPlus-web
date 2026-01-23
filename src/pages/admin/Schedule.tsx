@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/apiService';
 import type { SchoolYear, SemesterDto, ClassEntity, ScheduleLesson, LessonHour } from '../../types';
-import { RefreshCcw } from 'lucide-react';
 import { ExportButton } from '../../components/ui/ExportButton';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
@@ -95,7 +95,7 @@ export const Schedule = () => {
 
             <div className="bg-white border border-neutral-200 rounded-xs overflow-hidden">
                 {loading ? (
-                    <div className="flex items-center justify-center h-64 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />{'Ładowanie...'}</div>
+                    <LoadingSpinner className="h-64" />
                 ) : (
                     <table className="w-full border-collapse text-xs table-fixed">
                         <thead>

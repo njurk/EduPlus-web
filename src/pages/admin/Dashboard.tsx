@@ -6,9 +6,7 @@ import type { DashboardSummary } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { UptimeCounter } from '../../components/ui/UptimeCounter';
 import { useCMSContent } from '../../hooks/useCMSContent';
-
-const formatDate = (date?: string) => date ? new Date(date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-
+import {formatDateTime} from '../../utils/formatters';
 
 export const Dashboard = () => {
   const [data, setData] = useState<DashboardSummary | null>(null);
@@ -82,7 +80,7 @@ export const Dashboard = () => {
                 >
                   <h4 className="text-sm font-semibold text-neutral-800">{ticket.reasonName}</h4>
                   <div className="flex justify-between items-center mt-1.5">
-                    <span className="text-xs text-neutral-400">{formatDate(ticket.createdAt)}</span>
+                    <span className="text-xs text-neutral-400">{formatDateTime(ticket.createdAt)}</span>
                     <span className="text-[10px] px-2 py-0.5 bg-neutral-100 text-neutral-600 border border-neutral-200 uppercase font-bold tracking-wide">{ticket.email}</span>
                   </div>
                 </button>

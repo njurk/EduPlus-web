@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { clsx } from 'clsx';
 import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export interface Column<T> {
     header: string;
@@ -51,11 +52,7 @@ export const DataTable = <T extends { id: number | string }>({
     }, [data.length, totalPages, currentPage]);
 
     if (isLoading) {
-        return (
-            <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2">
-                Ładowanie...
-            </div>
-        );
+        return <LoadingSpinner className="py-12" />;
     }
 
     return (

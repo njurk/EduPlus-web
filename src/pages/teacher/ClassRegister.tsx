@@ -5,7 +5,7 @@ import { api } from '../../services/apiService';
 import { BookOpen, ArrowLeft, Plus, RefreshCcw, CheckSquare, Filter } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { Subject, SchoolYear, ClassEntity, Grade, StudentGradesRowDto, SemesterDto, AttendanceType, AttendanceAdminDto } from '../../types';
-import { formatDate, formatName } from '../../utils/formatters';
+import { formatDateTime, formatName } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { GradeSquare } from '../../components/ui/GradeSquare';
@@ -157,7 +157,7 @@ const ClassAttendanceView = ({ classId, onBack, className, yearName }: { classId
                 <div className="flex-1 overflow-auto">
                     {loading ? <div className="p-12 text-center text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" />Ładowanie...</div> : (
                         <DataTable data={filteredData} emptyMessage="Brak wpisów" columns={[
-                            { header: 'Data', render: r => <span className="text-xs">{formatDate(r.lessonDate)}</span>, className: 'w-28' },
+                            { header: 'Data', render: r => <span className="text-xs">{formatDateTime(r.lessonDate)}</span>, className: 'w-28' },
                             { header: 'Przedmiot', render: r => <div><div className="font-medium text-sm">{r.subjectName}</div><div className="text-xs text-neutral-500">{r.teacherName}</div></div>, className: 'w-48' },
                             { header: 'Uczeń', render: r => <span className="font-medium">{r.studentName}</span> },
                             { header: 'Status', render: r => <span>{r.shortCode}</span>, className: 'w-20' },
@@ -200,8 +200,8 @@ export const ClassRegister = () => {
     const classColumns: Column<ClassEntity>[] = [
         { header: 'Klasa', accessor: 'level', className: 'font-medium text-neutral-900', render: (row) => `${row.level}${row.letter}` },
         { header: 'Liczba uczniów', accessor: 'studentCount', render: (row) => row.studentCount || 0 },
-        { header: 'Utworzono', render: (row) => formatDate(row.createdAt) },
-        { header: 'Edytowano', render: (row) => formatDate(row.updatedAt) }
+        { header: 'Utworzono', render: (row) => formatDateTime(row.createdAt) },
+        { header: 'Edytowano', render: (row) => formatDateTime(row.updatedAt) }
     ];
 
     const filteredClasses = useMemo(() => {

@@ -108,3 +108,37 @@ export interface ScheduleLesson {
   endTime: string;
   topic?: string;
 }
+
+export interface LessonDetailsDto {
+  id: number;
+  subjectId: number;
+  subjectName: string;
+  classId: number;
+  className: string;
+  teacherId: number;
+  teacherName: string;
+  classroomId?: number;
+  classroomName: string;
+  date: string;
+  dayOfWeek: number;
+  orderNumber: number;
+  startTime: string;
+  endTime: string;
+  topic: string;
+  statusId: number;
+  statusName: string;
+  createdAt: string;
+  updatedAt: string;
+  modifiedByName?: string;
+}
+
+export interface LessonAttendanceDto {
+  id: number;
+  studentId: number;
+  studentName: string;
+  studentNumber: number;
+  attendanceTypeId?: number;
+  attendanceTypeName: string;
+  shortCode: string;
+  colorHex: string;
+}

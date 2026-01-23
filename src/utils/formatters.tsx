@@ -1,4 +1,4 @@
-export const formatDate = (dateString?: string | null): string => {
+export const formatDateTime = (dateString?: string | null): string => {
     if (!dateString) return '-';
     try {
         return new Date(dateString).toLocaleString('pl-PL', {
@@ -42,4 +42,17 @@ export const formatFullDate = (dateString?: string | null): string => {
 export const formatName = (user?: { firstName: string; lastName: string } | null): string => {
     if (!user) return 'Nieznany użytkownik';
     return `${user.lastName} ${user.firstName}`;
+};
+
+export const formatDateOnly = (dateString?: string | null): string => {
+    if (!dateString) return '-';
+    try {
+        return new Date(dateString).toLocaleDateString('pl-PL', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    } catch {
+        return '-';
+    }
 };

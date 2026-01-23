@@ -2,9 +2,9 @@
 import type { Target, Page, PageContent } from '../../types';
 import { api } from '../../services/apiService';
 import { Button } from '../../components/ui/Button';
-import { Edit2, Save, X, Layout, FileText, Type } from 'lucide-react';
+import { Edit2, Save, X, Layout, FileText, Type, RefreshCcw } from 'lucide-react';
 import clsx from 'clsx';
-import { RefreshCcw } from 'lucide-react';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { SearchBar } from '../../components/ui/SearchBar';
 
 const LINK_TO_NAV_KEY: Record<string, string> = {
@@ -134,7 +134,7 @@ export const CMS = () => {
                             <Layout size={14} /> Sekcja
                         </div>
                         <div className="overflow-y-auto flex-1 p-2 space-y-1">
-                            {loadingTargets && <div className="p-4 text-center"><RefreshCcw className="animate-spin inline text-neutral-400" /></div>}
+                            {loadingTargets && <LoadingSpinner className="h-16" />}
                             {targets.map(t => (
                                 <button
                                     key={t.id}
@@ -156,7 +156,7 @@ export const CMS = () => {
                             <FileText size={14} /> Strona
                         </div>
                         <div className="overflow-y-auto flex-1 p-2 space-y-1">
-                            {loadingPages && <div className="p-4 text-center"><RefreshCcw className="animate-spin inline text-neutral-400" /></div>}
+                            {loadingPages && <LoadingSpinner className="h-16" />}
                             {!loadingPages && pages.length === 0 && <div className="p-4 text-center text-sm text-neutral-400">Brak stron w tej sekcji</div>}
                             {pages.map(p => (
                                 <button
@@ -188,7 +188,7 @@ export const CMS = () => {
                             />
                         </div>
                         <div className="overflow-y-auto flex-1 p-2">
-                            {loadingContents && <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2 max-w-sm mx-auto"><RefreshCcw className="animate-spin" size={24} /> Ładowanie treści...</div>}
+                            {loadingContents && <LoadingSpinner text="Ładowanie treści..." className="h-48" />}
 
                             {!selectedPageId && !loadingContents && (
                                 <div className="p-4 text-center text-sm text-neutral-400">Wybierz stronę</div>

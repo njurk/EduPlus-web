@@ -1,6 +1,6 @@
 import { Mail, Tag, Calendar, ArrowLeft } from 'lucide-react';
 import type { Ticket } from '../../types';
-import { formatDate } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 
 interface TicketDetailViewProps {
     ticket: Ticket;
@@ -51,7 +51,7 @@ export const TicketDetailView = ({
                             <Calendar size={16} className="text-neutral-400 mt-0.5" />
                             <div>
                                 <p className="text-xs text-neutral-500">Data zgłoszenia</p>
-                                <p className="text-sm font-medium text-neutral-800">{formatDate(ticket.createdAt)}</p>
+                                <p className="text-sm font-medium text-neutral-800">{formatDateTime(ticket.createdAt)}</p>
                             </div>
                         </div>
 

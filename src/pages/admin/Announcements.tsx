@@ -2,10 +2,11 @@
 import { Button } from '../../components/ui/Button';
 import type { Announcement, Role } from '../../types';
 import { api } from '../../services/apiService';
-import { Plus, RefreshCcw, User } from 'lucide-react';
+import { Plus, User } from 'lucide-react';
 import { SearchBar } from '../../components/ui/SearchBar';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
-import { formatDate } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { AnnouncementModal } from '../../components/modals/AnnouncementModal';
 import { TrashButton } from '../../components/ui/TrashButton';
@@ -107,14 +108,14 @@ export const Announcements = () => {
                         {!filters.showInactive && <Button onClick={() => { setSelectedAnnouncement(null); setIsModalOpen(true); }}><Plus size={14} className="mr-1" />Dodaj</Button>}
                     </div>
                 </div>
-                {loading ? <div className="flex items-center justify-center h-32 text-neutral-400"><RefreshCcw className="animate-spin mr-2" size={16} />Ładowanie...</div> : (
+                {loading ? <LoadingSpinner /> : (
                     <DataTable
                         data={data}
                         sortBy={filters.sortBy}
                         sortDesc={filters.sortDesc}
                         onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
                         columns={[
-                            { header: getText('columns.date'), sortKey: 'created', render: (a) => <div className="text-xs w-28 text-neutral-600">{formatDate(a.createdAt)}</div> },
+                            { header: getText('columns.date'), sortKey: 'created', render: (a) => <div className="text-xs w-28 text-neutral-600">{formatDateTime(a.createdAt)}</div> },
                             {
                                 header: getText('columns.title'), className: 'w-1/4', render: (a) => (
                                     <div className="flex items-center gap-2">
@@ -126,7 +127,7 @@ export const Announcements = () => {
                             { header: getText('columns.content'), render: (a) => <span className="text-neutral-700 text-sm line-clamp-2">{stripHtml(a.description)}</span> },
                             { header: getText('columns.author'), sortKey: 'author', className: 'w-32', render: (a) => <div className="flex items-center gap-2 text-sm text-neutral-600"><User size={14} />{a.authorName}</div> },
                             { header: 'Adresaci', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{a.targetRoles || 'Wszyscy'}</span> },
-                            { header: 'Edytowano', sortKey: 'updated', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{formatDate(a.updatedAt)}</span> },
+                            { header: 'Edytowano', sortKey: 'updated', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{formatDateTime(a.updatedAt)}</span> },
                             { header: getText('columns.modifiedBy'), className: 'w-40', render: (a) => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
                             {
                                 header: getText('columns.actions'), className: 'w-20 text-right', render: (a) => filters.showInactive ? (

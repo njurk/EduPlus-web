@@ -6,6 +6,7 @@ import type { User } from './users';
 export interface AttendanceType extends BaseEntity {
     name: string;
     shortCode: string;
+    colorHex: string;
 }
 
 export interface Attendance extends BaseEntity {
@@ -17,11 +18,6 @@ export interface Attendance extends BaseEntity {
 
     attendanceTypeId: number;
     attendanceType?: AttendanceType;
-}
-
-export interface AttendanceType extends BaseEntity {
-    name: string;
-    shortCode: string;
 }
 
 export interface AttendanceAdminDto {

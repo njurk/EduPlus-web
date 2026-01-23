@@ -11,7 +11,7 @@ import { validateSystemConfig } from "../../utils/validation";
 import { DataTable, type Column } from "../../components/ui/DataTable";
 import { ActionButtons } from "../../components/ui/ActionButtons";
 import type { BaseEntity, GradeType, GradeCategory, AttendanceType, LessonHour } from "../../types";
-import { formatDate } from "../../utils/formatters";
+import { formatDateTime } from "../../utils/formatters";
 import { useCMSContent } from "../../hooks/useCMSContent";
 
 
@@ -329,8 +329,8 @@ export const SystemConfig = () => {
 
         return [
             ...specificCols,
-            { header: getText('columns.createdAt'), render: (row) => formatDate(row.createdAt), className: "text-neutral-500 text-xs" },
-            { header: getText('columns.updatedAt'), render: (row) => formatDate(row.updatedAt), className: "text-neutral-500 text-xs" },
+            { header: getText('columns.createdAt'), render: (row) => formatDateTime(row.createdAt), className: "text-neutral-500 text-xs" },
+            { header: getText('columns.updatedAt'), render: (row) => formatDateTime(row.updatedAt), className: "text-neutral-500 text-xs" },
             {
                 header: getText('columns.actions'),
                 className: "text-right",

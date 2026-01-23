@@ -6,7 +6,7 @@ import { Edit2, Trash2, Calendar, Tag, MessageSquare, Scale, User } from 'lucide
 import { clsx } from 'clsx';
 import type { Grade, GradeType, GradeCategory, GradeDto } from '../../types';
 import { validateGradeForm } from '../../utils/validation';
-import { formatDate } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 
 interface GradeModalProps {
     isOpen: boolean;
@@ -114,7 +114,7 @@ export const GradeModal = ({ isOpen, onClose, onSuccess, studentId, subjectId, g
 
                             <div className="flex items-center gap-3">
                                 <Calendar size={16} className="text-neutral-400" />
-                                <div><span className="text-xs text-neutral-500 block">Data wystawienia oceny</span><span className="font-medium">{formatDate(grade.createdAt)}</span></div>
+                                <div><span className="text-xs text-neutral-500 block">Data wystawienia oceny</span><span className="font-medium">{formatDateTime(grade.createdAt)}</span></div>
                             </div>
                             <div className="flex items-start gap-3 pt-2 border-t border-neutral-200/50 mt-1">
                                 <MessageSquare size={16} className="text-neutral-400 mt-1" />

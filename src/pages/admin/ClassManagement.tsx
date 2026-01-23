@@ -11,7 +11,7 @@ import { Users, BookOpen, UserPlus, RefreshCcw, Search, Check, Plus, ArrowLeft }
 import { clsx } from 'clsx';
 import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear } from '../../types';
 import { validateClassForm } from '../../utils/validation';
-import { formatDate, formatName } from '../../utils/formatters';
+import { formatDateTime, formatName } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
@@ -184,7 +184,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                 { header: getText('columns.ordinal'), sortKey: 'id', accessor: 'orderNumber', className: 'w-12 text-center' },
                                 { header: getText('columns.student'), sortKey: 'lastName', render: (row) => formatName(row.student), className: 'font-medium' },
                                 { header: getText('columns.email'), sortKey: 'email', render: (row) => row.student?.email },
-                                { header: getText('columns.createdAt'), sortKey: 'createdat', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+                                { header: getText('columns.createdAt'), sortKey: 'createdat', render: (row) => formatDateTime(row.createdAt), className: 'text-xs text-neutral-500' },
                                 {
                                     header: getText('columns.actions'),
                                     className: 'text-right',
@@ -208,7 +208,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                             columns={[
                                 { header: getText('columns.subject'), sortKey: 'subjectName', accessor: 'subjectName', className: 'font-medium pl-4' },
                                 { header: getText('columns.teacher'), sortKey: 'teacherName', accessor: 'teacherName' },
-                                { header: getText('columns.createdAt'), sortKey: 'createdat', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
+                                { header: getText('columns.createdAt'), sortKey: 'createdat', render: (row) => formatDateTime(row.createdAt), className: 'text-xs text-neutral-500' },
                                 {
                                     header: getText('columns.actions'),
                                     className: 'text-right',
@@ -277,8 +277,8 @@ export const ClassManagement = () => {
     const classColumns: Column<ClassEntity>[] = [
         { header: getText('columns.class'), sortKey: 'class', className: 'text-neutral-800 font-medium', render: (row) => `${row.level}${row.letter}` },
         { header: getText('columns.studentCount'), sortKey: 'studentCount', render: (row) => row.studentCount || 0 },
-        { header: getText('columns.createdAt'), sortKey: 'created', render: (row) => formatDate(row.createdAt), className: 'text-xs text-neutral-500' },
-        { header: getText('columns.updatedAt'), sortKey: 'updated', render: (row) => formatDate(row.updatedAt), className: 'text-xs text-neutral-500' },
+        { header: getText('columns.createdAt'), sortKey: 'created', render: (row) => formatDateTime(row.createdAt), className: 'text-xs text-neutral-500' },
+        { header: getText('columns.updatedAt'), sortKey: 'updated', render: (row) => formatDateTime(row.updatedAt), className: 'text-xs text-neutral-500' },
         { header: getText('columns.actions'), className: 'text-right', render: (row) => (<div onClick={e => e.stopPropagation()}><ActionButtons isActive={row.isActive} onEdit={() => setForm({ open: true, data: { ...row }, errors: {} })} onDelete={() => delClass(row.id)} onRestore={() => restoreClass(row)} /></div>) }
     ];
 

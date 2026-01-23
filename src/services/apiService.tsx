@@ -203,6 +203,14 @@ export const api = {
 
             const response = await fetch(`${API_URL}/role?${query.toString()}`, { headers: getHeaders() });
             return handleResponse<Role[]>(response);
+        },
+        update: async (id: number, data: { name: string; description?: string }): Promise<void> => {
+            const response = await fetch(`${API_URL}/role/${id}`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            return handleResponse<void>(response);
         }
     },
 
@@ -621,6 +629,15 @@ export const api = {
             if (semesterId) url.searchParams.append('semesterId', semesterId.toString());
             const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse(response);
+        },
+        getAvailableForDate: async (date: string, classId?: number, teacherId?: number, semesterId?: number): Promise<any[]> => {
+            const url = new URL(`${API_URL}/WeeklySchedule/available`);
+            url.searchParams.append('date', date);
+            if (classId) url.searchParams.append('classId', classId.toString());
+            if (teacherId) url.searchParams.append('teacherId', teacherId.toString());
+            if (semesterId) url.searchParams.append('semesterId', semesterId.toString());
+            const response = await fetch(url.toString(), { headers: getHeaders() });
+            return handleResponse(response);
         }
     },
     lessons: {
@@ -638,11 +655,27 @@ export const api = {
             const response = await fetch(url.toString(), { headers: getHeaders() });
             return handleResponse(response);
         },
-        generateLessons: async (classId: number, schoolYearId: number, semesterId: number): Promise<{ generatedCount: number }> => {
-            const response = await fetch(`${API_URL}/lesson/generate`, {
+        createFromSchedule: async (scheduleId: number, date: string, teacherId?: number): Promise<any> => {
+            const response = await fetch(`${API_URL}/lesson/from-schedule`, {
                 method: 'POST',
                 headers: getHeaders(),
-                body: JSON.stringify({ classId, schoolYearId, semesterId })
+                body: JSON.stringify({ scheduleId, date, teacherId })
+            });
+            return handleResponse(response);
+        },
+        getDetails: async (id: number): Promise<any> => {
+            const response = await fetch(`${API_URL}/lesson/${id}/details`, { headers: getHeaders() });
+            return handleResponse(response);
+        },
+        getAttendance: async (id: number): Promise<any[]> => {
+            const response = await fetch(`${API_URL}/lesson/${id}/attendance`, { headers: getHeaders() });
+            return handleResponse(response);
+        },
+        updateAttendance: async (lessonId: number, studentId: number, attendanceTypeId: number | null): Promise<void> => {
+            const response = await fetch(`${API_URL}/lesson/${lessonId}/attendance/${studentId}`, {
+                method: 'PATCH',
+                headers: getHeaders(),
+                body: JSON.stringify({ attendanceTypeId })
             });
             return handleResponse(response);
         }
