@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, FileText, Table, FileSpreadsheet, ChevronDown } from 'lucide-react';
+import { Download, FileText, Table, FileSpreadsheet, ChevronDown, FileType } from 'lucide-react';
 import { Button } from './Button';
 import clsx from 'clsx';
 
 interface ExportButtonProps {
-    onExport: (format: 'pdf' | 'xlsx' | 'csv') => void;
+    onExport: (format: 'pdf' | 'xlsx' | 'csv' | 'docx') => void;
     disabled?: boolean;
     className?: string;
 }
@@ -25,7 +25,8 @@ export const ExportButton = ({ onExport, disabled, className }: ExportButtonProp
 
     const options = [
         { format: 'pdf' as const, label: 'PDF', icon: FileText },
-        { format: 'xlsx' as const, label: 'Excel', icon: FileSpreadsheet },
+        { format: 'xlsx' as const, label: 'Excel (xlsx)', icon: FileSpreadsheet },
+        { format: 'docx' as const, label: 'Word (docx)', icon: FileType },
         { format: 'csv' as const, label: 'CSV', icon: Table }
     ];
 
@@ -38,12 +39,12 @@ export const ExportButton = ({ onExport, disabled, className }: ExportButtonProp
                 className="flex items-center gap-2"
             >
                 <Download size={16} />
-                Eksport
+                Eksportuj
                 <ChevronDown size={14} className={clsx("transition-transform", isOpen && "rotate-180")} />
             </Button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-1 bg-white border border-neutral-200 rounded-xs shadow-lg z-50 min-w-[140px]">
+                <div className="absolute right-0 mt-1 bg-white border border-neutral-200 rounded-xs shadow-lg z-50 min-w-[150px]">
                     {options.map(({ format, label, icon: Icon }) => (
                         <button
                             key={format}

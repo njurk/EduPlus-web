@@ -223,11 +223,7 @@ export const Tickets = () => {
                                 />
                             </div>
 
-                            <div className="flex items-center justify-between pt-4 border-t">
-                                <p className="text-xs text-neutral-500">
-                                    <Mail size={12} className="inline mr-1" />
-                                    Odpowiedź zostanie wysłana na: <strong>{selectedTicket.email}</strong>
-                                </p>
+                            <div className="flex items-center justify-end pt-4 border-t">
                                 <div className="flex gap-3">
                                     <Button variant="secondary" onClick={backToList} disabled={resolveLoading}>
                                         Anuluj
