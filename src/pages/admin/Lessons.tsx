@@ -4,13 +4,15 @@ import { Plus, RefreshCcw } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
+import { Pagination } from '../../components/ui/Pagination';
 import { formatDateTime } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
+import { TrashButton } from '../../components/ui/TrashButton';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { LessonDetailView } from '../../components/views/LessonDetailView';
 import { Modal } from '../../components/modals/Modal';
-import type { SchoolYear, SemesterDto, ClassEntity, LessonDetailsDto, LessonAttendanceDto, User } from '../../types';
+import type { SchoolYear, SemesterDto, ClassEntity, LessonDetailsDto, LessonAttendanceDto, User, PaginatedResponse } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
 type ViewMode = 'list' | 'details' | 'edit';
@@ -18,6 +20,8 @@ type ViewMode = 'list' | 'details' | 'edit';
 export const Lessons = () => {
     const { getText } = useCMSContent('lessons');
     const [data, setData] = useState<any[]>([]);
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<any> | null>(null);
+    const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
     const [years, setYears] = useState<SchoolYear[]>([]);
     const [semesters, setSemesters] = useState<SemesterDto[]>([]);
@@ -40,13 +44,17 @@ export const Lessons = () => {
         classId: null as number | null,
         statusId: null as number | null,
         subjectId: null as number | null,
-        classroomId: null as number | null
+        classroomId: null as number | null,
+        teacherId: null as number | null,
+        showInactive: false
     });
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [addDate, setAddDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedClassIdModal, setSelectedClassIdModal] = useState<number | null>(null);
     const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null);
+    const [selectedStatusId, setSelectedStatusId] = useState<number | null>(null);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
     const [teachers, setTeachers] = useState<User[]>([]);
     const [templates, setTemplates] = useState<any[]>([]);
     const [templatesLoading, setTemplatesLoading] = useState(false);
@@ -61,7 +69,7 @@ export const Lessons = () => {
         api.lessonStatuses.getAll().then(setStatuses).catch(console.error);
         api.subjects.getAll().then(setSubjects).catch(console.error);
         api.classrooms.getAll().then(setClassrooms).catch(console.error);
-        api.users.getAll({ roleName: 'Nauczyciel' }).then(setTeachers).catch(console.error);
+        api.users.getAll({ roleLevel: 2, pageSize: 1000 }).then(res => setTeachers(res.data)).catch(console.error);
     }, []);
 
     useEffect(() => {
@@ -71,7 +79,7 @@ export const Lessons = () => {
                 api.classManagement.getClassesByYear(filters.yearId)
             ]).then(([sem, cls]) => {
                 setSemesters(sem);
-                setClasses(cls);
+                setClasses(cls.data);
             });
         }
     }, [filters.yearId]);
@@ -81,6 +89,8 @@ export const Lessons = () => {
         setLoading(true);
         try {
             const params: Record<string, any> = {
+                pageNumber,
+                pageSize: 20,
                 search: filters.search,
                 sortBy: filters.sortBy,
                 sortDesc: filters.sortDesc,
@@ -89,11 +99,19 @@ export const Lessons = () => {
             if (filters.classId) params.classId = filters.classId;
             if (filters.subjectId) params.subjectId = filters.subjectId;
             if (filters.semesterId) params.semesterId = filters.semesterId;
-            setData(await api.lessons.getAll(params));
+            if (filters.statusId) params.statusId = filters.statusId;
+            if (filters.classroomId) params.classroomId = filters.classroomId;
+            if (filters.teacherId) params.teacherId = filters.teacherId;
+            if (filters.showInactive) params.showInactive = true;
+            const response = await api.lessons.getAll(params);
+            setPaginatedData(response);
+            setData(response.data);
         } finally { setLoading(false); }
-    }, [filters]);
+    }, [filters, pageNumber]);
 
     useEffect(() => { loadData(); }, [loadData]);
+
+    useEffect(() => { setPageNumber(1); }, [filters.search, filters.yearId, filters.semesterId, filters.classId, filters.statusId, filters.subjectId, filters.classroomId, filters.teacherId]);
 
     const openLessonView = async (lesson: any, mode: 'details' | 'edit') => {
         setDetailsLoading(true);
@@ -117,9 +135,14 @@ export const Lessons = () => {
         setAddDate(new Date().toISOString().split('T')[0]);
         setSelectedClassIdModal(null);
         setSelectedTeacherId(null);
+        const completedStatus = statuses.find(s => s.slug === 'completed');
+        setSelectedStatusId(completedStatus?.id || null);
+        setSelectedTemplateId(null);
         setTemplates([]);
         setIsAddModalOpen(true);
     };
+
+    const isSubstituteStatus = statuses.find(s => s.id === selectedStatusId)?.slug === 'substitute';
 
     const loadTemplates = useCallback(async () => {
         if (!isAddModalOpen || !addDate) return;
@@ -129,7 +152,7 @@ export const Lessons = () => {
             const result = await api.schedule.getAvailableForDate(
                 addDate,
                 selectedClassIdModal || undefined,
-                selectedTeacherId || undefined,
+                isSubstituteStatus ? undefined : (selectedTeacherId || undefined),
                 currentSemester?.id
             );
             setTemplates(result);
@@ -138,13 +161,14 @@ export const Lessons = () => {
         } finally {
             setTemplatesLoading(false);
         }
-    }, [isAddModalOpen, addDate, selectedClassIdModal, selectedTeacherId, semesters]);
+    }, [isAddModalOpen, addDate, selectedClassIdModal, selectedTeacherId, semesters, isSubstituteStatus]);
 
     useEffect(() => { loadTemplates(); }, [loadTemplates]);
 
     const handleCreateFromTemplate = async (templateId: number) => {
         try {
-            await api.lessons.createFromSchedule(templateId, addDate, selectedTeacherId || undefined);
+            const teacherIdToUse = isSubstituteStatus && selectedTeacherId ? selectedTeacherId : undefined;
+            await api.lessons.createFromSchedule(templateId, addDate, teacherIdToUse, selectedStatusId ?? undefined);
             setIsAddModalOpen(false);
             loadData();
         } catch (e: any) {
@@ -162,18 +186,31 @@ export const Lessons = () => {
         loadData();
     };
 
-    const filteredData = data.filter(l => {
-        if (filters.statusId && l.statusId !== filters.statusId) return false;
-        if (filters.classroomId && l.classroomId !== filters.classroomId) return false;
-        return true;
-    });
+    const handleDelete = async (id: number) => {
+        if (!confirm('Czy na pewno chcesz usunąć tę lekcję?')) return;
+        try {
+            await api.lessons.delete(id);
+            loadData();
+        } catch (e: any) {
+            alert(e.message || 'Błąd usuwania lekcji');
+        }
+    };
+
+    const handleRestore = async (id: number) => {
+        try {
+            await api.lessons.restore(id);
+            loadData();
+        } catch (e: any) {
+            alert(e.message || 'Błąd przywracania lekcji');
+        }
+    };
 
     if (viewMode === 'details' || viewMode === 'edit') {
         if (detailsLoading) {
             return (
                 <div className="flex items-center justify-center h-64 text-neutral-400">
                     <RefreshCcw className="animate-spin mr-2" size={20} />
-                    Ładowanie szczegółów...
+                    Ładowanie...
                 </div>
             );
         }
@@ -219,10 +256,9 @@ export const Lessons = () => {
                             <option value="">Wszystkie klasy</option>
                             {classes.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
                         </select>
-                        <Button onClick={openAddModal}><Plus size={14} className="mr-1" /> Dodaj</Button>
                     </div>
                 </div>
-                <div className="bg-white border border-neutral-200 rounded-xs">
+                <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
                     <div className="p-3 border-b flex items-center gap-4">
                         <SearchBar value={filters.search} onChange={v => setFilters(f => ({ ...f, search: v }))} className="max-w-xs" />
                         <select
@@ -249,32 +285,62 @@ export const Lessons = () => {
                             <option value="">Wszystkie sale</option>
                             {classrooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
+                        <select
+                            value={filters.teacherId || ''}
+                            onChange={e => setFilters(f => ({ ...f, teacherId: e.target.value ? Number(e.target.value) : null }))}
+                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[160px]"
+                        >
+                            <option value="">Wszyscy nauczyciele</option>
+                            {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
+                        </select>
+                        <div className="ml-auto flex items-center gap-2">
+                            <TrashButton
+                                isTrashActive={filters.showInactive}
+                                onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))}
+                            />
+                            <Button onClick={openAddModal}><Plus size={14} className="mr-1" /> Dodaj</Button>
+                        </div>
                     </div>
-                    {loading ? <LoadingSpinner /> : (
-                        <DataTable
-                            data={filteredData}
-                            sortBy={filters.sortBy}
-                            sortDesc={filters.sortDesc}
-                            onSort={field => setFilters(f => f.sortBy === field ? { ...f, sortDesc: !f.sortDesc } : { ...f, sortBy: field, sortDesc: true })}
-                            columns={[
-                                { header: getText('columns.orderNumber'), sortKey: 'ordernumber', render: l => <span className="font-medium">{l.orderNumber}</span> },
-                                { header: getText('columns.class'), render: l => l.className },
-                                { header: getText('columns.classroom'), render: l => l.classroomName || '-' },
-                                { header: getText('columns.subject'), render: l => <span className="font-medium">{l.subjectName}</span> },
-                                { header: getText('columns.status'), render: l => <span className="text-xs">{l.statusName}</span> },
-                                { header: getText('columns.createdAt'), sortKey: 'created', render: l => <span className="text-xs text-neutral-500">{formatDateTime(l.createdAt)}</span> },
-                                { header: getText('columns.updatedAt'), sortKey: 'updated', render: l => <span className="text-xs text-neutral-500">{formatDateTime(l.updatedAt)}</span> },
-                                { header: getText('columns.modifiedBy'), render: l => <span className="text-xs text-neutral-500">{l.modifiedByName || 'System'}</span> },
-                                {
-                                    header: getText('columns.actions'), className: 'text-right', render: l => (
-                                        <ActionButtons
-                                            onDetails={() => openLessonView(l, 'details')}
-                                            onEdit={() => openLessonView(l, 'edit')}
-                                        />
-                                    )
-                                }
-                            ]}
-                            emptyMessage={getText('emptyMessage')}
+                    <div className="flex-1">
+                        {loading ? <LoadingSpinner /> : (
+                            <DataTable
+                                data={data}
+                                sortBy={filters.sortBy}
+                                sortDesc={filters.sortDesc}
+                                onSort={field => setFilters(f => f.sortBy === field ? { ...f, sortDesc: !f.sortDesc } : { ...f, sortBy: field, sortDesc: true })}
+                                columns={[
+                                    { header: getText('columns.createdAt'), sortKey: 'created', render: l => <span className="text-xs text-neutral-500">{formatDateTime(l.createdAt)}</span> },
+                                    { header: getText('columns.orderNumber'), sortKey: 'ordernumber', render: l => <span className="font-medium">{l.orderNumber}</span> },
+                                    { header: getText('columns.class'), render: l => l.className },
+                                    { header: getText('columns.classroom'), render: l => l.classroomName || '-' },
+                                    { header: getText('columns.subject'), render: l => <span className="font-medium">{l.subjectName}</span> },
+                                    { header: 'Nauczyciel', render: l => <span className="text-sm">{l.teacherName}</span> },
+                                    { header: getText('columns.status'), render: l => <span className="text-xs">{l.statusName}</span> },
+                                    { header: getText('columns.updatedAt'), sortKey: 'updated', render: l => <span className="text-xs text-neutral-500">{formatDateTime(l.updatedAt)}</span> },
+                                    { header: getText('columns.modifiedBy'), render: l => <span className="text-xs text-neutral-500">{l.modifiedByName || 'System'}</span> },
+                                    {
+                                        header: getText('columns.actions'), className: 'text-right', render: l => (
+                                            <ActionButtons
+                                                isActive={l.isActive}
+                                                onDetails={() => openLessonView(l, 'details')}
+                                                onEdit={() => openLessonView(l, 'edit')}
+                                                onDelete={() => handleDelete(l.id)}
+                                                onRestore={() => handleRestore(l.id)}
+                                            />
+                                        )
+                                    }
+                                ]}
+                                emptyMessage={getText('emptyMessage')}
+                            />
+                        )}
+                    </div>
+                    {paginatedData && (
+                        <Pagination
+                            currentPage={pageNumber}
+                            totalPages={paginatedData.totalPages}
+                            totalCount={paginatedData.totalCount}
+                            pageSize={paginatedData.pageSize}
+                            onPageChange={setPageNumber}
                         />
                     )}
                 </div>
@@ -308,17 +374,6 @@ export const Lessons = () => {
                                 {classes.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="label-text block mb-1">Nauczyciel</label>
-                            <select
-                                value={selectedTeacherId || ''}
-                                onChange={e => setSelectedTeacherId(e.target.value ? Number(e.target.value) : null)}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                            >
-                                <option value="">Wszyscy nauczyciele</option>
-                                {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
-                            </select>
-                        </div>
                     </div>
 
                     <div className="border-t pt-4">
@@ -332,8 +387,8 @@ export const Lessons = () => {
                                 {templates.map(t => (
                                     <div
                                         key={t.id}
-                                        onClick={() => handleCreateFromTemplate(t.id)}
-                                        className="border rounded-xs p-3 cursor-pointer hover:bg-primary-light hover:border-primary transition-colors"
+                                        onClick={() => setSelectedTemplateId(t.id)}
+                                        className={`border rounded-xs p-3 cursor-pointer transition-colors ${selectedTemplateId === t.id ? 'bg-primary-light border-primary' : 'hover:bg-neutral-50'}`}
                                     >
                                         <div className="flex justify-between items-center">
                                             <div>
@@ -351,6 +406,41 @@ export const Lessons = () => {
                                 ))}
                             </div>
                         )}
+                    </div>
+
+                    <div className="border-t pt-4 grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label-text block mb-1">Status</label>
+                            <select
+                                value={selectedStatusId || ''}
+                                onChange={e => setSelectedStatusId(e.target.value ? Number(e.target.value) : null)}
+                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
+                            >
+                                {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                        </div>
+                        {isSubstituteStatus && (
+                            <div>
+                                <label className="label-text block mb-1">Nauczyciel zastępujący</label>
+                                <select
+                                    value={selectedTeacherId || ''}
+                                    onChange={e => setSelectedTeacherId(e.target.value ? Number(e.target.value) : null)}
+                                    className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
+                                >
+                                    <option value="">Wybierz nauczyciela</option>
+                                    {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border-t pt-4 flex justify-end">
+                        <Button
+                            onClick={() => selectedTemplateId && handleCreateFromTemplate(selectedTemplateId)}
+                            disabled={!selectedTemplateId}
+                        >
+                            <Plus size={16} className="mr-2" /> Dodaj
+                        </Button>
                     </div>
                 </div>
             </Modal>

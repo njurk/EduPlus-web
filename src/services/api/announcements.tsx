@@ -1,9 +1,9 @@
-import type { Announcement } from '../../types';
+import type { Announcement, PaginatedResponse } from '../../types';
 import { API_URL, getHeaders, handleResponse, createCrudResource } from './core';
 
 export const announcementsApi = {
     ...createCrudResource<Announcement>('announcement'),
-    getAll: async (params?: { search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, authorName?: string, targetRoleId?: number }): Promise<Announcement[]> => {
+    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, authorName?: string, targetRoleId?: number }): Promise<PaginatedResponse<Announcement>> => {
         const url = new URL(`${API_URL}/announcement`);
         if (params) {
             Object.keys(params).forEach(key => {
@@ -14,7 +14,7 @@ export const announcementsApi = {
             });
         }
         const response = await fetch(url.toString(), { headers: getHeaders() });
-        return handleResponse<Announcement[]>(response);
+        return handleResponse<PaginatedResponse<Announcement>>(response);
     },
     restore: async (id: number): Promise<void> => {
         const response = await fetch(`${API_URL}/announcement/${id}/restore`, {

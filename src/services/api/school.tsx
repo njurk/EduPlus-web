@@ -1,6 +1,6 @@
 import type {
     SchoolYear, SchoolClass, Classroom, Subject, User,
-    ClassEntity, ClassDetailsDto, SemesterDto
+    ClassEntity, ClassDetailsDto, SemesterDto, PaginatedResponse
 } from '../../types';
 import { API_URL, getHeaders, handleResponse, createCrudResource } from './core';
 
@@ -75,11 +75,15 @@ export const classManagementApi = {
         const response = await fetch(`${API_URL}/schoolyear/${yearId}/semesters`, { headers: getHeaders() });
         return handleResponse(response);
     },
-    getClassesByYear: async (yearId: number, params?: { sortBy?: string; sortDesc?: boolean; level?: number }): Promise<ClassEntity[]> => {
+    getClassesByYear: async (yearId: number, params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDesc?: boolean; level?: number; search?: string; includeInactive?: boolean }): Promise<PaginatedResponse<ClassEntity>> => {
         const query = new URLSearchParams({ schoolYearId: String(yearId) });
+        if (params?.pageNumber !== undefined) query.append('pageNumber', String(params.pageNumber));
+        if (params?.pageSize !== undefined) query.append('pageSize', String(params.pageSize));
         if (params?.sortBy) query.append('sortBy', params.sortBy);
         if (params?.sortDesc !== undefined) query.append('sortDesc', String(params.sortDesc));
         if (params?.level !== undefined) query.append('level', String(params.level));
+        if (params?.search) query.append('search', params.search);
+        if (params?.includeInactive !== undefined) query.append('includeInactive', String(params.includeInactive));
         const response = await fetch(`${API_URL}/class?${query.toString()}`, { headers: getHeaders() });
         return handleResponse(response);
     },

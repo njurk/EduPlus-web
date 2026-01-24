@@ -3,7 +3,7 @@ import { ArrowLeft, BookOpen, Users, User, MapPin, Clock, Calendar, FileText, Ch
 import { formatDateTime, formatDateOnly } from '../../utils/formatters';
 import { api } from '../../services/apiService';
 import { Button } from '../ui/Button';
-import type { LessonDetailsDto, LessonAttendanceDto, AttendanceType } from '../../types';
+import type { LessonDetailsDto, LessonAttendanceDto, AttendanceType, User as UserType } from '../../types';
 
 interface LessonDetailViewProps {
     lesson: LessonDetailsDto;
@@ -31,11 +31,13 @@ export const LessonDetailView = ({
 
     const [classrooms, setClassrooms] = useState<any[]>([]);
     const [statuses, setStatuses] = useState<any[]>([]);
+    const [teachers, setTeachers] = useState<UserType[]>([]);
 
     const [editData, setEditData] = useState({
         classroomId: lesson.classroomId,
         statusId: lesson.statusId,
-        topic: lesson.topic
+        topic: lesson.topic,
+        teacherId: lesson.teacherId
     });
 
     useEffect(() => {
@@ -43,6 +45,7 @@ export const LessonDetailView = ({
             api.attendanceTypes.getAll().then(setAttendanceTypes).catch(console.error);
             api.classrooms.getAll().then(setClassrooms).catch(console.error);
             api.lessonStatuses.getAll().then(setStatuses).catch(console.error);
+            api.users.getAll({ roleLevel: 2, pageSize: 1000 }).then(res => setTeachers(res.data)).catch(console.error);
         }
     }, [editMode]);
 
@@ -54,7 +57,8 @@ export const LessonDetailView = ({
         setEditData({
             classroomId: lesson.classroomId,
             statusId: lesson.statusId,
-            topic: lesson.topic
+            topic: lesson.topic,
+            teacherId: lesson.teacherId
         });
     }, [lesson]);
 
@@ -91,7 +95,8 @@ export const LessonDetailView = ({
             await api.lessons.update(lesson.id, {
                 classroomId: editData.classroomId,
                 statusId: editData.statusId,
-                topic: editData.topic
+                topic: editData.topic,
+                teacherId: editData.teacherId
             });
             onLessonUpdate?.();
             onBack();
@@ -144,9 +149,20 @@ export const LessonDetailView = ({
 
                         <div className="flex items-start gap-3">
                             <User size={16} className="text-neutral-400 mt-0.5" />
-                            <div>
+                            <div className="flex-1">
                                 <p className="text-xs text-neutral-500">Nauczyciel</p>
-                                <p className="text-sm font-medium text-neutral-800">{lesson.teacherName}</p>
+                                {editMode && statuses.find(s => s.id === editData.statusId)?.slug === 'substitute' ? (
+                                    <select
+                                        value={editData.teacherId || ''}
+                                        onChange={e => setEditData(d => ({ ...d, teacherId: Number(e.target.value) || d.teacherId }))}
+                                        className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
+                                    >
+                                        <option value="">Wybierz nauczyciela</option>
+                                        {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
+                                    </select>
+                                ) : (
+                                    <p className="text-sm font-medium text-neutral-800">{lesson.teacherName}</p>
+                                )}
                             </div>
                         </div>
 

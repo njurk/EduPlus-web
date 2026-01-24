@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import type { User, Role } from '../../types';
+import type { User, Role, PaginatedResponse } from '../../types';
 import { api } from '../../services/apiService';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { Check, AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus } from 'lucide-react';
@@ -15,20 +16,30 @@ import { formatDateTime, formatName } from '../../utils/formatters';
 import { DetailsModal } from '../../components/modals/DetailsModal';
 import { Modal } from '../../components/modals/Modal';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { Pagination } from '../../components/ui/Pagination';
 
 const FIELDS_CONFIG = { firstName: "Imię", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
 
 export const Users = () => {
     const { getText } = useCMSContent('users');
     const [mainTab, setMainTab] = useState<'users' | 'relations' | 'roles'>('users');
-    const [data, setData] = useState<any[]>([]);
+    const [usersData, setUsersData] = useState<PaginatedResponse<any> | null>(null);
+    const [tableData, setTableData] = useState<any[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [viewMode, setViewMode] = useState<'list' | 'form' | 'assign'>('list');
     const [loading, setLoading] = useState(false);
+    const [pageNumber, setPageNumber] = useState(1);
     const [assignmentTarget, setAssignmentTarget] = useState<User | null>(null);
     const [assignmentCandidates, setAssignmentCandidates] = useState<User[]>([]);
     const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<number[]>([]);
     const [relationSearch, setRelationSearch] = useState('');
+
+    const [searchParams] = useSearchParams();
+    const initialRoleLevel = useMemo(() => {
+        const role = searchParams.get('roleLevel');
+        if (role) return parseInt(role);
+        return undefined;
+    }, []);
 
     const [filters, setFilters] = useState({
         search: '',
@@ -36,7 +47,7 @@ export const Users = () => {
         sortDesc: true,
         showInactive: false,
         onlyUnassignedParents: false,
-        roleName: ''
+        roleLevel: initialRoleLevel
     });
 
     const [formData, setFormData] = useState<Partial<User>>({});
@@ -51,34 +62,41 @@ export const Users = () => {
         setLoading(true);
         try {
             if (mainTab === 'users') {
-                const [users, fetchedRoles] = await Promise.all([
-                    api.users.getAll(filters),
+                const [response, fetchedRoles] = await Promise.all([
+                    api.users.getAll({ ...filters, pageNumber, pageSize: 20 }),
                     roles.length ? Promise.resolve(roles) : api.roles.getAll()
                 ]);
-                setData(users);
+                setUsersData(response);
+                setTableData(response.data);
                 if (!roles.length) setRoles(fetchedRoles);
             } else if (mainTab === 'roles') {
                 const r = await api.roles.getAll({ search: filters.search, sortBy: filters.sortBy, sortDesc: filters.sortDesc });
-                setData(r);
+                setTableData(r);
             } else {
                 if (filters.onlyUnassignedParents) {
-                    const parents = await api.users.getAll({ onlyUnassignedParents: true });
-                    setData(parents);
+                    const parents = await api.users.getAll({ onlyUnassignedParents: true, pageSize: 1000 });
+                    setTableData(parents.data);
                 } else {
                     const rels = await api.parentStudents.getAll(filters.search, filters.sortBy, filters.sortDesc);
-                    setData(rels);
+                    setTableData(rels);
                 }
             }
         } catch (e) { console.error('Error:', e); }
         finally { setLoading(false); }
-    }, [mainTab, filters, roles.length]);
+    }, [mainTab, filters, pageNumber, roles.length]);
 
-    useEffect(() => { loadData(); }, [mainTab, filters]);
+    useEffect(() => { loadData(); }, [mainTab, filters, pageNumber]);
 
     useEffect(() => {
-        setData([]);
+        setTableData([]);
+        setUsersData(null);
+        setPageNumber(1);
         setFilters(prev => ({ ...prev, search: '', showInactive: false, onlyUnassignedParents: false, sortBy: 'created', sortDesc: true }));
     }, [mainTab]);
+
+    useEffect(() => {
+        setPageNumber(1);
+    }, [filters.search, filters.roleLevel, filters.showInactive, filters.onlyUnassignedParents]);
 
     useEffect(() => {
         if (viewMode === 'form' && !roles.length) {
@@ -101,10 +119,10 @@ export const Users = () => {
             setAssignmentTarget(user);
 
             const isStudent = user.userRoles?.some((ur: any) => ur.roleName === 'Uczeń' || ur.role?.name === 'Uczeń');
-            const targetRole = isStudent ? 'Rodzic' : 'Uczeń';
+            const targetRoleLevel = isStudent ? 3 : 4;
 
-            const candidates = await api.users.getAll({ roleName: targetRole });
-            setAssignmentCandidates(candidates);
+            const candidateResponse = await api.users.getAll({ roleLevel: targetRoleLevel, pageSize: 1000 });
+            setAssignmentCandidates(candidateResponse.data);
 
             setSelectedAssignmentIds(isStudent ? (user.parentIds || []) : (user.childIds || []));
             setRelationSearch('');
@@ -283,19 +301,19 @@ export const Users = () => {
                     <SearchBar value={filters.search} onChange={v => setFilters(p => ({ ...p, search: v }))} className="max-w-xs" />
                     {mainTab === 'users' && roles.length > 0 && (
                         <select
-                            value={filters.roleName}
-                            onChange={e => setFilters(p => ({ ...p, roleName: e.target.value }))}
+                            value={filters.roleLevel ?? ''}
+                            onChange={e => setFilters(p => ({ ...p, roleLevel: e.target.value ? parseInt(e.target.value) : undefined }))}
                             className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[120px]"
                         >
                             <option value="">Wszystkie role</option>
-                            {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                            {roles.map(r => <option key={r.id} value={r.level}>{r.name}</option>)}
                         </select>
                     )}
                 </div>
                 {mainTab === 'users' && (
                     <div className="flex gap-2">
-                        <TrashButton isTrashActive={filters.showInactive || false} onToggle={() => { setLoading(true); setData([]); setFilters(p => ({ ...p, showInactive: !p.showInactive })); }} />
-                        {!filters.showInactive && <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {'Dodaj'}</Button>}
+                        <TrashButton isTrashActive={filters.showInactive || false} onToggle={() => { setLoading(true); setTableData([]); setPageNumber(1); setFilters(p => ({ ...p, showInactive: !p.showInactive })); }} />
+                        <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {'Dodaj'}</Button>
                     </div>
                 )}
                 {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> Pokaż niepowiązanych</label>}
@@ -303,63 +321,75 @@ export const Users = () => {
 
             <div className="flex-1 bg-white">
                 {mainTab === 'users' ? (
-                    <DataTable
-                        data={data}
-                        isLoading={loading}
-                        sortBy={filters.sortBy}
-                        sortDesc={filters.sortDesc}
-                        onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
-                        columns={[
-                            { header: getText('columns.user'), sortKey: 'name', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
-                            { header: getText('columns.phone'), render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
-                            {
-                                header: getText('columns.role'), render: (u) =>
-                                    <div className="flex gap-1 flex-wrap">
-                                        {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
-                                            <span key={idx} className="text-neutral-500 text-xs">{r}</span>
-                                        )) : <span className="text-neutral-400 text-xs">-</span>}
-                                    </div>
-                            },
-                            { header: getText('columns.createdAt'), sortKey: 'created', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.createdAt)}</span> },
-                            { header: getText('columns.updatedAt'), sortKey: 'updated', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.updatedAt)}</span> },
-                            { header: getText('columns.modifiedBy'), render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
-                            {
-                                header: getText('columns.actions'), className: 'text-right', render: (u) => (
-                                    <ActionButtons
-                                        isActive={u.isActive}
-                                        onEdit={u.isActive ? async () => {
-                                            try {
-                                                const fullUser = await api.users.get(u.id);
-                                                openForm(fullUser);
-                                            } catch { alert("Błąd pobierania danych użytkownika"); }
-                                        } : undefined}
-                                        onDelete={u.isActive ? () => handleAction(() => api.users.delete(u.id), "Usun?") : undefined}
-                                        onRestore={!u.isActive ? () => handleRestore(u.id) : undefined}
-                                        onDetails={async () => {
-                                            try {
-                                                const fullUser = await api.users.get(u.id);
-                                                const roleNames = fullUser.userRoles?.map((ur: any) => ur.roleName || ur.role?.name).filter(Boolean).join(', ') || '-';
-                                                const relatedContent = fullUser.relations && fullUser.relations.length > 0
-                                                    ? fullUser.relations.join(', ')
-                                                    : '-';
+                    <div className="flex flex-col h-full">
+                        <div className="flex-1">
+                            <DataTable
+                                data={tableData}
+                                isLoading={loading}
+                                sortBy={filters.sortBy}
+                                sortDesc={filters.sortDesc}
+                                onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
+                                columns={[
+                                    { header: getText('columns.user'), sortKey: 'name', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
+                                    { header: getText('columns.phone'), render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
+                                    {
+                                        header: getText('columns.role'), render: (u) =>
+                                            <div className="flex gap-1 flex-wrap">
+                                                {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
+                                                    <span key={idx} className="text-neutral-500 text-xs">{r}</span>
+                                                )) : <span className="text-neutral-400 text-xs">-</span>}
+                                            </div>
+                                    },
+                                    { header: getText('columns.createdAt'), sortKey: 'created', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.createdAt)}</span> },
+                                    { header: getText('columns.updatedAt'), sortKey: 'updated', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.updatedAt)}</span> },
+                                    { header: getText('columns.modifiedBy'), render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
+                                    {
+                                        header: getText('columns.actions'), className: 'text-right', render: (u) => (
+                                            <ActionButtons
+                                                isActive={u.isActive}
+                                                onEdit={u.isActive ? async () => {
+                                                    try {
+                                                        const fullUser = await api.users.get(u.id);
+                                                        openForm(fullUser);
+                                                    } catch (e) { console.error(e); }
+                                                } : undefined}
+                                                onDelete={u.isActive ? () => handleAction(() => api.users.delete(u.id), "Usun?") : undefined}
+                                                onRestore={!u.isActive ? () => handleRestore(u.id) : undefined}
+                                                onDetails={async () => {
+                                                    try {
+                                                        const fullUser = await api.users.get(u.id);
+                                                        const roleNames = fullUser.userRoles?.map((ur: any) => ur.roleName || ur.role?.name).filter(Boolean).join(', ') || '-';
+                                                        const relatedContent = fullUser.relations && fullUser.relations.length > 0
+                                                            ? fullUser.relations.join(', ')
+                                                            : '-';
 
-                                                setDetailsUser({
-                                                    ...fullUser,
-                                                    roleNames,
-                                                    relatedContent,
-                                                    createdAt: fullUser.createdAt,
-                                                });
-                                                setIsDetailsOpen(true);
-                                            } catch { alert("Błąd pobierania szczegółów"); }
-                                        }}
-                                    />
-                                )
-                            }
-                        ]}
-                    />
+                                                        setDetailsUser({
+                                                            ...fullUser,
+                                                            roleNames,
+                                                            relatedContent,
+                                                            createdAt: fullUser.createdAt,
+                                                        });
+                                                        setIsDetailsOpen(true);
+                                                    } catch (e) { console.error(e); }
+                                                }}
+                                            />
+                                        )
+                                    }
+                                ]} />
+                        </div>
+                        {usersData && (
+                            <Pagination
+                                currentPage={pageNumber}
+                                totalPages={usersData.totalPages}
+                                totalCount={usersData.totalCount}
+                                pageSize={usersData.pageSize}
+                                onPageChange={setPageNumber}
+                            />
+                        )}
+                    </div>
                 ) : mainTab === 'roles' ? (
                     <DataTable
-                        data={data}
+                        data={tableData}
                         isLoading={loading}
                         sortBy={filters.sortBy}
                         sortDesc={filters.sortDesc}
@@ -381,7 +411,7 @@ export const Users = () => {
                 ) : (
                     filters.onlyUnassignedParents ? (
                         <DataTable
-                            data={data}
+                            data={tableData}
                             isLoading={loading}
                             sortBy={filters.sortBy}
                             sortDesc={filters.sortDesc}
@@ -397,7 +427,7 @@ export const Users = () => {
                         />
                     ) : (
                         <DataTable
-                            data={data}
+                            data={tableData}
                             isLoading={loading}
                             sortBy={filters.sortBy}
                             sortDesc={filters.sortDesc}

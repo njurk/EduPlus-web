@@ -1,4 +1,4 @@
-import type { GradeType, GradeCategory, Grade, GradeDto, StudentGradesRowDto } from '../../types';
+import type { GradeType, GradeCategory, Grade, GradeDto, StudentGradesRowDto, PaginatedResponse } from '../../types';
 import { API_URL, getHeaders, handleResponse, createCrudResource } from './core';
 
 export const gradeTypesApi = createCrudResource<GradeType>('GradeType');
@@ -17,7 +17,7 @@ export const gradesApi = {
         const response = await fetch(`${API_URL}/grade/current-semester/${yearId}`, { headers: getHeaders() });
         return handleResponse(response);
     },
-    getAll: async (params?: Record<string, any>): Promise<any[]> => {
+    getAll: async (params?: Record<string, any>): Promise<PaginatedResponse<any>> => {
         const url = new URL(`${API_URL}/grade`);
         if (params) {
             Object.keys(params).forEach(key => {
@@ -28,7 +28,7 @@ export const gradesApi = {
             });
         }
         const response = await fetch(url.toString(), { headers: getHeaders() });
-        return handleResponse(response);
+        return handleResponse<PaginatedResponse<any>>(response);
     },
     create: async (data: GradeDto): Promise<Grade> => {
         const response = await fetch(`${API_URL}/grade`, {

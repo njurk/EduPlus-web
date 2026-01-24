@@ -1,4 +1,4 @@
-import type { LessonHour, LessonStatus, ScheduleLesson } from '../../types';
+import type { LessonHour, LessonStatus, ScheduleLesson, PaginatedResponse } from '../../types';
 import { API_URL, getHeaders, handleResponse, createCrudResource } from './core';
 
 export const lessonHoursApi = createCrudResource<LessonHour>('LessonHour');
@@ -49,7 +49,7 @@ export const scheduleApi = {
 
 export const lessonsApi = {
     ...createCrudResource<any>('lesson'),
-    getAll: async (params?: Record<string, any>): Promise<any[]> => {
+    getAll: async (params?: Record<string, any>): Promise<PaginatedResponse<any>> => {
         const url = new URL(`${API_URL}/lesson`);
         if (params) {
             Object.keys(params).forEach(key => {
@@ -60,13 +60,13 @@ export const lessonsApi = {
             });
         }
         const response = await fetch(url.toString(), { headers: getHeaders() });
-        return handleResponse(response);
+        return handleResponse<PaginatedResponse<any>>(response);
     },
-    createFromSchedule: async (scheduleId: number, date: string, teacherId?: number): Promise<any> => {
+    createFromSchedule: async (scheduleId: number, date: string, teacherId?: number, statusId?: number): Promise<any> => {
         const response = await fetch(`${API_URL}/lesson/from-schedule`, {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify({ scheduleId, date, teacherId })
+            body: JSON.stringify({ scheduleId, date, teacherId, statusId })
         });
         return handleResponse(response);
     },
@@ -83,6 +83,20 @@ export const lessonsApi = {
             method: 'PATCH',
             headers: getHeaders(),
             body: JSON.stringify({ attendanceTypeId })
+        });
+        return handleResponse(response);
+    },
+    delete: async (id: number): Promise<void> => {
+        const response = await fetch(`${API_URL}/lesson/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+    restore: async (id: number): Promise<void> => {
+        const response = await fetch(`${API_URL}/lesson/${id}/restore`, {
+            method: 'PATCH',
+            headers: getHeaders()
         });
         return handleResponse(response);
     }

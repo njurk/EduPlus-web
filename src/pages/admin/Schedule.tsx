@@ -51,7 +51,7 @@ export const Schedule = () => {
             const today = new Date().toISOString().split('T')[0];
             const current = yearsData.find(y => y.startDate <= today && y.endDate >= today) || yearsData.find(y => y.isActive) || yearsData[0];
             if (current) setSelectedYearId(current.id);
-            setLessonHours(hoursData.sort((a, b) => a.orderNumber - b.orderNumber));
+            setLessonHours(hoursData);
             setSubjects(subjectsData);
             setClassrooms(classroomsData);
         };
@@ -62,11 +62,11 @@ export const Schedule = () => {
         if (!selectedYearId) return;
         Promise.all([
             api.classManagement.getSemesters(selectedYearId),
-            api.classManagement.getClassesByYear(selectedYearId),
+            api.classManagement.getClassesByYear(selectedYearId, { includeInactive: false }),
             api.grades.getCurrentSemester(selectedYearId).catch(() => 1)
         ]).then(([sem, cls, currentSem]) => {
             setSemesters(sem);
-            setClasses(cls.filter(c => c.isActive));
+            setClasses(cls.data);
             const semToSelect = sem.find(s => s.order === currentSem) || sem[0];
             if (semToSelect) setSelectedSemesterOrder(semToSelect.order);
             else if (sem.length > 0) setSelectedSemesterOrder(sem[0].order);

@@ -6,7 +6,7 @@ import type { DashboardSummary } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { UptimeCounter } from '../../components/ui/UptimeCounter';
 import { useCMSContent } from '../../hooks/useCMSContent';
-import {formatDateTime} from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 
 export const Dashboard = () => {
   const [data, setData] = useState<DashboardSummary | null>(null);
@@ -35,9 +35,9 @@ export const Dashboard = () => {
 
   const stats = [
     { id: 'users', label: getText('stats.users'), value: data?.stats.totalUsers ?? 0, link: '/users' },
-    { id: 'students', label: getText('stats.students'), value: data?.stats.totalStudents ?? 0, link: '/users?role=student' },
-    { id: 'teachers', label: getText('stats.teachers'), value: data?.stats.totalTeachers ?? 0, link: '/users?role=teacher' },
-    { id: 'parents', label: getText('stats.parents'), value: data?.stats.totalParents ?? 0, link: '/users?role=parent' },
+    { id: 'students', label: getText('stats.students'), value: data?.stats.totalStudents ?? 0, link: '/users?roleLevel=4' },
+    { id: 'teachers', label: getText('stats.teachers'), value: data?.stats.totalTeachers ?? 0, link: '/users?roleLevel=2' },
+    { id: 'parents', label: getText('stats.parents'), value: data?.stats.totalParents ?? 0, link: '/users?roleLevel=3' },
     { id: 'classes', label: getText('stats.classes'), value: data?.stats.totalClasses ?? 0, link: '/class-management' },
   ];
 

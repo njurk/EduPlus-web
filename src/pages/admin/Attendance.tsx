@@ -10,12 +10,14 @@ import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
 import { TrashButton } from '../../components/ui/TrashButton';
-import type { SchoolYear, SemesterDto, ClassEntity } from '../../types';
+import type { SchoolYear, SemesterDto, ClassEntity, PaginatedResponse } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { Pagination } from '../../components/ui/Pagination';
 
 export const Attendance = () => {
     const { getText } = useCMSContent('attendance');
-    const [data, setData] = useState<any[]>([]);
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<any> | null>(null);
+    const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
     const [years, setYears] = useState<SchoolYear[]>([]);
     const [semesters, setSemesters] = useState<SemesterDto[]>([]);
@@ -37,7 +39,7 @@ export const Attendance = () => {
                 api.classManagement.getClassesByYear(filters.yearId)
             ]).then(([sem, cls]) => {
                 setSemesters(sem);
-                setClasses(cls);
+                setClasses(cls.data);
                 if (sem.length > 0) setFilters(f => ({ ...f, semesterOrder: sem[0].order }));
             });
         }
@@ -47,16 +49,21 @@ export const Attendance = () => {
         if (!filters.yearId) return;
         setLoading(true);
         try {
-            setData(await api.attendance.getAllAdmin({
+            const result = await api.attendance.getAllAdmin({
+                pageNumber,
+                pageSize: 20,
                 includeInactive: filters.showInactive,
                 search: filters.search,
                 sortBy: filters.sortBy,
                 sortDesc: filters.sortDesc
-            }));
+            });
+            setPaginatedData(result);
         } finally { setLoading(false); }
-    }, [filters]);
+    }, [filters, pageNumber]);
 
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
+
+    useEffect(() => { setPageNumber(1); }, [filters.search, filters.yearId, filters.semesterOrder, filters.classId, filters.showInactive]);
 
     return (
         <div className="space-y-4">
@@ -70,7 +77,7 @@ export const Attendance = () => {
                     <Button><Plus size={14} className="mr-1" />{'Dodaj'}</Button>
                 </div>
             </div>
-            <div className="bg-white border border-neutral-200 rounded-xs">
+            <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
                 <div className="p-3 border-b">
                     <SortToolbar search={filters.search} onSearchChange={v => setFilters(f => ({ ...f, search: v }))}
                         sortBy={filters.sortBy} sortDesc={filters.sortDesc}
@@ -78,13 +85,25 @@ export const Attendance = () => {
                         sortOptions={[{ field: 'studentName', label: 'Uczeń' }, { field: 'date', label: 'Data' }]}
                     />
                 </div>
-                {loading ? <LoadingSpinner /> : (
-                    <DataTable data={data} columns={[
-                        { header: getText('columns.date'), render: a => <span className="text-xs">{formatDateTime(a.lessonDate)}</span> },
-                        { header: getText('columns.student'), render: a => <span className="font-medium">{a.studentName}</span> },
-                        { header: getText('columns.subject'), render: a => a.subjectName },
-                        { header: getText('columns.status'), render: a => <span className={a.attendanceTypeName === 'Obecny' ? 'text-success' : a.attendanceTypeName === 'Nieobecny' ? 'text-danger' : 'text-warning'}>{a.attendanceTypeName}</span> }
-                    ]} emptyMessage={'Brak danych'} />
+                <div className="flex-1">
+                    {loading ? <LoadingSpinner /> : (
+                        <DataTable data={paginatedData?.data || []} columns={[
+                            { header: getText('columns.date'), render: a => <span className="text-xs">{formatDateTime(a.lessonDate)}</span> },
+                            { header: getText('columns.student'), render: a => <span className="font-medium">{a.studentName}</span> },
+                            { header: getText('columns.subject'), render: a => a.subjectName },
+                            { header: getText('columns.status'), render: a => <span className={a.attendanceTypeName === 'Obecny' ? 'text-success' : a.attendanceTypeName === 'Nieobecny' ? 'text-danger' : 'text-warning'}>{a.attendanceTypeName}</span> }
+                        ]} emptyMessage={'Brak danych'}
+                        />
+                    )}
+                </div>
+                {paginatedData && (
+                    <Pagination
+                        currentPage={pageNumber}
+                        totalPages={paginatedData.totalPages}
+                        totalCount={paginatedData.totalCount}
+                        pageSize={paginatedData.pageSize}
+                        onPageChange={setPageNumber}
+                    />
                 )}
             </div>
         </div>

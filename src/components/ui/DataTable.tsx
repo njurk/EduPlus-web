@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { clsx } from 'clsx';
-import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { LoadingSpinner } from './LoadingSpinner';
 
 export interface Column<T> {
@@ -19,7 +18,6 @@ interface DataTableProps<T> {
     isLoading?: boolean;
     emptyMessage?: string;
     onRowClick?: (item: T) => void;
-    pageSize?: number;
     sortBy?: string;
     sortDesc?: boolean;
     onSort?: (field: string) => void;
@@ -31,26 +29,10 @@ export const DataTable = <T extends { id: number | string }>({
     isLoading,
     emptyMessage = "Brak danych",
     onRowClick,
-    pageSize = 20,
     sortBy,
     sortDesc,
     onSort
 }: DataTableProps<T>) => {
-    const [currentPage, setCurrentPage] = useState(1);
-
-    const totalPages = Math.ceil(data.length / pageSize);
-
-    const paginatedData = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return data.slice(start, start + pageSize);
-    }, [data, currentPage, pageSize]);
-
-    useMemo(() => {
-        if (currentPage > totalPages && totalPages > 0) {
-            setCurrentPage(1);
-        }
-    }, [data.length, totalPages, currentPage]);
-
     if (isLoading) {
         return <LoadingSpinner className="py-12" />;
     }
@@ -84,14 +66,14 @@ export const DataTable = <T extends { id: number | string }>({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-100 text-sm">
-                        {paginatedData.length === 0 ? (
+                        {data.length === 0 ? (
                             <tr>
                                 <td colSpan={columns.length} className="p-8 text-center text-neutral-400">
                                     {emptyMessage}
                                 </td>
                             </tr>
                         ) : (
-                            paginatedData.map((item, idx) => (
+                            data.map((item, idx) => (
                                 <tr
                                     key={item.id}
                                     onClick={() => onRowClick && onRowClick(item)}
@@ -99,7 +81,7 @@ export const DataTable = <T extends { id: number | string }>({
                                 >
                                     {columns.map((col, colIdx) => (
                                         <td key={colIdx} className={clsx("px-4 py-3 text-neutral-900", col.className)}>
-                                            {col.render ? col.render(item, (currentPage - 1) * pageSize + idx) : (col.accessor ? String(item[col.accessor]) : '-')}
+                                            {col.render ? col.render(item, idx) : (col.accessor ? String(item[col.accessor]) : '-')}
                                         </td>
                                     ))}
                                 </tr>
@@ -108,33 +90,6 @@ export const DataTable = <T extends { id: number | string }>({
                     </tbody>
                 </table>
             </div>
-
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t bg-neutral-50/50">
-                    <span className="text-sm text-neutral-500">
-                        Strona {currentPage} z {totalPages} ({data.length} rekordów)
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="p-1.5 rounded-xs border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronLeft size={16} />
-                        </button>
-                        <span className="text-sm font-medium text-neutral-700 min-w-[60px] text-center">
-                            {currentPage} / {totalPages}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="p-1.5 rounded-xs border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronRight size={16} />
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

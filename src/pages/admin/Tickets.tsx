@@ -54,7 +54,6 @@ export const Tickets = () => {
             setData(response);
         } catch (error) {
             console.error(error);
-            alert("Błąd pobierania zgłoszeń");
         } finally {
             setLoading(false);
         }
@@ -253,7 +252,7 @@ export const Tickets = () => {
                 </div>
             )}
 
-            <div className="bg-white border border-neutral-200 rounded-xs">
+            <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
                 <div className="p-3 border-b flex items-center gap-4">
                     <SearchBar value={filters.search} onChange={v => setFilters(p => ({ ...p, search: v }))} className="max-w-xs" />
                     <select
@@ -269,7 +268,7 @@ export const Tickets = () => {
                         onChange={e => { setFilters(p => ({ ...p, status: e.target.value as 'open' | 'closed' | 'all' })); setPageNumber(1); }}
                         className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[140px]"
                     >
-                        <option value="all">Wszystkie</option>
+                        <option value="all">Wszystkie statusy</option>
                         <option value="open">Otwarte</option>
                         <option value="closed">Zamknięte</option>
                     </select>
@@ -279,43 +278,42 @@ export const Tickets = () => {
                     {loading && !data ? (
                         <LoadingSpinner className="py-12" />
                     ) : (
-                        <>
-                            <DataTable
-                                data={data?.data || []}
-                                sortBy={filters.sortBy}
-                                sortDesc={filters.sortDesc}
-                                onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
-                                columns={[
-                                    { header: getText('columns.email'), sortKey: 'email', render: (t) => <div className="text-neutral-900 font-medium">{t.email}</div> },
-                                    { header: getText('columns.reason'), sortKey: 'reason', render: (t) => <span className="text-neutral-900">{t.reasonName}</span> },
-                                    { header: getText('columns.status'), className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-xs text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-xs text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },
-                                    { header: getText('columns.closedAt'), sortKey: 'closedat', render: (t) => t.closedAt ? <span className="text-neutral-500 text-xs">{formatDateTime(t.closedAt)}</span> : <span className="text-neutral-300">-</span> },
-                                    { header: getText('columns.createdAt'), sortKey: 'created', render: (t) => <span className="text-neutral-600 text-xs">{formatDateTime(t.createdAt)}</span> },
-                                    { header: getText('columns.modifiedBy'), render: (t) => <span className="text-neutral-500 text-xs">{t.modifiedByName || 'System'}</span> },
-                                    {
-                                        header: getText('columns.actions'), className: 'w-32 text-right', render: (t) => (
-                                            <ActionButtons
-                                                onDetails={() => openDetails(t)}
-                                                onEdit={!t.isClosed ? () => openResolve(t) : undefined}
-                                                editLabel="Rozwiąż"
-                                                editIcon={MessageSquare}
-                                            />
-                                        )
-                                    }
-                                ]}
-                                emptyMessage={'Brak danych'}
-                            />
-
-                            {data && (
-                                <Pagination
-                                    currentPage={data.pageNumber}
-                                    totalPages={data.totalPages}
-                                    onPageChange={setPageNumber}
-                                />
-                            )}
-                        </>
+                        <DataTable
+                            data={data?.data || []}
+                            sortBy={filters.sortBy}
+                            sortDesc={filters.sortDesc}
+                            onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
+                            columns={[
+                                { header: getText('columns.email'), sortKey: 'email', render: (t) => <div className="text-neutral-900 font-medium">{t.email}</div> },
+                                { header: getText('columns.reason'), sortKey: 'reason', render: (t) => <span className="text-neutral-900">{t.reasonName}</span> },
+                                { header: getText('columns.status'), className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-xs text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-xs text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },
+                                { header: getText('columns.closedAt'), sortKey: 'closedat', render: (t) => t.closedAt ? <span className="text-neutral-500 text-xs">{formatDateTime(t.closedAt)}</span> : <span className="text-neutral-300">-</span> },
+                                { header: getText('columns.createdAt'), sortKey: 'created', render: (t) => <span className="text-neutral-600 text-xs">{formatDateTime(t.createdAt)}</span> },
+                                { header: getText('columns.modifiedBy'), render: (t) => <span className="text-neutral-500 text-xs">{t.modifiedByName || 'System'}</span> },
+                                {
+                                    header: getText('columns.actions'), className: 'w-32 text-right', render: (t) => (
+                                        <ActionButtons
+                                            onDetails={() => openDetails(t)}
+                                            onEdit={!t.isClosed ? () => openResolve(t) : undefined}
+                                            editLabel="Rozwiąż"
+                                            editIcon={MessageSquare}
+                                        />
+                                    )
+                                }
+                            ]}
+                            emptyMessage={'Brak danych'}
+                        />
                     )}
                 </div>
+                {data && (
+                    <Pagination
+                        currentPage={data.pageNumber}
+                        totalPages={data.totalPages}
+                        totalCount={data.totalCount}
+                        pageSize={data.pageSize}
+                        onPageChange={setPageNumber}
+                    />
+                )}
             </div>
 
             <DetailsModal

@@ -74,6 +74,7 @@ export interface ClassDetailsDto {
 
 export interface LessonStatus extends BaseEntity {
   name: string;
+  slug: string;
 }
 
 export interface LessonHour extends BaseEntity {

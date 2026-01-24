@@ -6,10 +6,11 @@ import { DataTable, type Column } from '../../components/ui/DataTable';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { TrashButton } from '../../components/ui/TrashButton';
+import { Pagination } from '../../components/ui/Pagination';
 import { api } from '../../services/apiService';
 import { Users, BookOpen, UserPlus, RefreshCcw, Search, Check, Plus, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
-import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear } from '../../types';
+import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear, PaginatedResponse } from '../../types';
 import { validateClassForm } from '../../utils/validation';
 import { formatDateTime, formatName } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
@@ -63,11 +64,11 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
     const loadDicts = async () => {
         if (dicts.subjects.length) return;
-        const [s, sub] = await Promise.all([
-            api.users.getAll({ roleName: 'Uczeń' }),
+        const [usersResponse, sub] = await Promise.all([
+            api.users.getAll({ roleLevel: 4, pageSize: 1000 }),
             api.subjects.getAll()
         ]);
-        setDicts(prev => ({ ...prev, students: s.filter(u => u.isActive), subjects: sub }));
+        setDicts(prev => ({ ...prev, students: usersResponse.data.filter((u: User) => u.isActive), subjects: sub }));
     };
 
     useEffect(() => {
@@ -227,7 +228,8 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 export const ClassManagement = () => {
     const { getText } = useCMSContent('classManagement');
     const [years, setYears] = useState<SchoolYear[]>([]);
-    const [classes, setClasses] = useState<ClassEntity[]>([]);
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<ClassEntity> | null>(null);
+    const [pageNumber, setPageNumber] = useState(1);
     const [selected, setSelected] = useState<{ year: number | null, class: number | null }>({ year: null, class: null });
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState<{ open: boolean, data: Partial<ClassEntity>, errors: Record<string, string> }>({ open: false, data: {}, errors: {} });
@@ -247,20 +249,22 @@ export const ClassManagement = () => {
         if (!selected.year) return;
         setLoading(true);
         api.classManagement.getClassesByYear(selected.year, {
+            pageNumber,
             sortBy: filters.sortBy,
             sortDesc: filters.sortDesc,
-            level: filters.level ? parseInt(filters.level) : undefined
+            level: filters.level ? parseInt(filters.level) : undefined,
+            search: filters.search || undefined,
+            includeInactive: showInactive
         }).then(res => {
-            let result = res.filter(c => showInactive ? !c.isActive : c.isActive);
-            if (filters.search) {
-                const q = filters.search.toLowerCase();
-                result = result.filter(c => `${c.level}${c.letter}`.toLowerCase().includes(q));
-            }
-            setClasses(result);
+            setPaginatedData(res);
         }).catch(console.error).finally(() => setLoading(false));
-    }, [selected.year, showInactive, filters]);
+    }, [selected.year, showInactive, filters, pageNumber]);
 
     useEffect(() => { loadClasses(); }, [loadClasses]);
+
+    useEffect(() => {
+        setPageNumber(1);
+    }, [filters.search, filters.level, showInactive]);
 
     const saveClass = async () => {
         const err = validateClassForm(form.data);
@@ -300,28 +304,28 @@ export const ClassManagement = () => {
                 <YearSelector years={years} selectedYear={selected.year} onChange={id => setSelected(p => ({ ...p, year: id }))} />
             </div>
 
-            <div className="bg-white border border-neutral-200 min-h-[400px]">
-                <div className="flex flex-col h-full">
-                    <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
-                        <div className="flex items-center gap-4 flex-1">
-                            <SearchBar value={filters.search} onChange={v => setFilters({ ...filters, search: v })} className="max-w-xs" />
-                            <select
-                                value={filters.level}
-                                onChange={e => setFilters({ ...filters, level: e.target.value })}
-                                className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[100px]"
-                            >
-                                <option value="">Wszystkie</option>
-                                {[1, 2, 3, 4, 5, 6, 7, 8].map(l => <option key={l} value={l}>klasa {l}</option>)}
-                            </select>
-                        </div>
-                        <div className="flex gap-2 pl-4 border-l">
-                            <TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} />
-                            {!showInactive && <Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button>}
-                        </div>
+            <div className="bg-white border border-neutral-200 min-h-[400px] flex flex-col">
+                <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
+                    <div className="flex items-center gap-4 flex-1">
+                        <SearchBar value={filters.search} onChange={v => setFilters({ ...filters, search: v })} className="max-w-xs" />
+                        <select
+                            value={filters.level}
+                            onChange={e => setFilters({ ...filters, level: e.target.value })}
+                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[100px]"
+                        >
+                            <option value="">Wszystkie poziomy</option>
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map(l => <option key={l} value={l}>klasa {l}</option>)}
+                        </select>
                     </div>
+                    <div className="flex gap-2 pl-4 border-l">
+                        <TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} />
+                        <Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button>
+                    </div>
+                </div>
+                <div className="flex-1">
                     {loading ? <div className="text-center p-12 text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" /> Ładowanie...</div> : (
                         <DataTable
-                            data={classes}
+                            data={paginatedData?.data || []}
                             columns={classColumns}
                             emptyMessage="Brak klas"
                             onRowClick={(row) => setSelected(p => ({ ...p, class: row.id }))}
@@ -331,6 +335,15 @@ export const ClassManagement = () => {
                         />
                     )}
                 </div>
+                {paginatedData && (
+                    <Pagination
+                        currentPage={pageNumber}
+                        totalPages={paginatedData.totalPages}
+                        totalCount={paginatedData.totalCount}
+                        pageSize={paginatedData.pageSize}
+                        onPageChange={setPageNumber}
+                    />
+                )}
             </div>
         </div>
     );

@@ -415,11 +415,9 @@ export const SystemConfig = () => {
                             setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
                         }}
                     />
-                    {!filters.showInactive && (
-                        <Button onClick={() => openForm()} className="h-10">
-                            <Plus size={16} className="mr-2" /> Dodaj
-                        </Button>
-                    )}
+                    <Button onClick={() => openForm()} className="h-10">
+                        <Plus size={16} className="mr-2" /> Dodaj
+                    </Button>
                 </div>
             </div>
 
