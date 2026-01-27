@@ -10,7 +10,7 @@ import { pageContentApi, targetsApi, pagesApi, cmsApi } from './api/cms';
 import { dashboardApi } from './api/dashboard';
 import { exportApi } from './api/export';
 
-export { API_URL } from './api/core';
+export { API_URL, getHeaders } from './api/core';
 
 export const api = {
     auth: authApi,

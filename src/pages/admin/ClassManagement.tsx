@@ -7,8 +7,9 @@ import { SearchBar } from '../../components/ui/SearchBar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { Pagination } from '../../components/ui/Pagination';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { api } from '../../services/apiService';
-import { Users, BookOpen, UserPlus, RefreshCcw, Search, Check, Plus, ArrowLeft } from 'lucide-react';
+import { Users, BookOpen, UserPlus, Search, Check, Plus, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear, PaginatedResponse } from '../../types';
 import { validateClassForm } from '../../utils/validation';
@@ -323,7 +324,7 @@ export const ClassManagement = () => {
                     </div>
                 </div>
                 <div className="flex-1">
-                    {loading ? <div className="text-center p-12 text-neutral-400"><RefreshCcw className="animate-spin inline mr-2" /> Ładowanie...</div> : (
+                    {loading ? <LoadingSpinner className="h-48" /> : (
                         <DataTable
                             data={paginatedData?.data || []}
                             columns={classColumns}

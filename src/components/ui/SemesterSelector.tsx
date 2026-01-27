@@ -15,7 +15,7 @@ export const SemesterSelector = ({ semesters, selectedOrder, onChange, showAll =
         onChange={(e) => onChange(e.target.value ? +e.target.value : null)}
         disabled={semesters.length === 0}
     >
-        {showAll && <option value="">Wszystkie</option>}
+        {showAll && <option value="">Wszystkie semestry</option>}
         {semesters.length === 0 && <option value="">Brak semestrów</option>}
         {semesters.map(s => <option key={s.id} value={String(s.order)}>{s.name}</option>)}
     </select>

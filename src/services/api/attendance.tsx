@@ -19,7 +19,7 @@ export const attendanceTypesApi = {
 };
 
 export const attendanceApi = {
-    getAllAdmin: async (params?: { pageNumber?: number, pageSize?: number, includeInactive?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, classId?: number, date?: string, subjectName?: string, teacherName?: string, attendanceTypeShortCode?: string }): Promise<PaginatedResponse<AttendanceAdminDto>> => {
+    getAllAdmin: async (params?: { pageNumber?: number, pageSize?: number, includeInactive?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, classId?: number, date?: string, subjectName?: string, teacherName?: string, attendanceTypeShortCode?: string, orderNumber?: number, studentName?: string }): Promise<PaginatedResponse<AttendanceAdminDto>> => {
         const url = new URL(`${API_URL}/attendance/admin`);
         if (params?.pageNumber) url.searchParams.append('pageNumber', params.pageNumber.toString());
         if (params?.pageSize) url.searchParams.append('pageSize', params.pageSize.toString());
@@ -32,16 +32,19 @@ export const attendanceApi = {
         if (params?.subjectName) url.searchParams.append('subjectName', params.subjectName);
         if (params?.teacherName) url.searchParams.append('teacherName', params.teacherName);
         if (params?.attendanceTypeShortCode) url.searchParams.append('attendanceTypeShortCode', params.attendanceTypeShortCode);
+        if (params?.orderNumber) url.searchParams.append('orderNumber', params.orderNumber.toString());
+        if (params?.studentName) url.searchParams.append('studentName', params.studentName);
         const response = await fetch(url.toString(), { headers: getHeaders() });
         return handleResponse<PaginatedResponse<AttendanceAdminDto>>(response);
     },
-    delete: async (id: number): Promise<void> => {
+    update: async (id: number, attendanceTypeId: number): Promise<void> => {
         const response = await fetch(`${API_URL}/attendance/${id}`, {
-            method: 'DELETE',
-            headers: getHeaders()
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ attendanceTypeId })
         });
         return handleResponse(response);
-    },
+    }
 };
 
 export const excusesApi = {

@@ -163,7 +163,7 @@ export const Schedule = () => {
         setEditMode(false);
     };
 
-    const days = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek'];
+    const days = [getText('days.monday'), getText('days.tuesday'), getText('days.wednesday'), getText('days.thursday'), getText('days.friday')];
 
     return (
         <div className="space-y-4">
@@ -195,11 +195,12 @@ export const Schedule = () => {
                     <ExportButton disabled={!selectedClassId} onExport={(format) => {
                         if (!selectedClassId) return;
                         const semester = semesters.find(s => s.order === selectedSemesterOrder);
-                        const semId = semester?.id;
-                        if (format === 'pdf') api.export.downloadSchedulePdf(selectedClassId, selectedYearId || undefined, semId);
-                        else if (format === 'xlsx') api.export.downloadScheduleXlsx(selectedClassId, selectedYearId || undefined, semId);
-                        else if (format === 'docx') api.export.downloadScheduleDocx(selectedClassId, selectedYearId || undefined, semId);
-                        else api.export.downloadScheduleCsv(selectedClassId, selectedYearId || undefined, semId);
+                        api.export.downloadSchedule({
+                            classId: selectedClassId,
+                            yearId: selectedYearId || undefined,
+                            semesterId: semester?.id,
+                            format
+                        });
                     }} />
                 </div>
             </div>

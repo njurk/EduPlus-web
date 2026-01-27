@@ -39,7 +39,7 @@ export const ExportButton = ({ onExport, disabled, className }: ExportButtonProp
                 className="flex items-center gap-2"
             >
                 <Download size={16} />
-                Eksportuj
+                Eksport
                 <ChevronDown size={14} className={clsx("transition-transform", isOpen && "rotate-180")} />
             </Button>
 

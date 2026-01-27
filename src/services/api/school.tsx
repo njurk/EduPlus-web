@@ -178,5 +178,9 @@ export const classManagementApi = {
             headers: getHeaders()
         });
         return handleResponse(response);
+    },
+    getClassStudents: async (classId: number): Promise<any[]> => {
+        const details = await classManagementApi.getClassDetails(classId);
+        return details.students || [];
     }
 };

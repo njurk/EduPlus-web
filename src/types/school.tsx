@@ -12,6 +12,8 @@ export interface SemesterDto {
   id: number;
   name: string;
   order: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface SchoolClass extends BaseEntity {

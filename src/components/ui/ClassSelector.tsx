@@ -14,7 +14,7 @@ export const ClassSelector = ({ classes, selectedClass, onChange, showAll = fals
         value={selectedClass || ''}
         onChange={(e) => onChange(e.target.value ? +e.target.value : null)}
     >
-        {showAll && <option value="">Wybierz klasę...</option>}
+        {showAll && <option value="">Wszystkie klasy</option>}
         {classes.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
     </select>
 );
