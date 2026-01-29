@@ -9,7 +9,7 @@ import { formatDateTime } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { TrashButton } from '../../components/ui/TrashButton';
-import { SearchBar } from '../../components/ui/SearchBar';
+import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { Modal } from '../../components/modals/Modal';
 import type { SchoolYear, SemesterDto, ClassEntity, PaginatedResponse, Subject, User } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
@@ -238,51 +238,53 @@ export const Grades = () => {
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
-                <div className="p-3 border-b flex items-center justify-between gap-4 flex-wrap">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <SearchBar value={filters.search} onChange={v => setFilters(f => ({ ...f, search: v }))} className="max-w-xs" />
-                        <select
-                            value={filters.subjectId || ''}
-                            onChange={e => setFilters(f => ({ ...f, subjectId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-9 text-sm bg-white min-w-[120px]"
-                        >
-                            <option value="">Wszystkie przedmioty</option>
-                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                        <select
-                            value={filters.gradeTypeId || ''}
-                            onChange={e => setFilters(f => ({ ...f, gradeTypeId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-9 text-sm bg-white min-w-[80px]"
-                        >
-                            <option value="">Wszystkie oceny</option>
-                            {gradeTypes.map(g => <option key={g.id} value={g.id}>{g.numeric}</option>)}
-                        </select>
-                        <select
-                            value={filters.gradeCategoryId || ''}
-                            onChange={e => setFilters(f => ({ ...f, gradeCategoryId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-9 text-sm bg-white min-w-[100px]"
-                        >
-                            <option value="">Wszystkie kategorie</option>
-                            {gradeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                        <select
-                            value={filters.teacherId || ''}
-                            onChange={e => setFilters(f => ({ ...f, teacherId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-9 text-sm bg-white min-w-[140px]"
-                        >
-                            <option value="">Wszyscy nauczyciele</option>
-                            {teachers.map(t => <option key={t.id} value={t.id}>{t.lastName} {t.firstName}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="secondary" onClick={() => { setExportOpen(true); setExportFilters({ yearId: filters.yearId, semesterId: null, classId: filters.classId, subjectId: filters.subjectId, studentId: null }); }}>
-                            <Download size={14} className="mr-1" /> Eksport
-                            <ChevronDown size={14} className="ml-1" />
-                        </Button>
-                        <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-                        <Button><Plus size={14} className="mr-1" /> Dodaj</Button>
-                    </div>
-                </div>
+                <FilterToolbar
+                    search={{ value: filters.search, onChange: v => setFilters(f => ({ ...f, search: v })) }}
+                    onReset={() => setFilters(f => ({ ...f, search: '', subjectId: null, gradeTypeId: null, gradeCategoryId: null, teacherId: null }))}
+                    rightContent={
+                        <>
+                            <Button variant="secondary" onClick={() => { setExportOpen(true); setExportFilters({ yearId: filters.yearId, semesterId: null, classId: filters.classId, subjectId: filters.subjectId, studentId: null }); }}>
+                                <Download size={14} className="mr-1" /> Eksport
+                                <ChevronDown size={14} className="ml-1" />
+                            </Button>
+                            <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
+                            <Button><Plus size={14} className="mr-1" /> Dodaj</Button>
+                        </>
+                    }
+                >
+                    <FilterSelect
+                        label="Przedmiot:"
+                        value={filters.subjectId}
+                        onChange={v => setFilters(f => ({ ...f, subjectId: v as number | null }))}
+                        options={subjects.map(s => ({ value: s.id, label: s.name }))}
+                        placeholder="Wszystkie"
+                        minWidth="120px"
+                    />
+                    <FilterSelect
+                        label="Typ:"
+                        value={filters.gradeTypeId}
+                        onChange={v => setFilters(f => ({ ...f, gradeTypeId: v as number | null }))}
+                        options={gradeTypes.map(g => ({ value: g.id, label: String(g.numeric) }))}
+                        placeholder="Wszystkie"
+                        minWidth="80px"
+                    />
+                    <FilterSelect
+                        label="Kategoria:"
+                        value={filters.gradeCategoryId}
+                        onChange={v => setFilters(f => ({ ...f, gradeCategoryId: v as number | null }))}
+                        options={gradeCategories.map(c => ({ value: c.id, label: c.name }))}
+                        placeholder="Wszystkie"
+                        minWidth="100px"
+                    />
+                    <FilterSelect
+                        label="Nauczyciel:"
+                        value={filters.teacherId}
+                        onChange={v => setFilters(f => ({ ...f, teacherId: v as number | null }))}
+                        options={teachers.map(t => ({ value: t.id, label: `${t.lastName} ${t.firstName}` }))}
+                        placeholder="Wszyscy"
+                        minWidth="140px"
+                    />
+                </FilterToolbar>
                 <div className="flex-1">
                     {loading ? <LoadingSpinner /> : (
                         <DataTable

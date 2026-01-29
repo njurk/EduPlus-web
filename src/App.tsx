@@ -2,9 +2,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Dashboard } from './pages/admin/Dashboard';
 import { AdminLayout } from './layouts/AdminLayout';
+import { TeacherLayout } from './layouts/TeacherLayout';
+import { TeacherDashboard } from './pages/teacher/Dashboard';
 import { Users } from './pages/admin/Users';
 import { SystemConfig } from './pages/admin/SystemConfig';
-import { Login } from './pages/Login';
+import { TeacherLogin } from './pages/TeacherLogin';
+import { AdminLogin } from './pages/AdminLogin';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Settings } from './pages/admin/Settings';
 import { ClassManagement } from './pages/admin/ClassManagement';
@@ -18,6 +21,7 @@ import { Grades } from './pages/admin/Grades';
 import { Attendance } from './pages/admin/Attendance';
 import { Lessons } from './pages/admin/Lessons';
 import { Excuses } from './pages/admin/Excuses';
+import { Logs } from './pages/admin/Logs';
 import { SubmitTicket } from './pages/SubmitTicket';
 import { useCMSContent } from './hooks/useCMSContent';
 
@@ -36,13 +40,15 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<TeacherLogin />} />
+      <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/submit-ticket" element={<SubmitTicket />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+
       <Route element={<ProtectedRoute requiredLevel={1} />}>
-        <Route element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="system-config" element={<SystemConfig />} />
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
@@ -55,9 +61,19 @@ export default function App() {
           <Route path="attendance" element={<Attendance />} />
           <Route path="lessons" element={<Lessons />} />
           <Route path="excuses" element={<Excuses />} />
+          <Route path="logs" element={<Logs />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+
+      <Route element={<ProtectedRoute requiredLevel={2} />}>
+        <Route path="/teacher" element={<TeacherLayout />}>
+          <Route index element={<TeacherDashboard />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Route>
+
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

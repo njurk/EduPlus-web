@@ -6,8 +6,10 @@ import { AlertCircle, CheckCircle, ArrowLeft, Mail } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 import { isPasswordValid } from '../utils/validation';
 import { API_URL } from '../services/apiService';
+import { useCMSContent } from '../hooks/useCMSContent';
 
 export const ResetPassword = () => {
+    const { getText } = useCMSContent('resetPassword');
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [step, setStep] = useState<'request' | 'reset' | 'sent'>('request');
@@ -119,13 +121,20 @@ export const ResetPassword = () => {
 
     return (
         <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4 font-sans">
-            <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md border border-neutral-200">
+            <div className="bg-white p-8 rounded-sm shadow-md w-full max-w-md border border-neutral-200 relative">
+                <button
+                    type="button"
+                    onClick={() => navigate('/login')}
+                    className="absolute top-4 left-4 p-2 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 rounded-full transition-colors"
+                >
+                    <ArrowLeft size={20} />
+                </button>
                 <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold text-neutral-800">EduPlus</h1>
                     <p className="text-neutral-500 mt-1">
-                        {step === 'request' && 'Resetowanie hasła'}
-                        {step === 'sent' && 'Sprawdź swoją skrzynkę'}
-                        {step === 'reset' && 'Ustaw nowe hasło'}
+                        {step === 'request' && getText('title.request')}
+                        {step === 'sent' && getText('title.sent')}
+                        {step === 'reset' && getText('title.reset')}
                     </p>
                 </div>
 
@@ -157,15 +166,6 @@ export const ResetPassword = () => {
                         <Button type="submit" className="w-full justify-center" disabled={loading}>
                             {loading ? 'Wysyłanie...' : 'Wyślij link'}
                         </Button>
-                        <div className="text-center">
-                            <button
-                                type="button"
-                                onClick={() => navigate('/login')}
-                                className="text-sm text-primary hover:underline flex items-center justify-center gap-1 mx-auto"
-                            >
-                                <ArrowLeft size={14} /> Powrót
-                            </button>
-                        </div>
                     </form>
                 )}
 
@@ -176,10 +176,10 @@ export const ResetPassword = () => {
                         </div>
                         <div className="space-y-2">
                             <p className="text-neutral-700">
-                                Jeśli adres <strong>{email}</strong> istnieje w naszej bazie, za chwilę otrzymasz wiadomość z linkiem do resetowania hasła.
+                                {getText('message.sent').replace('{email}', email) || `Jeśli adres ${email} istnieje w naszej bazie, za chwilę otrzymasz wiadomość z linkiem do resetowania hasła.`}
                             </p>
                             <p className="text-sm text-neutral-500">
-                                Link wygasa po 1 godzinie
+                                {getText('message.linkExpirationTime')}
                             </p>
                         </div>
                         <button

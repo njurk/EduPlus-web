@@ -6,8 +6,8 @@ import { api } from '../services/apiService';
 import { AlertCircle, Lock, Mail } from 'lucide-react';
 import { useCMSContent } from '../hooks/useCMSContent';
 
-export const Login = () => {
-    const { getText } = useCMSContent('login');
+export const AdminLogin = () => {
+    const { getText } = useCMSContent('adminLogin');
     const navigate = useNavigate();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState<string | null>(null);
@@ -18,7 +18,8 @@ export const Login = () => {
         setLoading(true);
 
         try {
-            const response = await api.auth.login(formData);
+            const response = await api.auth.loginAdmin(formData);
+
             localStorage.setItem('token', response.token);
             localStorage.setItem('user', JSON.stringify({
                 id: response.userId,
@@ -26,7 +27,7 @@ export const Login = () => {
                 roles: response.roles
             }));
 
-            navigate('/');
+            navigate('/admin/dashboard');
 
         } catch (err: any) {
             setError(err.message || 'Wystąpił błąd logowania');
@@ -57,7 +58,7 @@ export const Login = () => {
                             </div>
                         )}
                         <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-1 ml-1">{getText('form.email')}</label>
+                            <label className="block text-sm font-medium text-neutral-700 mb-1 ml-1">Email</label>
                             <div className="relative">
                                 <div className="absolute left-3 top-2.5 text-neutral-400">
                                     <Mail size={18} />
@@ -73,7 +74,7 @@ export const Login = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-1 ml-1">{getText('form.password')}</label>
+                            <label className="block text-sm font-medium text-neutral-700 mb-1 ml-1">Hasło</label>
                             <div className="relative">
                                 <div className="absolute left-3 top-2.5 text-neutral-400">
                                     <Lock size={18} />
@@ -100,11 +101,22 @@ export const Login = () => {
                             {loading ? 'Logowanie...' : 'Zaloguj się'}
                         </Button>
                     </form>
+                    <p className="text-center mt-4">
+                        <Link to="/submit-ticket" className="text-xs text-neutral-500 hover:text-primary hover:underline">
+                            {getText('helpLink')}
+                        </Link>
+                    </p>
                 </div>
-                <div className="bg-neutral-50 p-4 text-center border-t border-neutral-100">
+                <div className="bg-neutral-50 p-4 flex justify-between items-center border-t border-neutral-100">
                     <p className="text-xs text-neutral-500">
                         &copy; {new Date().getFullYear()} {getText('footer')}
                     </p>
+                    <Link
+                        to="/login"
+                        className="text-xs text-neutral-500 hover:text-primary"
+                    >
+                        {getText('teacherLink')}
+                    </Link>
                 </div>
             </div>
         </div>

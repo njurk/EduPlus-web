@@ -6,8 +6,7 @@ import { DataTable } from '../../components/ui/DataTable';
 import { formatDateTime, formatDateOnly } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
-import { ClassSelector } from '../../components/ui/ClassSelector';
-import { SearchBar } from '../../components/ui/SearchBar';
+import { FilterToolbar, FilterSelect, FilterDate } from '../../components/ui/FilterToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { Modal } from '../../components/modals/Modal';
 import type { SchoolYear, SemesterDto, ClassEntity, PaginatedResponse, User, LessonHour, AttendanceType } from '../../types';
@@ -140,66 +139,59 @@ export const Attendance = () => {
                 <div className="flex gap-2">
                     <YearSelector years={years} selectedYear={filters.yearId} onChange={v => setFilters(f => ({ ...f, yearId: v, semesterOrder: null, classId: null, studentId: null }))} />
                     <SemesterSelector semesters={semesters} selectedOrder={filters.semesterOrder} onChange={v => setFilters(f => ({ ...f, semesterOrder: v }))} showAll />
-                    <ClassSelector classes={classes} selectedClass={filters.classId} onChange={v => setFilters(f => ({ ...f, classId: v, studentId: null }))} showAll />
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
-                <div className="p-3 border-b flex flex-wrap items-center gap-3">
-                    <SearchBar value={filters.search} onChange={v => setFilters(f => ({ ...f, search: v }))} className="max-w-xs" placeholder="Szukaj..." />
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs text-neutral-500">Lp:</label>
-                        <select
-                            value={filters.orderNumber || ''}
-                            onChange={e => setFilters(f => ({ ...f, orderNumber: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-8 text-sm bg-white min-w-[100px]"
-                        >
-                            <option value="">Wszystkie</option>
-                            {lessonHours.map(h => <option key={h.orderNumber} value={h.orderNumber}>{h.orderNumber}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs text-neutral-500">Data lekcji:</label>
-                        <input
-                            type="date"
-                            value={filters.lessonDate}
-                            onChange={e => setFilters(f => ({ ...f, lessonDate: e.target.value }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-8 text-sm bg-white"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs text-neutral-500">Nauczyciel:</label>
-                        <select
-                            value={filters.teacherId || ''}
-                            onChange={e => setFilters(f => ({ ...f, teacherId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-8 text-sm bg-white min-w-[160px]"
-                        >
-                            <option value="">Wszyscy nauczyciele</option>
-                            {teachers.map(t => <option key={t.id} value={t.id}>{t.lastName} {t.firstName}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs text-neutral-500">Uczeń:</label>
-                        <select
-                            value={filters.studentId || ''}
-                            onChange={e => setFilters(f => ({ ...f, studentId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-8 text-sm bg-white min-w-[160px]"
-                        >
-                            <option value="">Wszyscy uczniowie</option>
-                            {students.map(s => <option key={s.id} value={s.id}>{s.lastName} {s.firstName}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs text-neutral-500">Typ:</label>
-                        <select
-                            value={filters.attendanceTypeId || ''}
-                            onChange={e => setFilters(f => ({ ...f, attendanceTypeId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-2 h-8 text-sm bg-white min-w-[120px]"
-                        >
-                            <option value="">Wszystkie typy</option>
-                            {attendanceTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                    </div>
-                </div>
+                <FilterToolbar
+                    search={{ value: filters.search, onChange: v => setFilters(f => ({ ...f, search: v })), placeholder: 'Szukaj...' }}
+                    onReset={() => setFilters(f => ({ ...f, search: '', classId: null, orderNumber: null, teacherId: null, studentId: null, attendanceTypeId: null, lessonDate: '' }))}
+                >
+                    <FilterSelect
+                        label="Klasa:"
+                        value={filters.classId}
+                        onChange={v => setFilters(f => ({ ...f, classId: v as number | null, studentId: null }))}
+                        options={classes.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))}
+                        placeholder="Wszystkie"
+                        minWidth="120px"
+                    />
+                    <FilterSelect
+                        label="Lp.:"
+                        value={filters.orderNumber}
+                        onChange={v => setFilters(f => ({ ...f, orderNumber: v as number | null }))}
+                        options={lessonHours.map(h => ({ value: h.orderNumber, label: String(h.orderNumber) }))}
+                        placeholder="Wszystkie"
+                        minWidth="100px"
+                    />
+                    <FilterDate
+                        label="Data lekcji:"
+                        value={filters.lessonDate}
+                        onChange={v => setFilters(f => ({ ...f, lessonDate: v }))}
+                    />
+                    <FilterSelect
+                        label="Nauczyciel:"
+                        value={filters.teacherId}
+                        onChange={v => setFilters(f => ({ ...f, teacherId: v as number | null }))}
+                        options={teachers.map(t => ({ value: t.id, label: `${t.lastName} ${t.firstName}` }))}
+                        placeholder="Wszyscy"
+                        minWidth="160px"
+                    />
+                    <FilterSelect
+                        label="Uczeń:"
+                        value={filters.studentId}
+                        onChange={v => setFilters(f => ({ ...f, studentId: v as number | null }))}
+                        options={students.map(s => ({ value: s.id, label: `${s.lastName} ${s.firstName}` }))}
+                        placeholder="Wszyscy"
+                        minWidth="160px"
+                    />
+                    <FilterSelect
+                        label="Typ:"
+                        value={filters.attendanceTypeId}
+                        onChange={v => setFilters(f => ({ ...f, attendanceTypeId: v as number | null }))}
+                        options={attendanceTypes.map(t => ({ value: t.id, label: t.name }))}
+                        placeholder="Wszystkie"
+                        minWidth="120px"
+                    />
+                </FilterToolbar>
                 <div className="flex-1 min-h-[500px]">
                     {loading ? <LoadingSpinner /> : (
                         <DataTable
@@ -248,7 +240,7 @@ export const Attendance = () => {
                         <div className="grid grid-cols-2 gap-2">
                             <span className="text-neutral-500">Data lekcji:</span>
                             <span>{formatDateOnly(selectedItem.lessonDate)}</span>
-                            <span className="text-neutral-500">Lp lekcji:</span>
+                            <span className="text-neutral-500">Lp.:</span>
                             <span>{selectedItem.orderNumber}</span>
                             <span className="text-neutral-500">Klasa:</span>
                             <span>{selectedItem.className}</span>
@@ -282,7 +274,7 @@ export const Attendance = () => {
                         <div className="grid grid-cols-2 gap-2 text-sm">
                             <span className="text-neutral-500">Data lekcji:</span>
                             <span>{formatDateOnly(selectedItem.lessonDate)}</span>
-                            <span className="text-neutral-500">Lp lekcji:</span>
+                            <span className="text-neutral-500">Lp.:</span>
                             <span>{selectedItem.orderNumber}</span>
                             <span className="text-neutral-500">Klasa:</span>
                             <span>{selectedItem.className}</span>

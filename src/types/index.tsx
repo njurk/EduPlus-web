@@ -6,3 +6,4 @@ export * from './dashboard';
 export * from './attendance';
 export * from './tickets';
 export * from './cms';
+export * from './layout';

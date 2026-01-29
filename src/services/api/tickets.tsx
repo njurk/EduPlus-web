@@ -30,6 +30,13 @@ export const ticketsApi = {
             body: JSON.stringify(data)
         });
         return handleResponse<void>(response);
+    },
+    markAsRead: async (id: number): Promise<void> => {
+        const response = await fetch(`${API_URL}/Ticket/${id}/read`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        return handleResponse<void>(response);
     }
 };
 

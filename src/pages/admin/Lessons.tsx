@@ -9,7 +9,7 @@ import { formatDateTime, formatDateOnly } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { YearSelector } from '../../components/ui/YearSelector';
-import { SearchBar } from '../../components/ui/SearchBar';
+import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { Modal } from '../../components/modals/Modal';
 import type { SchoolYear, SemesterDto, ClassEntity, LessonDetailsDto, LessonAttendanceDto, User as UserType, PaginatedResponse, AttendanceType } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
@@ -356,48 +356,49 @@ export const Lessons = () => {
                     </div>
                 </div>
                 <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
-                    <div className="p-3 border-b flex items-center gap-4">
-                        <SearchBar value={filters.search} onChange={v => setFilters(f => ({ ...f, search: v }))} className="max-w-xs" />
-                        <select
-                            value={filters.statusId || ''}
-                            onChange={e => setFilters(f => ({ ...f, statusId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[140px]"
-                        >
-                            <option value="">Wszystkie statusy</option>
-                            {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                        <select
-                            value={filters.subjectId || ''}
-                            onChange={e => setFilters(f => ({ ...f, subjectId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[140px]"
-                        >
-                            <option value="">Wszystkie przedmioty</option>
-                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                        <select
-                            value={filters.classroomId || ''}
-                            onChange={e => setFilters(f => ({ ...f, classroomId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[140px]"
-                        >
-                            <option value="">Wszystkie sale</option>
-                            {classrooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                        <select
-                            value={filters.teacherId || ''}
-                            onChange={e => setFilters(f => ({ ...f, teacherId: e.target.value ? Number(e.target.value) : null }))}
-                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[160px]"
-                        >
-                            <option value="">Wszyscy nauczyciele</option>
-                            {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
-                        </select>
-                        <div className="ml-auto flex items-center gap-2">
-                            <TrashButton
-                                isTrashActive={filters.showInactive}
-                                onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))}
-                            />
-                            <Button onClick={openAddModal}><Plus size={14} className="mr-1" /> Dodaj</Button>
-                        </div>
-                    </div>
+                    <FilterToolbar
+                        search={{ value: filters.search, onChange: v => setFilters(f => ({ ...f, search: v })) }}
+                        onReset={() => setFilters(f => ({ ...f, search: '', statusId: null, subjectId: null, classroomId: null, teacherId: null }))}
+                        rightContent={
+                            <>
+                                <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
+                                <Button onClick={openAddModal}><Plus size={14} className="mr-1" /> Dodaj</Button>
+                            </>
+                        }
+                    >
+                        <FilterSelect
+                            label="Statusy:"
+                            value={filters.statusId}
+                            onChange={v => setFilters(f => ({ ...f, statusId: v as number | null }))}
+                            options={statuses.map(s => ({ value: s.id, label: s.name }))}
+                            placeholder="Wszystkie"
+                            minWidth="140px"
+                        />
+                        <FilterSelect
+                            label="Przedmioty:"
+                            value={filters.subjectId}
+                            onChange={v => setFilters(f => ({ ...f, subjectId: v as number | null }))}
+                            options={subjects.map(s => ({ value: s.id, label: s.name }))}
+                            placeholder="Wszystkie"
+                            minWidth="140px"
+                        />
+                        <FilterSelect
+                            label="Sale:"
+                            value={filters.classroomId}
+                            onChange={v => setFilters(f => ({ ...f, classroomId: v as number | null }))}
+                            options={classrooms.map(c => ({ value: c.id, label: c.name }))}
+                            placeholder="Wszystkie"
+                            minWidth="140px"
+                        />
+                        <FilterSelect
+                            label="Nauczyciel:"
+                            value={filters.teacherId}
+                            onChange={v => setFilters(f => ({ ...f, teacherId: v as number | null }))}
+                            options={teachers.map(t => ({ value: t.id, label: `${t.firstName} ${t.lastName}` }))}
+                            placeholder="Wszyscy"
+                            minWidth="160px"
+                        />
+                    </FilterToolbar>
                     <div className="flex-1">
                         {loading ? <LoadingSpinner /> : (
                             <DataTable

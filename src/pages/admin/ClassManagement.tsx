@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/modals/Modal';
 import { DataTable, type Column } from '../../components/ui/DataTable';
-import { SearchBar } from '../../components/ui/SearchBar';
+import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { Pagination } from '../../components/ui/Pagination';
@@ -173,10 +173,12 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
             <div className="bg-white border border-neutral-200 border-t-0 min-h-[500px]">
                 {activeTab === 'students' ? (
                     <div className="flex flex-col h-full">
-                        <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
-                            <SearchBar value={filters.studentSearch} onChange={v => setFilters({ ...filters, studentSearch: v })} className="max-w-xs" />
-                            <Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button>
-                        </div>
+                        <FilterToolbar
+                            search={{ value: filters.studentSearch, onChange: (v: string) => setFilters({ ...filters, studentSearch: v }) }}
+                            showResetButton={false}
+                            rightContent={<Button onClick={() => { setCandidateSearch(''); setSelections({ ...selections, candidates: [] }); setModals({ ...modals, student: true }); loadDicts(); }}><UserPlus size={16} className="mr-2" /> Przypisz</Button>}
+                            className="bg-neutral-50/30"
+                        />
                         <DataTable
                             data={details.students}
                             sortBy={studentSort.sortBy}
@@ -198,10 +200,12 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                     </div>
                 ) : (
                     <div className="flex flex-col h-full">
-                        <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
-                            <SearchBar value={filters.subjectSearch} onChange={v => setFilters({ ...filters, subjectSearch: v })} className="max-w-xs" />
-                            <Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button>
-                        </div>
+                        <FilterToolbar
+                            search={{ value: filters.subjectSearch, onChange: (v: string) => setFilters({ ...filters, subjectSearch: v }) }}
+                            showResetButton={false}
+                            rightContent={<Button onClick={() => { setSelections({ ...selections, subject: '', teacher: '' }); setModals({ ...modals, subject: true }); loadDicts(); }}><Plus size={16} className="mr-2" /> Przypisz</Button>}
+                            className="bg-neutral-50/30"
+                        />
                         <DataTable
                             data={details.subjects}
                             sortBy={subjectSort.sortBy}
@@ -284,7 +288,7 @@ export const ClassManagement = () => {
         { header: getText('columns.studentCount'), sortKey: 'studentCount', render: (row) => row.studentCount || 0 },
         { header: getText('columns.createdAt'), sortKey: 'created', render: (row) => formatDateTime(row.createdAt), className: 'text-xs text-neutral-500' },
         { header: getText('columns.updatedAt'), sortKey: 'updated', render: (row) => formatDateTime(row.updatedAt), className: 'text-xs text-neutral-500' },
-        { header: getText('columns.actions'), className: 'text-right', render: (row) => (<div onClick={e => e.stopPropagation()}><ActionButtons isActive={row.isActive} onEdit={() => setForm({ open: true, data: { ...row }, errors: {} })} onDelete={() => delClass(row.id)} onRestore={() => restoreClass(row)} /></div>) }
+        { header: getText('columns.actions'), className: 'text-right', render: (row) => (<div onClick={e => e.stopPropagation()}><ActionButtons isActive={row.isActive} onEdit={row.isActive ? () => setForm({ open: true, data: { ...row }, errors: {} }) : undefined} onDelete={row.isActive ? () => delClass(row.id) : undefined} onRestore={!row.isActive ? () => restoreClass(row) : undefined} /></div>) }
     ];
 
 
@@ -306,23 +310,27 @@ export const ClassManagement = () => {
             </div>
 
             <div className="bg-white border border-neutral-200 min-h-[400px] flex flex-col">
-                <div className="p-3 border-b flex justify-between items-center gap-4 bg-neutral-50/30">
-                    <div className="flex items-center gap-4 flex-1">
-                        <SearchBar value={filters.search} onChange={v => setFilters({ ...filters, search: v })} className="max-w-xs" />
-                        <select
-                            value={filters.level}
-                            onChange={e => setFilters({ ...filters, level: e.target.value })}
-                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[100px]"
-                        >
-                            <option value="">Wszystkie poziomy</option>
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map(l => <option key={l} value={l}>klasa {l}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex gap-2 pl-4 border-l">
-                        <TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} />
-                        <Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button>
-                    </div>
-                </div>
+                <FilterToolbar
+                    search={{ value: filters.search, onChange: v => setFilters({ ...filters, search: v }) }}
+                    onReset={() => setFilters({ ...filters, search: '', level: '' })}
+                    rightContent={
+                        <>
+                            <TrashButton isTrashActive={showInactive} onToggle={() => setShowInactive(!showInactive)} />
+                            <Button onClick={() => setForm({ open: true, data: { level: 1, letter: '', isActive: true }, errors: {} })}><Plus size={16} className="mr-2" /> Dodaj</Button>
+                        </>
+                    }
+                    className="bg-neutral-50/30"
+                >
+                    <FilterSelect
+                        label="Poziom"
+                        value={filters.level}
+                        onChange={v => setFilters({ ...filters, level: v ? String(v) : '' })}
+                        options={[1, 2, 3, 4, 5, 6, 7, 8].map(l => ({ value: l, label: `klasa ${l}` }))}
+                        placeholder="Wszystkie"
+                        minWidth="100px"
+                        parseAsNumber={false}
+                    />
+                </FilterToolbar>
                 <div className="flex-1">
                     {loading ? <LoadingSpinner className="h-48" /> : (
                         <DataTable

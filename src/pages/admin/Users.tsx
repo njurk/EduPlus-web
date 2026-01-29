@@ -5,9 +5,9 @@ import { Input } from '../../components/ui/Input';
 import type { User, Role, PaginatedResponse } from '../../types';
 import { api } from '../../services/apiService';
 import { TrashButton } from '../../components/ui/TrashButton';
-import { Check, AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus } from 'lucide-react';
+import { Check, AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus, EyeIcon } from 'lucide-react';
 import { clsx } from 'clsx';
-import { SearchBar } from '../../components/ui/SearchBar';
+import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { validateUserField, validateUserForm } from '../../utils/validation';
@@ -18,7 +18,6 @@ import { Modal } from '../../components/modals/Modal';
 import { useCMSContent } from '../../hooks/useCMSContent';
 import { Pagination } from '../../components/ui/Pagination';
 
-const FIELDS_CONFIG = { firstName: "Imię", lastName: "Nazwisko", email: "Email", phone: "Telefon", street: "Ulica i numer domu", postalCode: "Kod pocztowy", city: "Miasto" };
 
 export const Users = () => {
     const { getText } = useCMSContent('users');
@@ -34,9 +33,9 @@ export const Users = () => {
     const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<number[]>([]);
     const [relationSearch, setRelationSearch] = useState('');
 
-    const [searchParams] = useSearchParams();
     const initialRoleLevel = useMemo(() => {
-        const role = searchParams.get('roleLevel');
+        const urlParams = new URLSearchParams(window.location.search);
+        const role = urlParams.get('roleLevel');
         if (role) return parseInt(role);
         return undefined;
     }, []);
@@ -57,6 +56,18 @@ export const Users = () => {
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [editRole, setEditRole] = useState<{ id: number; name: string; description?: string } | null>(null);
     const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setFormData({ isActive: true });
+            setSelectedRoleIds([]);
+            setErrors({});
+            setViewMode('form');
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -216,11 +227,19 @@ export const Users = () => {
                 {errors.general && <div className="p-3 bg-danger-light text-danger-text rounded flex gap-2 text-sm"><AlertCircle size={16} />{errors.general}</div>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {Object.keys(FIELDS_CONFIG).map(f => (
-                        <div key={f} className={f === 'email' ? 'md:col-span-2' : ''}>
-                            <label className="label-text">{FIELDS_CONFIG[f as keyof typeof FIELDS_CONFIG]} {!['phone', 'street', 'city', 'postalCode'].includes(f) && <span className="text-danger">*</span>}</label>
-                            <Input name={f} value={(formData[f as keyof User] as string) || ''} onChange={handleInput} className={errors[f] ? "!border-danger" : ""} />
-                            {errors[f] && <span className="text-xs text-danger">{errors[f]}</span>}
+                    {([
+                        { key: 'firstName', label: 'Imię', required: true },
+                        { key: 'lastName', label: 'Nazwisko', required: true },
+                        { key: 'email', label: 'Email', required: true, colSpan: 2 },
+                        { key: 'phone', label: 'Telefon', required: false },
+                        { key: 'street', label: 'Ulica i numer domu', required: false },
+                        { key: 'postalCode', label: 'Kod pocztowy', required: false },
+                        { key: 'city', label: 'Miasto', required: false }
+                    ] as const).map(f => (
+                        <div key={f.key} className={'colSpan' in f && f.colSpan === 2 ? 'md:col-span-2' : ''}>
+                            <label className="label-text">{f.label} {f.required && <span className="text-danger">*</span>}</label>
+                            <Input name={f.key} value={(formData[f.key as keyof User] as string) || ''} onChange={handleInput} className={errors[f.key] ? "!border-danger" : ""} />
+                            {errors[f.key] && <span className="text-xs text-danger">{errors[f.key]}</span>}
                         </div>
                     ))}
                     <div className="md:col-span-2 border-t pt-4">
@@ -296,28 +315,37 @@ export const Users = () => {
                 </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4 p-4 border-b bg-white">
-                <div className="flex items-center gap-4 flex-1">
-                    <SearchBar value={filters.search} onChange={v => setFilters(p => ({ ...p, search: v }))} className="max-w-xs" />
-                    {mainTab === 'users' && roles.length > 0 && (
-                        <select
-                            value={filters.roleLevel ?? ''}
-                            onChange={e => setFilters(p => ({ ...p, roleLevel: e.target.value ? parseInt(e.target.value) : undefined }))}
-                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[120px]"
+            <FilterToolbar
+                search={{ value: filters.search, onChange: v => setFilters(p => ({ ...p, search: v })) }}
+                onReset={mainTab === 'users' ? () => setFilters(p => ({ ...p, search: '', roleLevel: undefined })) : undefined}
+                rightContent={
+                    mainTab === 'users' ? (
+                        <>
+                            <TrashButton isTrashActive={filters.showInactive || false} onToggle={() => { setLoading(true); setTableData([]); setPageNumber(1); setFilters(p => ({ ...p, showInactive: !p.showInactive })); }} />
+                            <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {'Dodaj'}</Button>
+                        </>
+                    ) : (
+                        <Button
+                            variant={filters.onlyUnassignedParents ? 'primary' : 'secondary'}
+                            onClick={() => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: !p.onlyUnassignedParents })); }}
                         >
-                            <option value="">Wszystkie role</option>
-                            {roles.map(r => <option key={r.id} value={r.level}>{r.name}</option>)}
-                        </select>
-                    )}
-                </div>
-                {mainTab === 'users' && (
-                    <div className="flex gap-2">
-                        <TrashButton isTrashActive={filters.showInactive || false} onToggle={() => { setLoading(true); setTableData([]); setPageNumber(1); setFilters(p => ({ ...p, showInactive: !p.showInactive })); }} />
-                        <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {'Dodaj'}</Button>
-                    </div>
+                            <EyeIcon size={16} className="mr-2" />
+                            {filters.onlyUnassignedParents ? 'Pokaż powiązanych' : 'Pokaż niepowiązanych'}
+                        </Button>
+                    )
+                }
+                className="p-4 border-b bg-white"
+            >
+                {mainTab === 'users' && roles.length > 0 && (
+                    <FilterSelect
+                        value={filters.roleLevel ?? ''}
+                        onChange={v => setFilters(p => ({ ...p, roleLevel: v ? Number(v) : undefined }))}
+                        options={roles.map(r => ({ value: r.level, label: r.name }))}
+                        placeholder="Wszystkie role"
+                        minWidth="120px"
+                    />
                 )}
-                {mainTab === 'relations' && <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer whitespace-nowrap"><input type="checkbox" checked={filters.onlyUnassignedParents} onChange={e => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: e.target.checked })); }} className="rounded border-neutral-300 text-primary focus:ring-primary" /> Pokaż niepowiązanych</label>}
-            </div>
+            </FilterToolbar>
 
             <div className="flex-1 bg-white">
                 {mainTab === 'users' ? (
@@ -459,7 +487,13 @@ export const Users = () => {
                     title={`Szczegóły użytkownika: ${formatName(detailsUser)}`}
                     data={detailsUser}
                     labels={{
-                        ...FIELDS_CONFIG,
+                        firstName: "Imię",
+                        lastName: "Nazwisko",
+                        email: "Email",
+                        phone: "Telefon",
+                        street: "Ulica i numer domu",
+                        postalCode: "Kod pocztowy",
+                        city: "Miasto",
                         roleNames: "Role",
                         relatedContent: "Powiązania",
                         createdAt: "Data utworzenia",

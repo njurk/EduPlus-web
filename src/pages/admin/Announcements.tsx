@@ -1,10 +1,12 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Badge } from '../../components/ui/Badge';
 import type { Announcement, Role, PaginatedResponse } from '../../types';
 import { api } from '../../services/apiService';
 import { Plus, User, AlertCircle } from 'lucide-react';
-import { SearchBar } from '../../components/ui/SearchBar';
+import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
 import { formatDateTime } from '../../utils/formatters';
@@ -123,6 +125,7 @@ const AnnouncementModal = ({ isOpen, onClose, announcement, onSaved }: Announcem
 
 export const Announcements = () => {
     const { getText } = useCMSContent('announcements');
+    const [searchParams, setSearchParams] = useSearchParams();
     const [allAuthors, setAllAuthors] = useState<string[]>([]);
     const [allRoles, setAllRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(false);
@@ -134,16 +137,18 @@ export const Announcements = () => {
     const [detailsAnnouncement, setDetailsAnnouncement] = useState<Announcement | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-    const stripHtml = (html: string) => {
-        const tmp = document.createElement('DIV');
-        tmp.innerHTML = html;
-        return tmp.textContent || tmp.innerText || '';
-    };
-
     useEffect(() => {
         api.announcements.getAuthors().then(setAllAuthors).catch(console.error);
         api.roles.getAll().then(setAllRoles).catch(console.error);
     }, []);
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setSelectedAnnouncement(null);
+            setIsModalOpen(true);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -198,32 +203,34 @@ export const Announcements = () => {
                 <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
-                <div className="p-3 border-b flex justify-between items-center gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                        <SearchBar value={filters.search} onChange={v => setFilters(p => ({ ...p, search: v }))} className="max-w-xs" />
-                        <select
-                            value={filters.authorName}
-                            onChange={e => setFilters(p => ({ ...p, authorName: e.target.value }))}
-                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[140px]"
-                        >
-                            <option value="">Wszyscy autorzy</option>
-                            {allAuthors.map(a => <option key={a} value={a}>{a}</option>)}
-                        </select>
-                        <select
-                            value={filters.targetRoleId ?? ''}
-                            onChange={e => setFilters(p => ({ ...p, targetRoleId: e.target.value === '' ? undefined : Number(e.target.value) }))}
-                            className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[140px]"
-                        >
-                            <option value="">Wszyscy adresaci</option>
-                            <option value="0">Wszyscy</option>
-                            {allRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex gap-2">
-                        <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(p => ({ ...p, showInactive: !p.showInactive }))} />
-                        <Button onClick={() => { setSelectedAnnouncement(null); setIsModalOpen(true); }}><Plus size={14} className="mr-1" />Dodaj</Button>
-                    </div>
-                </div>
+                <FilterToolbar
+                    search={{ value: filters.search, onChange: v => setFilters(p => ({ ...p, search: v })) }}
+                    onReset={() => setFilters(p => ({ ...p, search: '', authorName: '', targetRoleId: undefined }))}
+                    rightContent={
+                        <>
+                            <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(p => ({ ...p, showInactive: !p.showInactive }))} />
+                            <Button onClick={() => { setSelectedAnnouncement(null); setIsModalOpen(true); }}><Plus size={14} className="mr-1" />Dodaj</Button>
+                        </>
+                    }
+                >
+                    <FilterSelect
+                        label="Autor"
+                        value={filters.authorName}
+                        onChange={v => setFilters(p => ({ ...p, authorName: v ? String(v) : '' }))}
+                        options={allAuthors.map(a => ({ value: a, label: a }))}
+                        placeholder="Wszyscy"
+                        minWidth="140px"
+                        parseAsNumber={false}
+                    />
+                    <FilterSelect
+                        label="Adresaci"
+                        value={filters.targetRoleId ?? ''}
+                        onChange={v => setFilters(p => ({ ...p, targetRoleId: v === '' || v === null ? undefined : Number(v) }))}
+                        options={[{ value: 0, label: 'Wszyscy' }, ...allRoles.map(r => ({ value: r.id, label: r.name }))]}
+                        placeholder="Wszyscy"
+                        minWidth="140px"
+                    />
+                </FilterToolbar>
                 <div className="flex-1">
                     {loading ? <LoadingSpinner /> : (
                         <DataTable
@@ -237,23 +244,22 @@ export const Announcements = () => {
                                     header: getText('columns.title'), className: 'w-1/4', render: (a) => (
                                         <div className="flex items-center gap-2">
                                             <span className="text-neutral-900 font-medium">{a.title}</span>
-                                            {a.isRead === false && <span className="px-1.5 py-0.5 text-[10px] font-bold bg-primary text-white rounded">NOWE</span>}
+                                            <Badge variant="new" show={a.isRead === false} />
                                         </div>
                                     )
                                 },
-                                { header: getText('columns.content'), render: (a) => <span className="text-neutral-700 text-sm line-clamp-2">{stripHtml(a.description)}</span> },
                                 { header: getText('columns.author'), sortKey: 'author', className: 'w-32', render: (a) => <div className="flex items-center gap-2 text-sm text-neutral-600"><User size={14} />{a.authorName}</div> },
                                 { header: 'Adresaci', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{a.targetRoles || 'Wszyscy'}</span> },
                                 { header: 'Edytowano', sortKey: 'updated', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{formatDateTime(a.updatedAt)}</span> },
                                 { header: getText('columns.modifiedBy'), className: 'w-40', render: (a) => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
                                 {
-                                    header: getText('columns.actions'), className: 'w-20 text-right', render: (a) => filters.showInactive ? (
-                                        <button className="text-sm text-primary hover:underline" onClick={() => handleRestore(a.id)}>Przywróć</button>
-                                    ) : (
+                                    header: getText('columns.actions'), className: 'w-20 text-right', render: (a) => (
                                         <ActionButtons
-                                            onEdit={() => { setSelectedAnnouncement(a); setIsModalOpen(true); }}
-                                            onDelete={() => handleDelete(a.id)}
-                                            onDetails={() => handleOpenDetails(a)}
+                                            isActive={!filters.showInactive}
+                                            onEdit={!filters.showInactive ? () => { if (!a.isRead) api.announcements.markAsRead(a.id).catch(console.error); setSelectedAnnouncement(a); setIsModalOpen(true); } : undefined}
+                                            onDelete={!filters.showInactive ? () => handleDelete(a.id) : undefined}
+                                            onDetails={!filters.showInactive ? () => handleOpenDetails(a) : undefined}
+                                            onRestore={filters.showInactive ? () => handleRestore(a.id) : undefined}
                                         />
                                     )
                                 }

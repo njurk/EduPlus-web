@@ -42,6 +42,17 @@ export const schoolYearsApi = {
     }
 };
 
+export const semestersApi = {
+    update: async (id: number, data: { id: number; name: string; startDate: string; endDate: string; schoolYearId: number }): Promise<SemesterDto> => {
+        const response = await fetch(`${API_URL}/Semester/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<SemesterDto>(response);
+    }
+};
+
 export const classesApi = createCrudResource<SchoolClass>('class');
 export const classroomsApi = createCrudResource<Classroom>('classroom');
 

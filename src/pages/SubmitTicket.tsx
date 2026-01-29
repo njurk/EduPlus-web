@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/apiService';
 import type { TicketReason } from '../types';
 import { AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { REGEX } from '../utils/validation';
+import { useCMSContent } from '../hooks/useCMSContent';
+import { Editor } from 'primereact/editor';
 
 export const SubmitTicket = () => {
+    const { getText } = useCMSContent('submitTicket');
+    const navigate = useNavigate();
     const [reasons, setReasons] = useState<TicketReason[]>([]);
     const [email, setEmail] = useState('');
     const [reasonId, setReasonId] = useState<number | ''>('');
@@ -46,12 +50,12 @@ export const SubmitTicket = () => {
     if (success) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+                <div className="bg-white rounded-sm shadow-lg p-8 max-w-md w-full text-center">
                     <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                     <h1 className="text-2xl font-bold text-neutral-800 mb-2">Zgłoszenie wysłane</h1>
-                    <p className="text-neutral-600 mb-6">Twoje zgłoszenie zostało przyjęte. Odpowiedź otrzymasz na podany adres email.</p>
+                    <p className="text-neutral-600 mb-6">{getText('success.message')}</p>
                     <Link to="/login" className="inline-flex items-center gap-2 text-primary hover:underline">
-                        <ArrowLeft size={16} /> Powrót do strony logowania
+                        <ArrowLeft size={20} />
                     </Link>
                 </div>
             </div>
@@ -60,29 +64,33 @@ export const SubmitTicket = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full">
-                <Link to="/login" className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-primary mb-6">
-                    <ArrowLeft size={16} /> Powrót do logowania
-                </Link>
+            <div className="bg-white rounded-sm shadow-lg p-8 max-w-lg w-full relative">
+                <button
+                    type="button"
+                    onClick={() => navigate('/login')}
+                    className="absolute top-4 left-4 p-2 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 rounded-full transition-colors"
+                >
+                    <ArrowLeft size={20} />
+                </button>
 
-                <h1 className="text-2xl font-bold text-neutral-800 mb-2">Zgłoś problem</h1>
-                <p className="text-neutral-600 mb-6 text-sm">Masz problem z logowaniem lub chcesz zgłosić inny problem? Wypełnij formularz poniżej.</p>
+                <h1 className="text-2xl font-bold text-neutral-800 mb-2 mt-6">{getText('title')}</h1>
+                <p className="text-neutral-600 mb-6 text-sm">{getText('subtitle')}</p>
 
                 {error && (
-                    <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 text-sm">
+                    <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-sm flex items-center gap-2 text-sm">
                         <AlertCircle size={16} /> {error}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-1">Twój adres email</label>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="nazwa@example.com"
-                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none"
                             disabled={loading}
                         />
                     </div>
@@ -92,7 +100,7 @@ export const SubmitTicket = () => {
                         <select
                             value={reasonId}
                             onChange={(e) => setReasonId(e.target.value ? Number(e.target.value) : '')}
-                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white"
                             disabled={loading}
                         >
                             <option value="">Wybierz powód...</option>
@@ -101,21 +109,29 @@ export const SubmitTicket = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-1">Opis problemu</label>
-                        <textarea
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">{getText('form.description')}</label>
+                        <Editor
                             value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="Opisz szczegółowo problem, z którym się spotykasz..."
-                            rows={5}
-                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none resize-none"
-                            disabled={loading}
+                            onTextChange={(e) => setContent(e.htmlValue || '')}
+                            style={{ height: '200px' }}
+                            placeholder={getText('form.descriptionPlaceholder')}
+                            headerTemplate={
+                                <span className="ql-formats">
+                                    <button className="ql-bold" aria-label="Bold"></button>
+                                    <button className="ql-italic" aria-label="Italic"></button>
+                                    <button className="ql-underline" aria-label="Underline"></button>
+                                    <button className="ql-list" value="ordered" aria-label="Ordered List"></button>
+                                    <button className="ql-list" value="bullet" aria-label="Bullet List"></button>
+                                    <button className="ql-link" aria-label="Link"></button>
+                                </span>
+                            }
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                        className="w-full py-2.5 bg-primary text-white font-medium rounded-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
                     >
                         {loading ? 'Wysyłanie...' : 'Wyślij zgłoszenie'}
                     </button>

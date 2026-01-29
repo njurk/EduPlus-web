@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, FileCheck } from 'lucide-react';
+import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, FileCheck, Terminal } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useCMSContent } from '../hooks/useCMSContent';
+import { api } from '../services/apiService';
+import { Badge } from '../components/ui/Badge';
+import type { UnreadCounts } from '../types';
 
 const Clock = () => {
   const [time, setTime] = useState(new Date());
@@ -23,7 +26,23 @@ const Clock = () => {
 export const AdminLayout = () => {
   const { getText } = useCMSContent('layout');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0 });
   const navigate = useNavigate();
+
+  const loadUnreadCounts = useCallback(async () => {
+    try {
+      const counts = await api.layout.getUnreadCounts();
+      setUnreadCounts(counts);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUnreadCounts();
+    const interval = setInterval(loadUnreadCounts, 5000);
+    return () => clearInterval(interval);
+  }, [loadUnreadCounts]);
 
   const [user] = useState<{ name: string } | null>(() => {
     const savedUser = localStorage.getItem('user');
@@ -32,8 +51,9 @@ export const AdminLayout = () => {
 
   const handleNavClick = () => setSidebarOpen(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('Na pewno chcesz się wylogować?')) {
+      await api.auth.logout();
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       navigate('/login');
@@ -44,35 +64,39 @@ export const AdminLayout = () => {
     {
       title: null,
       items: [
-        { label: getText('nav.dashboard'), path: '/', icon: Home },
+        { label: getText('nav.dashboard'), path: '/admin/dashboard', icon: Home },
       ]
     },
     {
       title: getText('nav.section.management'),
       items: [
-        { label: getText('nav.users'), path: '/users', icon: Users },
-        { label: getText('nav.classes'), path: '/class-management', icon: Folder },
-        { label: getText('nav.announcements'), path: '/announcements', icon: Megaphone },
-        { label: getText('nav.tickets'), path: '/tickets', icon: HelpCircle },
+        { label: getText('nav.users'), path: '/admin/users', icon: Users },
+        { label: getText('nav.classes'), path: '/admin/class-management', icon: Folder },
+        { label: getText('nav.announcements'), path: '/admin/announcements', icon: Megaphone, badge: unreadCounts.announcements },
       ]
     },
     {
       title: getText('nav.section.teaching'),
       items: [
-        { label: getText('nav.schedule'), path: '/schedule', icon: Calendar },
-        { label: getText('nav.lessons'), path: '/lessons', icon: BookOpen },
-        { label: getText('nav.grades'), path: '/grades', icon: GraduationCap },
-        { label: getText('nav.attendance'), path: '/attendance', icon: ClipboardCheck },
-        { label: getText('nav.excuses'), path: '/excuses', icon: FileCheck },
+        { label: getText('nav.schedule'), path: '/admin/schedule', icon: Calendar },
+        { label: getText('nav.lessons'), path: '/admin/lessons', icon: BookOpen },
+        { label: getText('nav.grades'), path: '/admin/grades', icon: GraduationCap },
+        { label: getText('nav.attendance'), path: '/admin/attendance', icon: ClipboardCheck },
+        { label: getText('nav.excuses'), path: '/admin/excuses', icon: FileCheck },
       ]
     },
     {
       title: getText('nav.section.system'),
       items: [
-        { label: getText('nav.config'), path: '/system-config', icon: FilePenIcon },
-        { label: getText('nav.cms'), path: '/cms', icon: Layout },
+        { label: getText('nav.config'), path: '/admin/system-config', icon: FilePenIcon },
+        { label: getText('nav.cms'), path: '/admin/cms', icon: Layout },
       ]
     }
+  ];
+
+  const bottomNavItems = [
+    { label: getText('nav.tickets'), path: '/admin/tickets', icon: HelpCircle, badge: unreadCounts.tickets },
+    { label: 'Logi', path: '/admin/logs', icon: Terminal },
   ];
 
   return (
@@ -96,7 +120,7 @@ export const AdminLayout = () => {
           </button>
         </div>
 
-        <nav className="p-2 space-y-4 overflow-y-auto h-[calc(100vh-110px)]">
+        <nav className="p-2 space-y-4 overflow-y-auto h-[calc(100vh-200px)]">
           {navSections.map((section, idx) => (
             <div key={idx}>
               {section.title && <div className="px-3 py-1 text-xs font-semibold text-neutral-500 uppercase tracking-wider">{section.title}</div>}
@@ -113,6 +137,7 @@ export const AdminLayout = () => {
                   >
                     <item.icon size={16} className="mr-2 shrink-0" />
                     {item.label}
+                    <Badge count={(item as any).badge} />
                   </NavLink>
                 ))}
               </div>
@@ -120,8 +145,27 @@ export const AdminLayout = () => {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4 bg-neutral-950 border-t border-neutral-800">
-          <p className="text-xs text-neutral-500 font-mono">{getText('version')}</p>
+        <div className="absolute bottom-0 w-full bg-neutral-950 border-t border-neutral-800">
+          <div className="p-2 space-y-0.5">
+            {bottomNavItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={handleNavClick}
+                className={({ isActive }) => clsx(
+                  "flex items-center px-3 py-2 text-sm rounded-xs font-medium",
+                  isActive ? "bg-primary text-white" : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                )}
+              >
+                <item.icon size={16} className="mr-2 shrink-0" />
+                {item.label}
+                <Badge count={(item as any).badge} />
+              </NavLink>
+            ))}
+          </div>
+          <div className="px-4 py-2 border-t border-neutral-800">
+            <p className="text-xs text-neutral-500 font-mono">{getText('version')}</p>
+          </div>
         </div>
       </aside>
 
@@ -145,7 +189,7 @@ export const AdminLayout = () => {
               </span>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate('/settings')}
+                  onClick={() => navigate('/admin/settings')}
                   className="p-2 text-neutral-500 hover:text-primary hover:bg-neutral-50 transition-all rounded-full"
                   title="Ustawienia"
                 >

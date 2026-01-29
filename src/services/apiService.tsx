@@ -1,7 +1,7 @@
 import { authApi } from './api/auth';
 import { usersApi, rolesApi, userRolesApi, parentStudentsApi } from './api/users';
 import { announcementsApi } from './api/announcements';
-import { schoolYearsApi, classesApi, classroomsApi, subjectsApi, classManagementApi } from './api/school';
+import { schoolYearsApi, semestersApi, classesApi, classroomsApi, subjectsApi, classManagementApi } from './api/school';
 import { gradeTypesApi, gradeCategoriesApi, classGradesApi, gradesApi } from './api/grades';
 import { attendanceTypesApi, attendanceApi, excusesApi } from './api/attendance';
 import { lessonHoursApi, lessonStatusesApi, scheduleApi, lessonsApi } from './api/lessons';
@@ -9,6 +9,7 @@ import { ticketsApi, ticketReasonsApi } from './api/tickets';
 import { pageContentApi, targetsApi, pagesApi, cmsApi } from './api/cms';
 import { dashboardApi } from './api/dashboard';
 import { exportApi } from './api/export';
+import { layoutApi } from './api/layout';
 
 export { API_URL, getHeaders } from './api/core';
 
@@ -20,6 +21,7 @@ export const api = {
     parentStudents: parentStudentsApi,
     announcements: announcementsApi,
     schoolYears: schoolYearsApi,
+    semesters: semestersApi,
     classes: classesApi,
     classrooms: classroomsApi,
     subjects: subjectsApi,
@@ -42,5 +44,7 @@ export const api = {
     pages: pagesApi,
     cms: cmsApi,
     dashboard: dashboardApi,
-    export: exportApi
+    export: exportApi,
+    layout: layoutApi
 };
+

@@ -157,3 +157,37 @@ export const validateGradeForm = (data: Partial<GradeDto>): Record<string, strin
 
     return errors;
 };
+
+export interface SchoolYearSemesterData {
+    schoolYear: { id: number; name: string; startDate: string; endDate: string };
+    semester1: { id: number; name: string; startDate: string; endDate: string };
+    semester2: { id: number; name: string; startDate: string; endDate: string };
+}
+
+export const validateSchoolYearSemesters = (data: SchoolYearSemesterData): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    if (!data.schoolYear.startDate) errors.schoolYearStart = "Data początku roku jest wymagana";
+    if (!data.schoolYear.endDate) errors.schoolYearEnd = "Data końca roku jest wymagana";
+    if (!data.semester1.endDate) errors.semester1End = "Data końca I semestru jest wymagana";
+
+    if (data.schoolYear.startDate && data.schoolYear.endDate) {
+        if (new Date(data.schoolYear.startDate) >= new Date(data.schoolYear.endDate)) {
+            errors.schoolYearEnd = "Data końca musi być po dacie początku";
+        }
+    }
+
+    if (data.semester1.endDate && data.schoolYear.startDate) {
+        if (new Date(data.semester1.endDate) <= new Date(data.schoolYear.startDate)) {
+            errors.semester1End = "Koniec I semestru musi być po początku roku";
+        }
+    }
+
+    if (data.semester1.endDate && data.schoolYear.endDate) {
+        if (new Date(data.semester1.endDate) >= new Date(data.schoolYear.endDate)) {
+            errors.semester1End = "Koniec I semestru musi być przed końcem roku";
+        }
+    }
+
+    return errors;
+};

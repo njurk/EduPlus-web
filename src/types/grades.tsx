@@ -5,13 +5,13 @@ export interface GradeType extends BaseEntity {
   name: string;
   numeric: string;
   value: number;
-  colorHex: string;
 }
 
 export interface GradeCategory extends BaseEntity {
   id: number;
   name: string;
   weight: number;
+  colorHex: string;
 }
 
 export interface Grade {
