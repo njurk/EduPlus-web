@@ -27,7 +27,7 @@ const TABS = [
     { id: "ticketReasons", icon: HelpCircle },
 ] as const;
 
-const SchoolYearConfig = ({ getText }: { getText: (key: string) => string }) => {
+const SchoolYearConfig = () => {
     const [schoolYears, setSchoolYears] = useState<any[]>([]);
     const [selectedYear, setSelectedYear] = useState<any | null>(null);
     const [loading, setLoading] = useState(false);
@@ -553,36 +553,36 @@ export const SystemConfig = () => {
     const columns = useMemo(() => {
         const tabColumns: Record<string, Column<any>[]> = {
             lessonHours: [
-                { header: getText('columns.number'), accessor: "orderNumber", sortKey: "orderNumber", className: "text-center w-16" },
-                { header: getText('columns.hours'), render: (row) => `${row.startTime?.slice(0, 5)} - ${row.endTime?.slice(0, 5)}` }
+                { header: 'Nr', accessor: "orderNumber", sortKey: "orderNumber", className: "text-center w-16" },
+                { header: 'Godziny', render: (row) => `${row.startTime?.slice(0, 5)} - ${row.endTime?.slice(0, 5)}` }
             ],
             gradeTypes: [
-                { header: getText('columns.symbol'), accessor: "numeric", sortKey: "numeric" },
-                { header: getText('columns.name'), accessor: "name", sortKey: "name" },
-                { header: getText('columns.value'), sortKey: "value", render: (row) => Number(row.value).toFixed(2) }
+                { header: 'Symbol', accessor: "numeric", sortKey: "numeric" },
+                { header: 'Nazwa', accessor: "name", sortKey: "name" },
+                { header: 'Wartość', sortKey: "value", render: (row) => Number(row.value).toFixed(2) }
             ],
             gradeCategories: [
-                { header: getText('columns.name'), accessor: "name", sortKey: "name" },
-                { header: getText('columns.weight'), accessor: "weight", sortKey: "weight" },
+                { header: 'Nazwa', accessor: "name", sortKey: "name" },
+                { header: 'Waga', accessor: "weight", sortKey: "weight" },
                 { header: "Kolor", render: (row) => <div className="w-6 h-6 rounded border" style={{ backgroundColor: row.colorHex || '#6b7280' }} /> }
             ],
             attendance: [
-                { header: getText('columns.name'), accessor: "name", sortKey: "name" },
-                { header: getText('columns.shortCode'), accessor: "shortCode", className: "font-mono" },
+                { header: 'Nazwa', accessor: "name", sortKey: "name" },
+                { header: 'Skrót', accessor: "shortCode", className: "font-mono" },
                 { header: "Kolor", render: (row) => <div className="w-6 h-6 rounded border" style={{ backgroundColor: row.colorHex || '#6b7280' }} /> }
             ]
         };
 
         const specificCols = tabColumns[activeTab] || [
-            { header: getText('columns.name'), accessor: "name", sortKey: "name", className: "w-1/3" }
+            { header: 'Nazwa', accessor: "name", sortKey: "name", className: "w-1/3" }
         ];
 
         return [
             ...specificCols,
-            { header: getText('columns.createdAt'), sortKey: "created", render: (row) => formatDateTime(row.createdAt), className: "text-neutral-500 text-xs" },
-            { header: getText('columns.updatedAt'), sortKey: "updated", render: (row) => formatDateTime(row.updatedAt), className: "text-neutral-500 text-xs" },
+            { header: 'Utworzono', sortKey: "created", render: (row) => formatDateTime(row.createdAt), className: "text-neutral-500 text-xs" },
+            { header: 'Edytowano', sortKey: "updated", render: (row) => formatDateTime(row.updatedAt), className: "text-neutral-500 text-xs" },
             {
-                header: getText('columns.actions'),
+                header: 'Akcje',
                 className: "text-right",
                 render: (row) => (
                     <ActionButtons
@@ -594,14 +594,14 @@ export const SystemConfig = () => {
                 ),
             }
         ];
-    }, [activeTab, filters.showInactive, getText]);
+    }, [activeTab, filters.showInactive]);
 
     return (
         <div className="bg-white border border-neutral-200 shadow-sm font-sans min-h-[600px] flex">
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={formData.id ? getText('modal.edit') : getText('modal.new')}
+                title={formData.id ? 'Edycja elementu' : 'Nowy element'}
                 maxWidth="md"
                 footer={
                     <>
@@ -621,7 +621,7 @@ export const SystemConfig = () => {
 
             <div className="w-56 border-r bg-neutral-50/50 flex-shrink-0">
                 <div className="p-4 border-b">
-                    <h1 className="text-lg font-bold text-neutral-800">{getText('title') || 'Konfiguracja'}</h1>
+                    <h1 className="text-lg font-bold text-neutral-800">Konfiguracja</h1>
                 </div>
                 <nav className="py-2">
                     {TABS.map((tab) => {
@@ -646,7 +646,7 @@ export const SystemConfig = () => {
             </div>
 
             {activeTab === 'schoolYears' ? (
-                <SchoolYearConfig getText={getText} />
+                <SchoolYearConfig />
             ) : (
                 <div className="flex-1 flex flex-col">
                     <FilterToolbar

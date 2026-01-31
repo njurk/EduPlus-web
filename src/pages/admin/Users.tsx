@@ -214,7 +214,7 @@ export const Users = () => {
         <Modal
             isOpen={viewMode === 'form'}
             onClose={() => setViewMode('list')}
-            title={formData.id ? getText('modal.editUser') : getText('modal.newUser')}
+            title={formData.id ? 'Edycja użytkownika' : 'Nowy użytkownik'}
             maxWidth="lg"
             footer={
                 <>
@@ -248,7 +248,7 @@ export const Users = () => {
                     </div>
                 </div>
                 <div className="border-t pt-4">
-                    <label className="label-text block mb-2">{getText('form.role')} <span className="text-danger">*</span></label>
+                    <label className="label-text block mb-2">Uprawnienia <span className="text-danger">*</span></label>
                     <div className="flex gap-2 flex-wrap">
                         {roles.map(r => (
                             <button
@@ -270,7 +270,7 @@ export const Users = () => {
         <Modal
             isOpen={viewMode === 'assign'}
             onClose={() => setViewMode('list')}
-            title={getText('modal.manageRelations')}
+            title={'Zarządzanie powiązaniami'}
             maxWidth="lg"
             footer={
                 <>
@@ -281,7 +281,7 @@ export const Users = () => {
         >
             <div className="p-6 flex flex-col gap-4">
                 <div className="mb-2">
-                    <p className="text-sm text-neutral-500">{getText('modal.user')}: <span className="font-medium text-neutral-800">{formatName(assignmentTarget!)}</span></p>
+                    <p className="text-sm text-neutral-500">Użytkownik: <span className="font-medium text-neutral-800">{formatName(assignmentTarget!)}</span></p>
                 </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-neutral-400" size={18} />
@@ -324,7 +324,7 @@ export const Users = () => {
                             <TrashButton isTrashActive={filters.showInactive || false} onToggle={() => { setLoading(true); setTableData([]); setPageNumber(1); setFilters(p => ({ ...p, showInactive: !p.showInactive })); }} />
                             <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> {'Dodaj'}</Button>
                         </>
-                    ) : (
+                    ) : mainTab === 'relations' ? (
                         <Button
                             variant={filters.onlyUnassignedParents ? 'primary' : 'secondary'}
                             onClick={() => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: !p.onlyUnassignedParents })); }}
@@ -332,7 +332,7 @@ export const Users = () => {
                             <EyeIcon size={16} className="mr-2" />
                             {filters.onlyUnassignedParents ? 'Pokaż powiązanych' : 'Pokaż niepowiązanych'}
                         </Button>
-                    )
+                    ) : undefined
                 }
                 className="p-4 border-b bg-white"
             >
@@ -358,21 +358,21 @@ export const Users = () => {
                                 sortDesc={filters.sortDesc}
                                 onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                                 columns={[
-                                    { header: getText('columns.user'), sortKey: 'name', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
-                                    { header: getText('columns.phone'), render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
+                                    { header: 'Użytkownik', sortKey: 'name', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
+                                    { header: 'Telefon', render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
                                     {
-                                        header: getText('columns.role'), render: (u) =>
+                                        header: 'Rola', render: (u) =>
                                             <div className="flex gap-1 flex-wrap">
                                                 {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
                                                     <span key={idx} className="text-neutral-500 text-xs">{r}</span>
                                                 )) : <span className="text-neutral-400 text-xs">-</span>}
                                             </div>
                                     },
-                                    { header: getText('columns.createdAt'), sortKey: 'created', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.createdAt)}</span> },
-                                    { header: getText('columns.updatedAt'), sortKey: 'updated', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.updatedAt)}</span> },
-                                    { header: getText('columns.modifiedBy'), render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
+                                    { header: 'Utworzono', sortKey: 'created', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.createdAt)}</span> },
+                                    { header: 'Edytowano', sortKey: 'updated', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.updatedAt)}</span> },
+                                    { header: 'Edytowane przez', render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
                                     {
-                                        header: getText('columns.actions'), className: 'text-right', render: (u) => (
+                                        header: 'Akcje', className: 'text-right', render: (u) => (
                                             <ActionButtons
                                                 isActive={u.isActive}
                                                 onEdit={u.isActive ? async () => {
@@ -423,14 +423,14 @@ export const Users = () => {
                         sortDesc={filters.sortDesc}
                         onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                         columns={[
-                            { header: getText('columns.roleName'), accessor: 'name', sortKey: 'name', className: 'font-medium text-neutral-900' },
-                            { header: getText('columns.level'), accessor: 'level', sortKey: 'level', className: 'text-neutral-600' },
-                            { header: getText('columns.description'), render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
-                            { header: getText('columns.createdAt'), sortKey: 'created', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.createdAt)}</span> },
-                            { header: getText('columns.updatedAt'), sortKey: 'updated', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.updatedAt)}</span> },
-                            { header: getText('columns.modifiedBy'), render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
+                            { header: 'Nazwa roli', accessor: 'name', sortKey: 'name', className: 'font-medium text-neutral-900' },
+                            { header: 'Poziom', accessor: 'level', sortKey: 'level', className: 'text-neutral-600' },
+                            { header: 'Opis', render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
+                            { header: 'Utworzono', sortKey: 'created', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.createdAt)}</span> },
+                            { header: 'Edytowano', sortKey: 'updated', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.updatedAt)}</span> },
+                            { header: 'Edytowane przez', render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
                             {
-                                header: getText('columns.actions'), className: 'text-right', render: (r) => (
+                                header: 'Akcje', className: 'text-right', render: (r) => (
                                     <ActionButtons onEdit={() => { setEditRole({ id: r.id, name: r.name, description: r.description }); setIsRoleModalOpen(true); }} />
                                 )
                             }
@@ -445,12 +445,12 @@ export const Users = () => {
                             sortDesc={filters.sortDesc}
                             onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                             columns={[
-                                { header: getText('columns.parent'), sortKey: 'name', render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
-                                { header: getText('columns.status'), render: () => <span className="italic text-neutral-500">Brak powiązań</span> },
-                                { header: getText('columns.createdAt'), sortKey: 'created', render: (p) => <span className="text-xs text-neutral-500">{formatDateTime(p.createdAt)}</span> },
-                                { header: getText('columns.updatedAt'), sortKey: 'updated', render: (p) => <span className="text-xs text-neutral-500">{formatDateTime(p.updatedAt)}</span> },
-                                { header: getText('columns.modifiedBy'), render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },
-                                { header: getText('columns.actions'), className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> {'Przypisz'}</button> }
+                                { header: 'Rodzic', sortKey: 'name', render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
+                                { header: 'Status', render: () => <span className="italic text-neutral-500">Brak powiązań</span> },
+                                { header: 'Utworzono', sortKey: 'created', render: (p) => <span className="text-xs text-neutral-500">{formatDateTime(p.createdAt)}</span> },
+                                { header: 'Edytowano', sortKey: 'updated', render: (p) => <span className="text-xs text-neutral-500">{formatDateTime(p.updatedAt)}</span> },
+                                { header: 'Edytowane przez', render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },
+                                { header: 'Akcje', className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> {'Przypisz'}</button> }
                             ]}
                         />
                     ) : (
@@ -461,13 +461,13 @@ export const Users = () => {
                             sortDesc={filters.sortDesc}
                             onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                             columns={[
-                                { header: getText('columns.parent'), sortKey: 'parentName', render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
-                                { header: getText('columns.student'), accessor: 'studentName', sortKey: 'studentName', className: 'font-medium text-neutral-900' },
-                                { header: getText('columns.createdAt'), sortKey: 'created', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.createdAt)}</span> },
-                                { header: getText('columns.updatedAt'), sortKey: 'updated', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.updatedAt || r.createdAt)}</span> },
-                                { header: getText('columns.modifiedBy'), render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
+                                { header: 'Rodzic', sortKey: 'parentName', render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
+                                { header: 'Uczeń', accessor: 'studentName', sortKey: 'studentName', className: 'font-medium text-neutral-900' },
+                                { header: 'Utworzono', sortKey: 'created', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.createdAt)}</span> },
+                                { header: 'Edytowano', sortKey: 'updated', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.updatedAt || r.createdAt)}</span> },
+                                { header: 'Edytowane przez', render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
                                 {
-                                    header: getText('columns.actions'), className: 'text-right', render: (r) => (
+                                    header: 'Akcje', className: 'text-right', render: (r) => (
                                         <ActionButtons
                                             onEdit={() => handleEditRelation(r.parentId)}
                                             onDelete={() => handleAction(() => api.parentStudents.delete(r.id), 'Czy usunąć powiązanie?')}
@@ -526,7 +526,7 @@ export const Users = () => {
                         />
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
-                        <Button variant="ghost" onClick={() => { setIsRoleModalOpen(false); setEditRole(null); }}>Anuluj</Button>
+                        <Button variant="soft" onClick={() => { setIsRoleModalOpen(false); setEditRole(null); }}>Anuluj</Button>
                         <Button
                             onClick={async () => {
                                 if (!editRole?.name?.trim()) return alert('Nazwa roli jest wymagana');

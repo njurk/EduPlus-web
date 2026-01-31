@@ -77,7 +77,7 @@ export const Logs = () => {
     }, [autoRefresh, selectedFile]);
 
     const getLineClass = (line: string) => {
-        if (line.includes('| ERROR') || line.includes('LOGIN_FAILED')) return 'text-red-400';
+        if (line.includes('| ERROR') || line.includes('LOGIN_FAIL')) return 'text-red-400';
         if (line.includes('| LOGIN ') || line.includes('| LOGOUT')) return 'text-green-400';
         if (line.includes('| WARNING')) return 'text-yellow-400';
         return 'text-neutral-300';

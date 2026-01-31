@@ -13,6 +13,7 @@ import { formatDateTime } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useUnread } from '../../hooks/useUnread';
 import { DetailsModal } from '../../components/modals/DetailsModal';
 import { Modal } from '../../components/modals/Modal';
 import { Pagination } from '../../components/ui/Pagination';
@@ -125,6 +126,7 @@ const AnnouncementModal = ({ isOpen, onClose, announcement, onSaved }: Announcem
 
 export const Announcements = () => {
     const { getText } = useCMSContent('announcements');
+    const { unreadAnnouncementIds } = useUnread();
     const [searchParams, setSearchParams] = useSearchParams();
     const [allAuthors, setAllAuthors] = useState<string[]>([]);
     const [allRoles, setAllRoles] = useState<Role[]>([]);
@@ -239,21 +241,21 @@ export const Announcements = () => {
                             sortDesc={filters.sortDesc}
                             onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
                             columns={[
-                                { header: getText('columns.date'), sortKey: 'created', render: (a) => <div className="text-xs w-28 text-neutral-600">{formatDateTime(a.createdAt)}</div> },
+                                { header: 'Data', sortKey: 'created', render: (a) => <div className="text-xs w-28 text-neutral-600">{formatDateTime(a.createdAt)}</div> },
                                 {
-                                    header: getText('columns.title'), className: 'w-1/4', render: (a) => (
+                                    header: 'Tytuł', className: 'w-1/4', render: (a) => (
                                         <div className="flex items-center gap-2">
                                             <span className="text-neutral-900 font-medium">{a.title}</span>
-                                            <Badge variant="new" show={a.isRead === false} />
+                                            <Badge variant="new" show={unreadAnnouncementIds.includes(a.id)} />
                                         </div>
                                     )
                                 },
-                                { header: getText('columns.author'), sortKey: 'author', className: 'w-32', render: (a) => <div className="flex items-center gap-2 text-sm text-neutral-600"><User size={14} />{a.authorName}</div> },
+                                { header: 'Autor', sortKey: 'author', className: 'w-32', render: (a) => <div className="flex items-center gap-2 text-sm text-neutral-600"><User size={14} />{a.authorName}</div> },
                                 { header: 'Adresaci', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{a.targetRoles || 'Wszyscy'}</span> },
                                 { header: 'Edytowano', sortKey: 'updated', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{formatDateTime(a.updatedAt)}</span> },
-                                { header: getText('columns.modifiedBy'), className: 'w-40', render: (a) => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
+                                { header: 'Edytowane przez', className: 'w-40', render: (a) => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
                                 {
-                                    header: getText('columns.actions'), className: 'w-20 text-right', render: (a) => (
+                                    header: 'Akcje', className: 'w-20 text-right', render: (a) => (
                                         <ActionButtons
                                             isActive={!filters.showInactive}
                                             onEdit={!filters.showInactive ? () => { if (!a.isRead) api.announcements.markAsRead(a.id).catch(console.error); setSelectedAnnouncement(a); setIsModalOpen(true); } : undefined}

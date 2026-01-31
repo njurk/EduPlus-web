@@ -23,7 +23,6 @@ export const Attendance = () => {
     const [classes, setClasses] = useState<ClassEntity[]>([]);
     const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
     const [teachers, setTeachers] = useState<User[]>([]);
-    const [students, setStudents] = useState<User[]>([]);
     const [lessonHours, setLessonHours] = useState<LessonHour[]>([]);
     const [filters, setFilters] = useState({
         search: '',
@@ -34,7 +33,6 @@ export const Attendance = () => {
         classId: null as number | null,
         orderNumber: null as number | null,
         teacherId: null as number | null,
-        studentId: null as number | null,
         attendanceTypeId: null as number | null,
         lessonDate: '' as string
     });
@@ -49,13 +47,11 @@ export const Attendance = () => {
             api.schoolYears.getAll(),
             api.attendanceTypes.getAll(),
             api.users.getAll({ pageSize: 1000, roleLevel: 2 }),
-            api.users.getAll({ pageSize: 1000, roleLevel: 3 }),
             api.lessonHours.getAll()
-        ]).then(([yearsData, typesData, teachersData, studentsData, hoursData]) => {
+        ]).then(([yearsData, typesData, teachersData, hoursData]) => {
             setYears(yearsData);
             setAttendanceTypes(typesData);
             setTeachers(teachersData.data || []);
-            setStudents(studentsData.data || []);
             setLessonHours((hoursData || []).sort((a, b) => a.orderNumber - b.orderNumber));
             const today = new Date().toISOString().split('T')[0];
             const current = yearsData.find(y => y.startDate <= today && y.endDate >= today) || yearsData.find(y => y.isActive) || yearsData[0];
@@ -83,7 +79,6 @@ export const Attendance = () => {
         setLoading(true);
         try {
             const teacher = filters.teacherId ? teachers.find(t => t.id === filters.teacherId) : null;
-            const student = filters.studentId ? students.find(s => s.id === filters.studentId) : null;
             const result = await api.attendance.getAllAdmin({
                 pageNumber,
                 pageSize: 20,
@@ -94,16 +89,15 @@ export const Attendance = () => {
                 date: filters.lessonDate || undefined,
                 teacherName: teacher ? `${teacher.lastName} ${teacher.firstName}` : undefined,
                 attendanceTypeShortCode: filters.attendanceTypeId ? attendanceTypes.find(t => t.id === filters.attendanceTypeId)?.shortCode : undefined,
-                orderNumber: filters.orderNumber ?? undefined,
-                studentName: student ? `${student.lastName} ${student.firstName}` : undefined
+                orderNumber: filters.orderNumber ?? undefined
             });
             setPaginatedData(result);
         } finally { setLoading(false); }
-    }, [filters, pageNumber, attendanceTypes, teachers, students]);
+    }, [filters, pageNumber, attendanceTypes, teachers]);
 
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
 
-    useEffect(() => { setPageNumber(1); }, [filters.search, filters.yearId, filters.semesterOrder, filters.classId, filters.orderNumber, filters.teacherId, filters.studentId, filters.attendanceTypeId, filters.lessonDate]);
+    useEffect(() => { setPageNumber(1); }, [filters.search, filters.yearId, filters.semesterOrder, filters.classId, filters.orderNumber, filters.teacherId, filters.attendanceTypeId, filters.lessonDate]);
 
     const handleSort = (field: string) => {
         setFilters(f => f.sortBy === field ? { ...f, sortDesc: !f.sortDesc } : { ...f, sortBy: field, sortDesc: true });
@@ -137,19 +131,19 @@ export const Attendance = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
                 <div className="flex gap-2">
-                    <YearSelector years={years} selectedYear={filters.yearId} onChange={v => setFilters(f => ({ ...f, yearId: v, semesterOrder: null, classId: null, studentId: null }))} />
+                    <YearSelector years={years} selectedYear={filters.yearId} onChange={v => setFilters(f => ({ ...f, yearId: v, semesterOrder: null, classId: null }))} />
                     <SemesterSelector semesters={semesters} selectedOrder={filters.semesterOrder} onChange={v => setFilters(f => ({ ...f, semesterOrder: v }))} showAll />
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
                 <FilterToolbar
                     search={{ value: filters.search, onChange: v => setFilters(f => ({ ...f, search: v })), placeholder: 'Szukaj...' }}
-                    onReset={() => setFilters(f => ({ ...f, search: '', classId: null, orderNumber: null, teacherId: null, studentId: null, attendanceTypeId: null, lessonDate: '' }))}
+                    onReset={() => setFilters(f => ({ ...f, search: '', classId: null, orderNumber: null, teacherId: null, attendanceTypeId: null, lessonDate: '' }))}
                 >
                     <FilterSelect
                         label="Klasa:"
                         value={filters.classId}
-                        onChange={v => setFilters(f => ({ ...f, classId: v as number | null, studentId: null }))}
+                        onChange={v => setFilters(f => ({ ...f, classId: v as number | null }))}
                         options={classes.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))}
                         placeholder="Wszystkie"
                         minWidth="120px"
@@ -176,14 +170,6 @@ export const Attendance = () => {
                         minWidth="160px"
                     />
                     <FilterSelect
-                        label="Uczeń:"
-                        value={filters.studentId}
-                        onChange={v => setFilters(f => ({ ...f, studentId: v as number | null }))}
-                        options={students.map(s => ({ value: s.id, label: `${s.lastName} ${s.firstName}` }))}
-                        placeholder="Wszyscy"
-                        minWidth="160px"
-                    />
-                    <FilterSelect
                         label="Typ:"
                         value={filters.attendanceTypeId}
                         onChange={v => setFilters(f => ({ ...f, attendanceTypeId: v as number | null }))}
@@ -200,17 +186,17 @@ export const Attendance = () => {
                             sortDesc={filters.sortDesc}
                             onSort={handleSort}
                             columns={[
-                                { header: getText('columns.createdAt'), sortKey: 'created', render: a => <span className="text-xs text-neutral-500">{formatDateTime(a.createdAt)}</span> },
-                                { header: getText('columns.orderNumber'), sortKey: 'ordernumber', render: a => <span className="font-medium">{a.orderNumber}</span> },
-                                { header: getText('columns.date'), sortKey: 'lessondate', render: a => <span className="text-xs">{formatDateOnly(a.lessonDate)}</span> },
-                                { header: getText('columns.subject'), render: a => <span className="font-medium">{a.subjectName}</span> },
-                                { header: getText('columns.teacher'), render: a => <span className="text-sm">{a.teacherName || '-'}</span> },
-                                { header: getText('columns.student'), sortKey: 'studentname', render: a => <span className="font-medium">{a.studentName}</span> },
-                                { header: getText('columns.type'), render: a => <span className={a.typeName === 'Obecny' ? 'text-success' : a.typeName === 'Nieobecny' ? 'text-danger' : 'text-warning'}>{a.typeName}</span> },
-                                { header: getText('columns.updatedAt'), sortKey: 'updated', render: a => <span className="text-xs text-neutral-500">{formatDateTime(a.updatedAt)}</span> },
-                                { header: getText('columns.modifiedBy'), render: a => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
+                                { header: 'Utworzono', sortKey: 'created', render: a => <span className="text-xs text-neutral-500">{formatDateTime(a.createdAt)}</span> },
+                                { header: 'Nr', sortKey: 'ordernumber', render: a => <span className="font-medium">{a.orderNumber}</span> },
+                                { header: 'Data', sortKey: 'lessondate', render: a => <span className="text-xs">{formatDateOnly(a.lessonDate)}</span> },
+                                { header: 'Przedmiot', render: a => <span className="font-medium">{a.subjectName}</span> },
+                                { header: 'Nauczyciel', render: a => <span className="text-sm">{a.teacherName || '-'}</span> },
+                                { header: 'Uczeń', sortKey: 'studentname', render: a => <span className="font-medium">{a.studentName}</span> },
+                                { header: 'Typ', render: a => <span className="font-medium" style={{ color: a.colorHex }}>{a.typeName}</span> },
+                                { header: 'Edytowano', sortKey: 'updated', render: a => <span className="text-xs text-neutral-500">{formatDateTime(a.updatedAt)}</span> },
+                                { header: 'Edytowane przez', render: a => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
                                 {
-                                    header: getText('columns.actions'), className: 'text-right', render: a => (
+                                    header: 'Akcje', className: 'text-right', render: a => (
                                         <ActionButtons
                                             isActive={a.isActive}
                                             onDetails={() => handleView(a)}
@@ -219,7 +205,7 @@ export const Attendance = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={getText('emptyMessage')}
+                            emptyMessage={'Brak danych frekwencji'}
                         />
                     )}
                 </div>
@@ -253,7 +239,7 @@ export const Attendance = () => {
                             <span className="text-neutral-500">Email ucznia:</span>
                             <span>{selectedItem.studentEmail}</span>
                             <span className="text-neutral-500">Typ frekwencji:</span>
-                            <span className={selectedItem.typeName === 'Obecny' ? 'text-success font-medium' : selectedItem.typeName === 'Nieobecny' ? 'text-danger font-medium' : 'text-warning font-medium'}>{selectedItem.typeName} ({selectedItem.shortCode})</span>
+                            <span className="font-medium" style={{ color: selectedItem.colorHex }}>{selectedItem.typeName} ({selectedItem.shortCode})</span>
                             <span className="text-neutral-500">Utworzono:</span>
                             <span>{formatDateTime(selectedItem.createdAt)}</span>
                             <span className="text-neutral-500">Edytowano:</span>

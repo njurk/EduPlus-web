@@ -29,6 +29,7 @@ export interface AttendanceAdminDto {
     teacherName: string;
     typeName: string;
     shortCode: string;
+    colorHex: string;
     lessonDate: string;
     createdAt: string;
     updatedAt: string;

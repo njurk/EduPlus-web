@@ -22,6 +22,7 @@ import { Attendance } from './pages/admin/Attendance';
 import { Lessons } from './pages/admin/Lessons';
 import { Excuses } from './pages/admin/Excuses';
 import { Logs } from './pages/admin/Logs';
+import { Subjects } from './pages/admin/Subjects';
 import { SubmitTicket } from './pages/SubmitTicket';
 import { useCMSContent } from './hooks/useCMSContent';
 
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="grades" element={<Grades />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="lessons" element={<Lessons />} />
+          <Route path="subjects" element={<Subjects />} />
           <Route path="excuses" element={<Excuses />} />
           <Route path="logs" element={<Logs />} />
         </Route>

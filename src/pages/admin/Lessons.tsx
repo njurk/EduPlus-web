@@ -178,11 +178,11 @@ export const Lessons = () => {
         if (filters.yearId) {
             Promise.all([
                 api.classManagement.getSemesters(filters.yearId),
-                api.classManagement.getClassesByYear(filters.yearId)
+                api.classManagement.getClassesByYear(filters.yearId, { pageSize: 1000, includeInactive: false })
             ]).then(([sem, cls]) => {
                 setSemesters(sem);
-                setClasses(cls.data);
-            });
+                setClasses(cls.data || []);
+            }).catch(console.error);
         }
     }, [filters.yearId]);
 
@@ -367,7 +367,7 @@ export const Lessons = () => {
                         }
                     >
                         <FilterSelect
-                            label="Statusy:"
+                            label="Status:"
                             value={filters.statusId}
                             onChange={v => setFilters(f => ({ ...f, statusId: v as number | null }))}
                             options={statuses.map(s => ({ value: s.id, label: s.name }))}
@@ -375,7 +375,7 @@ export const Lessons = () => {
                             minWidth="140px"
                         />
                         <FilterSelect
-                            label="Przedmioty:"
+                            label="Przedmiot:"
                             value={filters.subjectId}
                             onChange={v => setFilters(f => ({ ...f, subjectId: v as number | null }))}
                             options={subjects.map(s => ({ value: s.id, label: s.name }))}
@@ -383,7 +383,7 @@ export const Lessons = () => {
                             minWidth="140px"
                         />
                         <FilterSelect
-                            label="Sale:"
+                            label="Sala:"
                             value={filters.classroomId}
                             onChange={v => setFilters(f => ({ ...f, classroomId: v as number | null }))}
                             options={classrooms.map(c => ({ value: c.id, label: c.name }))}
@@ -407,17 +407,16 @@ export const Lessons = () => {
                                 sortDesc={filters.sortDesc}
                                 onSort={field => setFilters(f => f.sortBy === field ? { ...f, sortDesc: !f.sortDesc } : { ...f, sortBy: field, sortDesc: true })}
                                 columns={[
-                                    { header: getText('columns.createdAt'), sortKey: 'created', render: l => <span className="text-xs text-neutral-500">{formatDateTime(l.createdAt)}</span> },
-                                    { header: getText('columns.orderNumber'), sortKey: 'ordernumber', render: l => <span className="font-medium">{l.orderNumber}</span> },
-                                    { header: getText('columns.class'), render: l => l.className },
-                                    { header: getText('columns.classroom'), render: l => l.classroomName || '-' },
-                                    { header: getText('columns.subject'), render: l => <span className="font-medium">{l.subjectName}</span> },
+                                    { header: 'Utworzono', sortKey: 'created', render: l => <span className="text-xs text-neutral-500">{formatDateTime(l.createdAt)}</span> },
+                                    { header: 'Data lekcji', sortKey: 'date', render: l => <span className="text-xs text-neutral-500">{formatDateOnly(l.date)}</span> },
+                                    { header: 'Nr lekcji', sortKey: 'ordernumber', render: l => <span className="font-medium">{l.orderNumber}</span> },
+                                    { header: 'Klasa', render: l => l.className },
+                                    { header: 'Sala', render: l => l.classroomName || '-' },
+                                    { header: 'Przedmiot', render: l => <span className="font-medium">{l.subjectName}</span> },
                                     { header: 'Nauczyciel', render: l => <span className="text-sm">{l.teacherName}</span> },
-                                    { header: getText('columns.status'), render: l => <span className="text-xs">{l.statusName}</span> },
-                                    { header: getText('columns.updatedAt'), sortKey: 'updated', render: l => <span className="text-xs text-neutral-500">{formatDateTime(l.updatedAt)}</span> },
-                                    { header: getText('columns.modifiedBy'), render: l => <span className="text-xs text-neutral-500">{l.modifiedByName || 'System'}</span> },
+                                    { header: 'Status', render: l => <span className="text-xs">{l.statusName}</span> },
                                     {
-                                        header: getText('columns.actions'), className: 'text-right', render: l => (
+                                        header: 'Akcje', className: 'text-right', render: l => (
                                             <ActionButtons
                                                 isActive={l.isActive}
                                                 onDetails={() => openLessonView(l, 'details')}
@@ -428,7 +427,7 @@ export const Lessons = () => {
                                         )
                                     }
                                 ]}
-                                emptyMessage={getText('emptyMessage')}
+                                emptyMessage={'Brak lekcji'}
                             />
                         )}
                     </div>
@@ -475,7 +474,7 @@ export const Lessons = () => {
                     </div>
 
                     <div className="border-t pt-4">
-                        <h3 className="text-sm font-semibold mb-3">Lekcje do realizacji według planu</h3>
+                        <h3 className="text-sm font-semibold mb-3">Lekcje według planu</h3>
                         {templatesLoading ? (
                             <LoadingSpinner className="h-32" />
                         ) : templates.length === 0 ? (
@@ -532,7 +531,7 @@ export const Lessons = () => {
                         )}
                     </div>
 
-                    <div className="border-t pt-4 flex justify-end">
+                    <div className="pt-4 flex justify-end">
                         <Button
                             onClick={() => selectedTemplateId && handleCreateFromTemplate(selectedTemplateId)}
                             disabled={!selectedTemplateId}

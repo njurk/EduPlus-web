@@ -11,7 +11,7 @@ import { YearSelector } from '../../components/ui/YearSelector';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { Modal } from '../../components/modals/Modal';
-import type { SchoolYear, SemesterDto, ClassEntity, PaginatedResponse, Subject, User } from '../../types';
+import type { SchoolYear, SemesterDto, ClassEntity, PaginatedResponse, Subject, SubjectList, User } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
 export const Grades = () => {
@@ -45,6 +45,7 @@ export const Grades = () => {
     });
     const [exportSemesters, setExportSemesters] = useState<SemesterDto[]>([]);
     const [exportClasses, setExportClasses] = useState<ClassEntity[]>([]);
+    const [exportSubjects, setExportSubjects] = useState<SubjectList[]>([]);
     const [exportStudents, setExportStudents] = useState<any[]>([]);
 
     const [filters, setFilters] = useState({
@@ -78,7 +79,7 @@ export const Grades = () => {
         if (filters.yearId) {
             Promise.all([
                 api.classManagement.getSemesters(filters.yearId),
-                api.classManagement.getClassesByYear(filters.yearId)
+                api.classManagement.getClassesByYear(filters.yearId, { pageSize: 1000 })
             ]).then(([sem, cls]) => {
                 setSemesters(sem);
                 setClasses(cls.data);
@@ -166,26 +167,29 @@ export const Grades = () => {
         if (exportFilters.yearId && exportOpen) {
             Promise.all([
                 api.classManagement.getSemesters(exportFilters.yearId),
-                api.classManagement.getClassesByYear(exportFilters.yearId)
+                api.classManagement.getClassesByYear(exportFilters.yearId, { pageSize: 1000 })
             ]).then(([sem, cls]) => {
-                setExportSemesters(sem);
-                setExportClasses(cls.data);
+                setExportSemesters(sem || []);
+                const classesArr = Array.isArray(cls) ? cls : (cls?.data || []);
+                setExportClasses(classesArr);
                 if (!exportFilters.semesterId) {
                     const today = new Date().toISOString().split('T')[0];
-                    const currentSem = sem.find((s: SemesterDto) => s.startDate && s.endDate && s.startDate <= today && s.endDate >= today) || sem[0];
+                    const currentSem = (sem || []).find((s: SemesterDto) => s.startDate && s.endDate && s.startDate <= today && s.endDate >= today) || sem?.[0];
                     if (currentSem) setExportFilters(f => ({ ...f, semesterId: currentSem.id }));
                 }
-            });
+            }).catch(console.error);
         }
     }, [exportFilters.yearId, exportOpen]);
 
     useEffect(() => {
         if (exportFilters.classId) {
-            api.classManagement.getClassStudents(exportFilters.classId).then(students => {
-                setExportStudents(students.sort((a: any, b: any) => a.orderNumber - b.orderNumber));
-            });
+            api.classManagement.getClassDetails(exportFilters.classId).then(details => {
+                setExportStudents((details.students || []).sort((a: any, b: any) => a.orderNumber - b.orderNumber));
+                setExportSubjects((details.subjects || []).map((cs: any) => ({ id: cs.subjectId, name: cs.subjectName })).filter((s: any) => s.id));
+            }).catch(console.error);
         } else {
             setExportStudents([]);
+            setExportSubjects([]);
         }
     }, [exportFilters.classId]);
 
@@ -293,17 +297,17 @@ export const Grades = () => {
                             sortDesc={filters.sortDesc}
                             onSort={field => setFilters(f => f.sortBy === field ? { ...f, sortDesc: !f.sortDesc } : { ...f, sortBy: field, sortDesc: true })}
                             columns={[
-                                { header: getText('columns.student'), sortKey: 'studentname', render: g => <span className="font-medium">{g.studentName}</span> },
-                                { header: getText('columns.class'), sortKey: 'classname', render: g => g.className },
-                                { header: getText('columns.subject'), sortKey: 'subjectname', render: g => g.subjectName },
-                                { header: getText('columns.grade'), sortKey: 'gradevalue', render: g => <span className="text-s">{g.gradeTypeName}</span> },
-                                { header: getText('columns.category'), sortKey: 'categoryname', render: g => <span className="text-neutral-500 text-xs">{g.categoryName}</span> },
-                                { header: getText('columns.teacher'), sortKey: 'teachername', render: g => <span className="text-xs">{g.teacherName}</span> },
-                                { header: getText('columns.createdAt'), sortKey: 'createdat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.createdAt)}</span> },
-                                { header: getText('columns.updatedAt'), sortKey: 'updatedat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.updatedAt)}</span> },
-                                { header: getText('columns.modifiedBy'), render: g => <span className="text-neutral-500 text-xs">{g.modifiedByName || 'System'}</span> },
+                                { header: 'Uczeń', sortKey: 'studentname', render: g => <span className="font-medium">{g.studentName}</span> },
+                                { header: 'Klasa', sortKey: 'classname', render: g => g.className },
+                                { header: 'Przedmiot', sortKey: 'subjectname', render: g => g.subjectName },
+                                { header: 'Ocena', sortKey: 'gradevalue', render: g => <span className="text-s">{g.gradeTypeName}</span> },
+                                { header: 'Kategoria', sortKey: 'categoryname', render: g => <span className="text-xs font-medium" style={{ color: g.categoryColorHex }}>{g.categoryName}</span> },
+                                { header: 'Nauczyciel', sortKey: 'teachername', render: g => <span className="text-xs">{g.teacherName}</span> },
+                                { header: 'Utworzono', sortKey: 'createdat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.createdAt)}</span> },
+                                { header: 'Edytowano', sortKey: 'updatedat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.updatedAt)}</span> },
+                                { header: 'Edytowane przez', render: g => <span className="text-neutral-500 text-xs">{g.modifiedByName || 'System'}</span> },
                                 {
-                                    header: getText('columns.actions'), className: 'text-right', render: g => (
+                                    header: 'Akcje', className: 'text-right', render: g => (
                                         <ActionButtons
                                             onDetails={() => handleDetails(g.id)}
                                             onEdit={() => handleEdit(g.id)}
@@ -313,7 +317,7 @@ export const Grades = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={getText('emptyMessage')}
+                            emptyMessage={'Brak ocen'}
                         />
                     )}
                 </div>
@@ -460,9 +464,10 @@ export const Grades = () => {
                                     value={exportFilters.subjectId || ''}
                                     onChange={e => setExportFilters(f => ({ ...f, subjectId: e.target.value ? Number(e.target.value) : null }))}
                                     className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
+                                    disabled={!exportFilters.classId}
                                 >
                                     <option value="">Wybierz przedmiot</option>
-                                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    {exportSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                             </div>
                         ) : (

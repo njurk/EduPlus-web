@@ -7,7 +7,7 @@ import { AlertCircle, Lock, Mail, ShieldCheckIcon } from 'lucide-react';
 import { useCMSContent } from '../hooks/useCMSContent';
 
 export const TeacherLogin = () => {
-    const { getText } = useCMSContent('login');
+    const { getText } = useCMSContent('teacherLogin');
     const navigate = useNavigate();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState<string | null>(null);

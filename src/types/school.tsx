@@ -42,6 +42,11 @@ export interface Subject extends BaseEntity {
   name: string;
 }
 
+export interface SubjectList {
+  id: number;
+  name: string;
+}
+
 export interface ClassStudent {
   id: number;
   classId: number;
@@ -49,6 +54,8 @@ export interface ClassStudent {
   studentId: number;
   createdAt: string;
   updatedAt: string;
+  modifiedByName?: string;
+  isActive: boolean;
   student: {
     id: number;
     firstName: string;
@@ -66,6 +73,8 @@ export interface ClassSubject {
   teacherId?: number;
   createdAt: string;
   updatedAt: string;
+  modifiedByName?: string;
+  isActive: boolean;
 }
 
 export interface ClassDetailsDto {

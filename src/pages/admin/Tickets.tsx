@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { AlertCircle } from 'lucide-react';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useUnread } from '../../hooks/useUnread';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { Editor } from 'primereact/editor';
 import 'primereact/resources/themes/lara-light-blue/theme.css';
@@ -66,6 +67,7 @@ type ViewMode = 'list' | 'resolve' | 'viewClosed';
 
 export const Tickets = () => {
     const { getText } = useCMSContent('tickets');
+    const { unreadTicketIds } = useUnread();
     const [data, setData] = useState<PaginatedResponse<Ticket> | null>(null);
     const [loading, setLoading] = useState(false);
     const [pageNumber, setPageNumber] = useState(1);
@@ -343,21 +345,21 @@ export const Tickets = () => {
                             sortDesc={filters.sortDesc}
                             onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
                             columns={[
-                                { header: getText('columns.createdAt'), sortKey: 'created', className: 'w-36', render: (t) => <span className="text-neutral-600 text-xs">{formatDateTime(t.createdAt)}</span> },
+                                { header: 'Data zgłoszenia', sortKey: 'created', className: 'w-36', render: (t) => <span className="text-neutral-600 text-xs">{formatDateTime(t.createdAt)}</span> },
                                 {
-                                    header: getText('columns.email'), sortKey: 'email', render: (t) => (
+                                    header: 'Email', sortKey: 'email', render: (t) => (
                                         <div className="flex items-center gap-2">
                                             <span className="text-neutral-900 font-medium">{t.email}</span>
-                                            <Badge variant="new" show={t.isRead === false} />
+                                            <Badge variant="new" show={unreadTicketIds.includes(t.id)} />
                                         </div>
                                     )
                                 },
-                                { header: getText('columns.reason'), sortKey: 'reason', render: (t) => <span className="text-neutral-900">{t.reasonName}</span> },
-                                { header: getText('columns.status'), className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-xs text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-xs text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },
-                                { header: getText('columns.closedAt'), sortKey: 'closedat', render: (t) => t.closedAt ? <span className="text-neutral-500 text-xs">{formatDateTime(t.closedAt)}</span> : <span className="text-neutral-300">-</span> },
-                                { header: getText('columns.modifiedBy'), render: (t) => <span className="text-neutral-500 text-xs">{t.modifiedByName || 'System'}</span> },
+                                { header: 'Powód', sortKey: 'reason', render: (t) => <span className="text-neutral-900">{t.reasonName}</span> },
+                                { header: 'Status', className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-xs text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-xs text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },
+                                { header: 'Data zamknięcia', sortKey: 'closedat', render: (t) => t.closedAt ? <span className="text-neutral-500 text-xs">{formatDateTime(t.closedAt)}</span> : <span className="text-neutral-300">-</span> },
+                                { header: 'Zamknięte przez', render: (t) => <span className="text-neutral-500 text-xs">{t.modifiedByName || 'System'}</span> },
                                 {
-                                    header: getText('columns.actions'), className: 'w-32 text-right', render: (t) => (
+                                    header: 'Akcje', className: 'w-32 text-right', render: (t) => (
                                         <ActionButtons
                                             onDetails={() => openDetails(t)}
                                             onEdit={!t.isClosed ? () => openResolve(t) : undefined}

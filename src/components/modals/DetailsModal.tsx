@@ -1,6 +1,6 @@
 import { Modal } from './Modal';
 import { Button } from '../ui/Button';
-import { formatFullDate } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 
 interface DetailsModalProps {
     isOpen: boolean;
@@ -29,7 +29,7 @@ export const DetailsModal = ({
         if (value === null || value === undefined || value === '') return <span className="text-neutral-400 font-light">-</span>;
         if (typeof value === 'boolean') return value ? 'Tak' : 'Nie';
         const lowerKey = key.toLowerCase();
-        if (lowerKey.endsWith('date') || lowerKey.endsWith('at') || lowerKey === 'date') return formatFullDate(value);
+        if (lowerKey.endsWith('date') || lowerKey.endsWith('at') || lowerKey === 'date') return formatDateTime(value);
         if (Array.isArray(value)) return value.join(', ');
         return String(value);
     };

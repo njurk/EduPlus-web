@@ -75,6 +75,48 @@ export const subjectsApi = {
         const response = await fetch(`${API_URL}/subject/${subjectId}/teachers`, { headers: getHeaders() });
         return handleResponse(response);
     },
+    getAllSubjectTeachers: async (params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDesc?: boolean; search?: string; subjectId?: number; teacherId?: number; showInactive?: boolean }): Promise<PaginatedResponse<any>> => {
+        const query = new URLSearchParams();
+        if (params?.pageNumber !== undefined) query.append('pageNumber', String(params.pageNumber));
+        if (params?.pageSize !== undefined) query.append('pageSize', String(params.pageSize));
+        if (params?.sortBy) query.append('sortBy', params.sortBy);
+        if (params?.sortDesc !== undefined) query.append('sortDesc', String(params.sortDesc));
+        if (params?.search) query.append('search', params.search);
+        if (params?.subjectId !== undefined) query.append('subjectId', String(params.subjectId));
+        if (params?.teacherId !== undefined) query.append('teacherId', String(params.teacherId));
+        if (params?.showInactive !== undefined) query.append('showInactive', String(params.showInactive));
+        const response = await fetch(`${API_URL}/subject/teachers?${query.toString()}`, { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    addTeacher: async (subjectId: number, teacherId: number) => {
+        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${teacherId}`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+    removeTeacher: async (subjectId: number, teacherId: number) => {
+        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${teacherId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+    restoreTeacher: async (subjectId: number, teacherId: number) => {
+        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${teacherId}/restore`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+    updateTeacher: async (subjectId: number, oldTeacherId: number, newTeacherId: number) => {
+        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${oldTeacherId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ newTeacherId })
+        });
+        return handleResponse(response);
+    },
 };
 
 export const classManagementApi = {
@@ -107,6 +149,8 @@ export const classManagementApi = {
             subjectSearch?: string;
             subjectSortBy?: string;
             subjectSortDesc?: boolean;
+            showInactiveSubjects?: boolean;
+            showInactiveStudents?: boolean;
         }
     ): Promise<ClassDetailsDto> => {
         const query = new URLSearchParams();
@@ -117,6 +161,8 @@ export const classManagementApi = {
             if (params.subjectSearch) query.append('subjectSearch', params.subjectSearch);
             if (params.subjectSortBy) query.append('subjectSortBy', params.subjectSortBy);
             if (params.subjectSortDesc !== undefined) query.append('subjectSortDesc', params.subjectSortDesc.toString());
+            if (params.showInactiveSubjects !== undefined) query.append('showInactiveSubjects', params.showInactiveSubjects.toString());
+            if (params.showInactiveStudents !== undefined) query.append('showInactiveStudents', params.showInactiveStudents.toString());
         }
         const response = await fetch(`${API_URL}/class/${classId}/details?${query.toString()}`, { headers: getHeaders() });
         return handleResponse(response);
@@ -190,8 +236,30 @@ export const classManagementApi = {
         });
         return handleResponse(response);
     },
+    updateSubjectTeacher: async (classSubjectId: number, teacherId: number) => {
+        const response = await fetch(`${API_URL}/class/subjects/${classSubjectId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ teacherId })
+        });
+        return handleResponse(response);
+    },
     getClassStudents: async (classId: number): Promise<any[]> => {
         const details = await classManagementApi.getClassDetails(classId);
         return details.students || [];
+    },
+    restoreSubjectInClass: async (relationId: number) => {
+        const response = await fetch(`${API_URL}/class/subjects/${relationId}/restore`, {
+            method: 'PUT',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+    restoreStudentInClass: async (relationId: number) => {
+        const response = await fetch(`${API_URL}/class/students/${relationId}/restore`, {
+            method: 'PUT',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
     }
 };

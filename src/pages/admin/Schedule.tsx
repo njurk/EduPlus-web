@@ -175,21 +175,21 @@ export const Schedule = () => {
                     <ClassSelector classes={classes} selectedClass={selectedClassId} onChange={setSelectedClassId} showAll />
                     {selectedClassId && (
                         <>
-                            <Button
-                                variant={editMode ? 'primary' : 'ghost'}
-                                onClick={() => setEditMode(!editMode)}
-                                className="flex items-center gap-1"
-                            >
-                                <Edit size={14} /> {editMode ? 'Zakończ edycję' : 'Edytuj'}
-                            </Button>
                             {editMode && (
                                 <Button
                                     variant="danger"
                                     onClick={handleClearSchedule}
                                 >
-                                    <Trash2 size={14} /> Wyczyść plan
+                                    <Trash2 size={14} /> Wyczyść
                                 </Button>
                             )}
+                            <Button
+                                variant={editMode ? 'primary' : 'soft'}
+                                onClick={() => setEditMode(!editMode)}
+                                className="flex items-center gap-1"
+                            >
+                                <Edit size={14} /> {editMode ? 'Zakończ edycję' : 'Edytuj'}
+                            </Button>
                         </>
                     )}
                     <ExportButton disabled={!selectedClassId} onExport={(format) => {
@@ -209,17 +209,17 @@ export const Schedule = () => {
                 {loading ? (
                     <LoadingSpinner className="h-64" />
                 ) : (
-                    <table className="w-full border-collapse text-xs table-fixed">
+                    <table className="w-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
                         <thead>
                             <tr>
-                                <th className="border-b border-r border-neutral-200 bg-neutral-50 p-2 w-16 text-center font-semibold">Nr</th>
-                                {days.map(d => <th key={d} className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center font-semibold" style={{ width: 'calc((100% - 64px) / 5)' }}>{d}</th>)}
+                                <th className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center font-semibold" style={{ width: '64px' }}>Nr</th>
+                                {days.map((d, i) => <th key={i} className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center font-semibold">{d}</th>)}
                             </tr>
                         </thead>
                         <tbody>
                             {lessonHours.map(hour => (
                                 <tr key={hour.id}>
-                                    <td className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center align-middle">
+                                    <td className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center align-middle" style={{ width: '64px' }}>
                                         <div className="font-bold text-neutral-700">{hour.orderNumber}</div>
                                         <div className="text-[10px] text-neutral-400">{String(hour.startTime).slice(0, 5)}</div>
                                         <div className="text-[10px] text-neutral-400">{String(hour.endTime).slice(0, 5)}</div>
@@ -294,7 +294,7 @@ export const Schedule = () => {
                             )}
                         </div>
                         <div className="flex gap-3">
-                            <Button variant="ghost" onClick={() => { setIsModalOpen(false); setModalData(null); }}>Anuluj</Button>
+                            <Button variant="soft" onClick={() => { setIsModalOpen(false); setModalData(null); }}>Anuluj</Button>
                             <Button
                                 onClick={handleSave}
                                 disabled={!modalData?.subjectId || !modalData?.teacherId || !modalData?.classroomId}

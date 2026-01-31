@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, FileCheck, Terminal } from 'lucide-react';
+import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, ClockIcon, FileCheck, Terminal } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useCMSContent } from '../hooks/useCMSContent';
-import { api } from '../services/apiService';
+import { api, API_URL } from '../services/apiService';
 import { Badge } from '../components/ui/Badge';
+import { UnreadContext } from '../hooks/useUnread';
 import type { UnreadCounts } from '../types';
 
 const Clock = () => {
@@ -26,23 +27,32 @@ const Clock = () => {
 export const AdminLayout = () => {
   const { getText } = useCMSContent('layout');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0 });
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, unreadAnnouncementIds: [], unreadTicketIds: [] });
   const navigate = useNavigate();
 
-  const loadUnreadCounts = useCallback(async () => {
-    try {
-      const counts = await api.layout.getUnreadCounts();
-      setUnreadCounts(counts);
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
   useEffect(() => {
-    loadUnreadCounts();
-    const interval = setInterval(loadUnreadCounts, 5000);
-    return () => clearInterval(interval);
-  }, [loadUnreadCounts]);
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const eventSource = new EventSource(
+      `${API_URL}/badge/unread-counts/stream?token=${token}`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const counts = JSON.parse(event.data);
+        setUnreadCounts(counts);
+      } catch (e) {
+        console.error('SSE parse error:', e);
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => eventSource.close();
+  }, []);
 
   const [user] = useState<{ name: string } | null>(() => {
     const savedUser = localStorage.getItem('user');
@@ -72,6 +82,7 @@ export const AdminLayout = () => {
       items: [
         { label: getText('nav.users'), path: '/admin/users', icon: Users },
         { label: getText('nav.classes'), path: '/admin/class-management', icon: Folder },
+        { label: getText('nav.subjects'), path: '/admin/subjects', icon: BookOpen },
         { label: getText('nav.announcements'), path: '/admin/announcements', icon: Megaphone, badge: unreadCounts.announcements },
       ]
     },
@@ -79,7 +90,7 @@ export const AdminLayout = () => {
       title: getText('nav.section.teaching'),
       items: [
         { label: getText('nav.schedule'), path: '/admin/schedule', icon: Calendar },
-        { label: getText('nav.lessons'), path: '/admin/lessons', icon: BookOpen },
+        { label: getText('nav.lessons'), path: '/admin/lessons', icon: ClockIcon },
         { label: getText('nav.grades'), path: '/admin/grades', icon: GraduationCap },
         { label: getText('nav.attendance'), path: '/admin/attendance', icon: ClipboardCheck },
         { label: getText('nav.excuses'), path: '/admin/excuses', icon: FileCheck },
@@ -209,7 +220,9 @@ export const AdminLayout = () => {
 
         <main className="flex-1 overflow-auto p-4 lg:p-8 bg-neutral-50">
           <div className="max-w-7xl mx-auto animate-in fade-in duration-300">
-            <Outlet />
+            <UnreadContext.Provider value={unreadCounts}>
+              <Outlet />
+            </UnreadContext.Provider>
           </div>
         </main>
       </div>
