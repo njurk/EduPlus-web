@@ -581,6 +581,7 @@ export const SystemConfig = () => {
             ...specificCols,
             { header: 'Utworzono', sortKey: "created", render: (row) => formatDateTime(row.createdAt), className: "text-neutral-500 text-xs" },
             { header: 'Edytowano', sortKey: "updated", render: (row) => formatDateTime(row.updatedAt), className: "text-neutral-500 text-xs" },
+            { header: 'Edytowane przez', render: (row) => row.modifiedByName || '-', className: "text-neutral-500 text-xs" },
             {
                 header: 'Akcje',
                 className: "text-right",
@@ -588,8 +589,8 @@ export const SystemConfig = () => {
                     <ActionButtons
                         isActive={!filters.showInactive}
                         onEdit={() => openForm(row)}
-                        onDelete={() => filters.showInactive ? handleHardDelete(row.id) : handleStatusChange(row, false)}
-                        onRestore={() => handleStatusChange(row, true)}
+                        onDelete={activeTab !== 'lessonStatuses' && activeTab !== 'attendance' ? (() => filters.showInactive ? handleHardDelete(row.id) : handleStatusChange(row, false)) : undefined}
+                        onRestore={activeTab !== 'lessonStatuses' && activeTab !== 'attendance' ? (() => handleStatusChange(row, true)) : undefined}
                     />
                 ),
             }
@@ -654,14 +655,16 @@ export const SystemConfig = () => {
                         onReset={() => setFilters(p => ({ ...p, search: '' }))}
                         rightContent={
                             <>
-                                <TrashButton
-                                    isTrashActive={filters.showInactive}
-                                    onToggle={() => {
-                                        setLoading(true);
-                                        setData([]);
-                                        setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
-                                    }}
-                                />
+                                {activeTab !== 'lessonStatuses' && activeTab !== 'attendance' && (
+                                    <TrashButton
+                                        isTrashActive={filters.showInactive}
+                                        onToggle={() => {
+                                            setLoading(true);
+                                            setData([]);
+                                            setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
+                                        }}
+                                    />
+                                )}
                                 <Button onClick={() => openForm()}>
                                     <Plus size={16} className="mr-2" /> Dodaj
                                 </Button>

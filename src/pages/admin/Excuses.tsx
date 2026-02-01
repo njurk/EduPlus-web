@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/apiService';
-import { Eye, Check, X } from 'lucide-react';
+import { Eye, Trash2, RotateCcw, Pencil } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
-import { FilterToolbar } from '../../components/ui/FilterToolbar';
-import { formatDateTime } from '../../utils/formatters';
+import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
+import { formatDateTime, formatDateOnly } from '../../utils/formatters';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { Modal } from '../../components/modals/Modal';
 import type { PaginatedResponse } from '../../types';
@@ -15,12 +15,18 @@ import { Pagination } from '../../components/ui/Pagination';
 interface Excuse {
     id: number;
     parentName: string;
-    lessonDate: string;
+    studentName: string;
+    className: string | null;
     isAccepted: boolean | null;
     acceptedAt: string | null;
     modifiedByName: string | null;
     reason: string;
     createdAt: string;
+    attendanceCount: number;
+}
+
+interface ExcuseDetails extends Excuse {
+    attendances: { id: number; date: string; subjectName: string; lessonHour: number }[];
 }
 
 export const Excuses = () => {
@@ -28,28 +34,71 @@ export const Excuses = () => {
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Excuse> | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [filters, setFilters] = useState({ search: '', sortBy: 'createdAt', sortDesc: true, showInactive: false });
-    const [detailsModal, setDetailsModal] = useState<Excuse | null>(null);
-    const [acceptModal, setAcceptModal] = useState<Excuse | null>(null);
+    const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
+    const [filters, setFilters] = useState({
+        search: '',
+        sortBy: 'createdAt',
+        sortDesc: true,
+        showInactive: false,
+        statusFilter: '' as string,
+        classId: null as number | null
+    });
+    const [detailsModal, setDetailsModal] = useState<ExcuseDetails | null>(null);
+    const [detailsLoading, setDetailsLoading] = useState(false);
+    const [editMode, setEditMode] = useState(false);
+    const [selectedStatus, setSelectedStatus] = useState<string>('');
+
+    useEffect(() => {
+        api.classes.getAll({ pageSize: 1000 }).then(r => setClasses(r.map((c: any) => ({ id: c.id, name: `${c.level}${c.letter}` }))));
+    }, []);
 
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await api.excuses.getAll({ pageNumber, pageSize: 20, ...filters });
+            const result = await api.excuses.getAll({
+                pageNumber,
+                pageSize: 20,
+                search: filters.search,
+                sortBy: filters.sortBy,
+                sortDesc: filters.sortDesc,
+                showInactive: filters.showInactive,
+                statusFilter: filters.statusFilter || undefined,
+                classId: filters.classId || undefined
+            });
             setPaginatedData(result);
         } finally { setLoading(false); }
     }, [filters, pageNumber]);
 
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
-    useEffect(() => { setPageNumber(1); }, [filters.search, filters.showInactive]);
+    useEffect(() => { setPageNumber(1); }, [filters.search, filters.showInactive, filters.statusFilter, filters.classId]);
 
     const handleSort = (field: string) => {
         setFilters(f => ({ ...f, sortBy: field, sortDesc: f.sortBy === field ? !f.sortDesc : true }));
     };
 
-    const handleAccept = async (id: number, accept: boolean) => {
-        await api.excuses.accept(id, accept);
-        setAcceptModal(null);
+    const openDetails = async (id: number, edit: boolean = false) => {
+        setDetailsLoading(true);
+        setEditMode(edit);
+        try {
+            const details = await api.excuses.getById(id);
+            setDetailsModal(details);
+            setSelectedStatus(details.isAccepted === true ? 'accepted' : details.isAccepted === false ? 'rejected' : 'pending');
+        } finally { setDetailsLoading(false); }
+    };
+
+    const handleSaveStatus = async () => {
+        if (!detailsModal) return;
+        const isAccepted = selectedStatus === 'accepted' ? true : selectedStatus === 'rejected' ? false : null;
+        await api.excuses.accept(detailsModal.id, isAccepted);
+        setDetailsModal(null);
+        setEditMode(false);
+        await loadData();
+    };
+
+    const handleAccept = async (accept: boolean) => {
+        if (!detailsModal) return;
+        await api.excuses.accept(detailsModal.id, accept);
+        setDetailsModal(null);
         await loadData();
     };
 
@@ -59,40 +108,81 @@ export const Excuses = () => {
         await loadData();
     };
 
+    const handleRestore = async (id: number) => {
+        await api.excuses.restore(id);
+        await loadData();
+    };
+
     const getStatusBadge = (isAccepted: boolean | null) => {
         if (isAccepted === true) return <span className="text-success text-xs font-medium">Zaakceptowane</span>;
         if (isAccepted === false) return <span className="text-danger text-xs font-medium">Odrzucone</span>;
         return <span className="text-warning text-xs font-medium">Oczekujące</span>;
     };
 
+    const statusOptions = [
+        { value: 'pending', label: 'Oczekujące' },
+        { value: 'accepted', label: 'Zaakceptowane' },
+        { value: 'rejected', label: 'Odrzucone' }
+    ];
+
+    const editStatusOptions = [
+        { value: 'pending', label: 'Oczekujące' },
+        { value: 'accepted', label: 'Zaakceptowane' },
+        { value: 'rejected', label: 'Odrzucone' }
+    ];
+
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
-                <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-            </div>
+            <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
             <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
-                <div className="p-3 border-b">
-                    <FilterToolbar search={{ value: filters.search, onChange: (v: string) => setFilters(f => ({ ...f, search: v })), placeholder: 'Szukaj...' }} />
-                </div>
+                <FilterToolbar
+                    search={{ value: filters.search, onChange: (v: string) => setFilters(f => ({ ...f, search: v })), placeholder: 'Szukaj...' }}
+                    onReset={() => setFilters(f => ({ ...f, search: '', statusFilter: '', classId: null }))}
+                    rightContent={<TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />}
+                >
+                    <FilterSelect
+                        label="Status:"
+                        value={filters.statusFilter || null}
+                        onChange={v => setFilters(f => ({ ...f, statusFilter: v ? String(v) : '' }))}
+                        options={statusOptions}
+                        placeholder="Wszystkie"
+                        minWidth="140px"
+                        parseAsNumber={false}
+                    />
+                    <FilterSelect
+                        label="Klasa:"
+                        value={filters.classId}
+                        onChange={v => setFilters(f => ({ ...f, classId: v ? Number(v) : null }))}
+                        options={classes.map(c => ({ value: c.id, label: c.name }))}
+                        placeholder="Wszystkie"
+                        minWidth="100px"
+                    />
+                </FilterToolbar>
                 <div className="flex-1">
                     {loading ? <LoadingSpinner /> : (
                         <DataTable data={paginatedData?.data || []} columns={[
-                            { header: 'Data', sortKey: 'createdAt', render: (e: Excuse) => <span className="text-xs">{formatDateTime(e.createdAt)}</span> },
+                            { header: 'Przesłano', sortKey: 'createdAt', render: (e: Excuse) => <span className="text-xs">{formatDateTime(e.createdAt)}</span> },
                             { header: 'Rodzic', sortKey: 'parent', render: (e: Excuse) => <span className="font-medium">{e.parentName}</span> },
-                            { header: 'Lekcja', sortKey: 'lessondate', render: (e: Excuse) => <span className="text-xs">{formatDateTime(e.lessonDate)}</span> },
+                            { header: 'Uczeń', sortKey: 'student', render: (e: Excuse) => <span className="font-medium">{e.studentName}</span> },
+                            { header: 'Klasa', render: (e: Excuse) => e.className || '-' },
+                            { header: 'Godziny', render: (e: Excuse) => e.attendanceCount, className: 'text-center w-16' },
                             { header: 'Status', sortKey: 'isaccepted', render: (e: Excuse) => getStatusBadge(e.isAccepted) },
-                            { header: 'Data akceptacji', sortKey: 'acceptedat', render: (e: Excuse) => e.acceptedAt ? <span className="text-xs">{formatDateTime(e.acceptedAt)}</span> : '-' },
-                            { header: 'Zaakceptował', sortKey: 'modifiedby', render: (e: Excuse) => e.modifiedByName || '-' },
+                            { header: 'Rozpatrzono', sortKey: 'acceptedat', render: (e: Excuse) => e.acceptedAt ? <span className="text-xs">{formatDateTime(e.acceptedAt)}</span> : '-' },
+                            { header: 'Rozpatrzył', render: (e: Excuse) => e.modifiedByName || '-' },
                             {
-                                header: 'Akcje', className: 'text-right w-32', render: (e: Excuse) => (
+                                header: 'Akcje', className: 'text-right w-24', render: (e: Excuse) => (
                                     <div className="flex justify-end gap-1">
-                                        <Button variant="soft" onClick={() => setDetailsModal(e)} className="p-1"><Eye size={14} /></Button>
-                                        {e.isAccepted === null && (
-                                            <Button variant="soft" onClick={() => setAcceptModal(e)} className="p-1 text-success"><Check size={14} /></Button>
-                                        )}
-                                        {!filters.showInactive && (
-                                            <Button variant="soft" onClick={() => handleDelete(e.id)} className="p-1 text-danger"><X size={14} /></Button>
+                                        <Button variant="soft" onClick={() => openDetails(e.id, false)} className="p-1"><Eye size={14} /></Button>
+                                        {filters.showInactive ? (
+                                            <>
+                                                <Button variant="soft" onClick={() => handleRestore(e.id)} className="p-1 text-success"><RotateCcw size={14} /></Button>
+                                                <Button variant="soft" onClick={() => handleDelete(e.id)} className="p-1 text-danger"><Trash2 size={14} /></Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Button variant="soft" onClick={() => openDetails(e.id, true)} className="p-1 text-primary"><Pencil size={14} /></Button>
+                                                <Button variant="soft" onClick={() => handleDelete(e.id)} className="p-1 text-danger"><Trash2 size={14} /></Button>
+                                            </>
                                         )}
                                     </div>
                                 )
@@ -107,29 +197,69 @@ export const Excuses = () => {
                 )}
             </div>
 
-            <Modal isOpen={!!detailsModal} onClose={() => setDetailsModal(null)} title="Szczegóły usprawiedliwienia">
-                {detailsModal && (
-                    <div className="space-y-3 p-4">
-                        <div><span className="font-medium">Rodzic:</span> {detailsModal.parentName}</div>
-                        <div><span className="font-medium">Data lekcji:</span> {formatDateTime(detailsModal.lessonDate)}</div>
-                        <div><span className="font-medium">Data zgłoszenia:</span> {formatDateTime(detailsModal.createdAt)}</div>
-                        <div><span className="font-medium">Status:</span> {getStatusBadge(detailsModal.isAccepted)}</div>
-                        <div><span className="font-medium">Powód:</span></div>
-                        <div className="p-3 bg-neutral-50 rounded text-sm">{detailsModal.reason}</div>
-                    </div>
-                )}
-            </Modal>
-
-            <Modal isOpen={!!acceptModal} onClose={() => setAcceptModal(null)} title="Akceptacja usprawiedliwienia">
-                {acceptModal && (
+            <Modal
+                isOpen={!!detailsModal || detailsLoading}
+                onClose={() => { setDetailsModal(null); setEditMode(false); }}
+                title={editMode ? "Edycja usprawiedliwienia" : "Szczegóły usprawiedliwienia"}
+                footer={editMode ? (
+                    <>
+                        <Button variant="secondary" onClick={() => { setDetailsModal(null); setEditMode(false); }}>Anuluj</Button>
+                        <Button onClick={handleSaveStatus}>Zapisz</Button>
+                    </>
+                ) : detailsModal?.isAccepted === null ? (
+                    <>
+                        <Button variant="danger" onClick={() => handleAccept(false)}>Odrzuć</Button>
+                        <Button onClick={() => handleAccept(true)}>Zatwierdź</Button>
+                    </>
+                ) : undefined}
+            >
+                {detailsLoading ? <LoadingSpinner /> : detailsModal && (
                     <div className="space-y-4 p-4">
-                        <div><span className="font-medium">Rodzic:</span> {acceptModal.parentName}</div>
-                        <div><span className="font-medium">Powód:</span></div>
-                        <div className="p-3 bg-neutral-50 rounded text-sm">{acceptModal.reason}</div>
-                        <div className="flex gap-2 justify-end pt-4">
-                            <Button variant="secondary" onClick={() => setAcceptModal(null)}>Anuluj</Button>
-                            <Button variant="danger" onClick={() => handleAccept(acceptModal.id, false)}>Odrzuć</Button>
-                            <Button onClick={() => handleAccept(acceptModal.id, true)}>Zatwierdź</Button>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div><span className="font-medium">Rodzic:</span> {detailsModal.parentName}</div>
+                            <div><span className="font-medium">Uczeń:</span> {detailsModal.studentName}</div>
+                            <div><span className="font-medium">Wysłano:</span> {formatDateTime(detailsModal.createdAt)}</div>
+                            <div>
+                                <span className="font-medium">Status:</span>{' '}
+                                {editMode ? (
+                                    <select
+                                        value={selectedStatus}
+                                        onChange={e => setSelectedStatus(e.target.value)}
+                                        className="border border-neutral-300 rounded-xs px-2 py-1 text-sm"
+                                    >
+                                        {editStatusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                    </select>
+                                ) : getStatusBadge(detailsModal.isAccepted)}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span className="font-medium text-sm">Powód:</span>
+                            <div className="p-3 bg-neutral-50 rounded text-sm mt-1">{detailsModal.reason}</div>
+                        </div>
+
+                        <div>
+                            <span className="font-medium text-sm">Dotyczy poniższych nieobecności:</span>
+                            <div className="mt-1 border rounded overflow-hidden">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-neutral-50">
+                                        <tr>
+                                            <th className="text-left p-2 font-medium">Data</th>
+                                            <th className="text-left p-2 font-medium">Przedmiot</th>
+                                            <th className="text-left p-2 font-medium">Lekcja</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {detailsModal.attendances.map(a => (
+                                            <tr key={a.id} className="border-t">
+                                                <td className="p-2">{formatDateOnly(a.date)}</td>
+                                                <td className="p-2">{a.subjectName}</td>
+                                                <td className="p-2">{a.lessonHour}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 )}

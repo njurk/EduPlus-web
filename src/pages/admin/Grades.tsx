@@ -33,6 +33,11 @@ export const Grades = () => {
     const [editForm, setEditForm] = useState({ gradeTypeId: 0, gradeCategoryId: 0, comment: '' });
     const [saving, setSaving] = useState(false);
 
+    const [addOpen, setAddOpen] = useState(false);
+    const [addForm, setAddForm] = useState({ classId: null as number | null, studentId: null as number | null, subjectId: null as number | null, gradeTypeId: null as number | null, gradeCategoryId: null as number | null, comment: '' });
+    const [addStudents, setAddStudents] = useState<any[]>([]);
+    const [addSubjects, setAddSubjects] = useState<any[]>([]);
+
     const [exportOpen, setExportOpen] = useState(false);
     const [exportFormat, setExportFormat] = useState<'pdf' | 'xlsx' | 'csv'>('pdf');
     const [exportType, setExportType] = useState<'class' | 'student'>('class');
@@ -163,6 +168,35 @@ export const Grades = () => {
         } catch (e) { console.error(e); }
     };
 
+    const handleAdd = async () => {
+        if (!addForm.studentId || !addForm.subjectId || !addForm.gradeTypeId || !addForm.gradeCategoryId) return;
+        setSaving(true);
+        try {
+            await api.grades.create({
+                studentId: addForm.studentId,
+                subjectId: addForm.subjectId,
+                gradeTypeId: addForm.gradeTypeId,
+                gradeCategoryId: addForm.gradeCategoryId,
+                comment: addForm.comment || undefined
+            });
+            setAddOpen(false);
+            setAddForm({ classId: null, studentId: null, subjectId: null, gradeTypeId: null, gradeCategoryId: null, comment: '' });
+            loadData();
+        } catch (e) { console.error(e); } finally { setSaving(false); }
+    };
+
+    useEffect(() => {
+        if (addForm.classId) {
+            api.classManagement.getClassDetails(addForm.classId).then(details => {
+                setAddStudents((details.students || []).sort((a: any, b: any) => a.orderNumber - b.orderNumber));
+                setAddSubjects((details.subjects || []).map((cs: any) => ({ id: cs.subjectId, name: cs.subjectName })).filter((s: any) => s.id));
+            }).catch(console.error);
+        } else {
+            setAddStudents([]);
+            setAddSubjects([]);
+        }
+    }, [addForm.classId]);
+
     useEffect(() => {
         if (exportFilters.yearId && exportOpen) {
             Promise.all([
@@ -252,7 +286,7 @@ export const Grades = () => {
                                 <ChevronDown size={14} className="ml-1" />
                             </Button>
                             <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
-                            <Button><Plus size={14} className="mr-1" /> Dodaj</Button>
+                            <Button onClick={() => { setAddOpen(true); setAddForm(f => ({ ...f, classId: filters.classId })); }}><Plus size={14} className="mr-1" /> Dodaj</Button>
                         </>
                     }
                 >
@@ -265,7 +299,7 @@ export const Grades = () => {
                         minWidth="120px"
                     />
                     <FilterSelect
-                        label="Typ:"
+                        label="Ocena:"
                         value={filters.gradeTypeId}
                         onChange={v => setFilters(f => ({ ...f, gradeTypeId: v as number | null }))}
                         options={gradeTypes.map(g => ({ value: g.id, label: String(g.numeric) }))}
@@ -303,14 +337,15 @@ export const Grades = () => {
                                 { header: 'Ocena', sortKey: 'gradevalue', render: g => <span className="text-s">{g.gradeTypeName}</span> },
                                 { header: 'Kategoria', sortKey: 'categoryname', render: g => <span className="text-xs font-medium" style={{ color: g.categoryColorHex }}>{g.categoryName}</span> },
                                 { header: 'Nauczyciel', sortKey: 'teachername', render: g => <span className="text-xs">{g.teacherName}</span> },
-                                { header: 'Utworzono', sortKey: 'createdat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.createdAt)}</span> },
+                                { header: 'Wystawiono', sortKey: 'createdat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.createdAt)}</span> },
                                 { header: 'Edytowano', sortKey: 'updatedat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.updatedAt)}</span> },
                                 { header: 'Edytowane przez', render: g => <span className="text-neutral-500 text-xs">{g.modifiedByName || 'System'}</span> },
                                 {
                                     header: 'Akcje', className: 'text-right', render: g => (
                                         <ActionButtons
+                                            isActive={!filters.showInactive}
                                             onDetails={() => handleDetails(g.id)}
-                                            onEdit={() => handleEdit(g.id)}
+                                            onEdit={!filters.showInactive ? () => handleEdit(g.id) : undefined}
                                             onDelete={() => handleDelete(g.id, g.isActive)}
                                             onRestore={filters.showInactive ? () => handleRestore(g.id) : undefined}
                                         />
@@ -334,27 +369,40 @@ export const Grades = () => {
 
             <Modal isOpen={!!detailsGrade} onClose={() => setDetailsGrade(null)} title="Szczegóły oceny">
                 {detailsGrade && (
-                    <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><span className="text-neutral-500 text-sm">Uczeń:</span><p className="font-medium">{detailsGrade.studentName}</p></div>
-                            <div><span className="text-neutral-500 text-sm">Klasa:</span><p className="font-medium">{detailsGrade.className}</p></div>
-                            <div><span className="text-neutral-500 text-sm">Przedmiot:</span><p className="font-medium">{detailsGrade.subjectName}</p></div>
-                            <div><span className="text-neutral-500 text-sm">Ocena:</span><p className="font-bold text-lg">{detailsGrade.gradeTypeName}</p></div>
-                            <div><span className="text-neutral-500 text-sm">Kategoria:</span><p className="font-medium">{detailsGrade.categoryName}</p></div>
-                            <div><span className="text-neutral-500 text-sm">Nauczyciel:</span><p className="font-medium">{detailsGrade.teacherName}</p></div>
-                            <div className="col-span-2"><span className="text-neutral-500 text-sm">Komentarz:</span><p>{detailsGrade.comment || '-'}</p></div>
-                            <div><span className="text-neutral-500 text-sm">Utworzono:</span><p className="text-sm">{formatDateTime(detailsGrade.createdAt)}</p></div>
-                            <div><span className="text-neutral-500 text-sm">Zaktualizowano:</span><p className="text-sm">{formatDateTime(detailsGrade.updatedAt)}</p></div>
+                    <div className="p-4 text-sm">
+                        <div className="space-y-2 pb-3">
+                            <div><span className="font-medium">Uczeń:</span> {detailsGrade.studentName}</div>
+                            <div><span className="font-medium">Klasa:</span> {detailsGrade.className}</div>
+                            <div><span className="font-medium">Przedmiot:</span> {detailsGrade.subjectName}</div>
                         </div>
+                        <div className="border-t border-neutral-200 py-3 space-y-2">
+                            <div><span className="font-medium">Ocena:</span> <span className="font-bold">{detailsGrade.gradeTypeName}</span></div>
+                            <div><span className="font-medium">Kategoria:</span> {detailsGrade.categoryName}</div>
+                            <div><span className="font-medium">Nauczyciel:</span> {detailsGrade.teacherName}</div>
+                        </div>
+                        <div className="border-t border-neutral-200 py-3 space-y-2 text-neutral-600">
+                            <div><span className="font-medium text-neutral-800">Wystawiono:</span> {formatDateTime(detailsGrade.createdAt)}</div>
+                            <div><span className="font-medium text-neutral-800">Edytowano:</span> {formatDateTime(detailsGrade.updatedAt)}</div>
+                            <div><span className="font-medium text-neutral-800">Edytowane przez:</span> {detailsGrade.modifiedByName || 'System'}</div>
+                        </div>
+                        {detailsGrade.comment && (
+                            <div className="border-t border-neutral-200 pt-3">
+                                <span className="font-medium">Komentarz:</span>
+                                <div className="p-3 bg-neutral-50 rounded mt-1">{detailsGrade.comment}</div>
+                            </div>
+                        )}
                     </div>
                 )}
             </Modal>
 
             <Modal isOpen={!!editGrade} onClose={() => setEditGrade(null)} title="Edycja oceny">
                 {editGrade && (
-                    <div className="space-y-4">
-                        <div className="text-sm text-neutral-500 mb-2">
-                            {editGrade.studentName} • {editGrade.className} • {editGrade.subjectName}
+                    <div className="space-y-4 p-4">
+                        <div className="text-sm text-neutral-500">
+                            <div><span>Uczeń:</span> {editGrade.studentName}</div>
+                            <div><span>Klasa:</span> {editGrade.className}</div>
+                            <div><span>Przedmiot:</span> {editGrade.subjectName}</div>
+                            <div><span>Wystawiono:</span> {formatDateTime(editGrade.createdAt)}</div>
                         </div>
                         <div>
                             <label className="label-text block mb-1">Ocena</label>
@@ -510,6 +558,91 @@ export const Grades = () => {
                             disabled={!exportFilters.yearId || !exportFilters.semesterId || !exportFilters.classId || (exportType === 'class' && !exportFilters.subjectId) || (exportType === 'student' && !exportFilters.studentId)}
                         >
                             <Download size={14} className="mr-1" /> Eksportuj
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Dodaj ocenę">
+                <div className="space-y-4 p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label-text block mb-1">Klasa <span className="text-danger">*</span></label>
+                            <select
+                                value={addForm.classId || ''}
+                                onChange={e => setAddForm(f => ({ ...f, classId: e.target.value ? Number(e.target.value) : null, studentId: null, subjectId: null }))}
+                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
+                            >
+                                <option value="">Wybierz klasę</option>
+                                {classes.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label-text block mb-1">Uczeń <span className="text-danger">*</span></label>
+                            <select
+                                value={addForm.studentId || ''}
+                                onChange={e => setAddForm(f => ({ ...f, studentId: e.target.value ? Number(e.target.value) : null }))}
+                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
+                                disabled={!addForm.classId}
+                            >
+                                <option value="">Wybierz ucznia</option>
+                                {addStudents.map((s: any) => <option key={s.studentId} value={s.studentId}>{s.orderNumber}. {s.student?.lastName} {s.student?.firstName}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="label-text block mb-1">Przedmiot <span className="text-danger">*</span></label>
+                        <select
+                            value={addForm.subjectId || ''}
+                            onChange={e => setAddForm(f => ({ ...f, subjectId: e.target.value ? Number(e.target.value) : null }))}
+                            className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
+                            disabled={!addForm.classId}
+                        >
+                            <option value="">Wybierz przedmiot</option>
+                            {addSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label-text block mb-1">Ocena <span className="text-danger">*</span></label>
+                            <select
+                                value={addForm.gradeTypeId || ''}
+                                onChange={e => setAddForm(f => ({ ...f, gradeTypeId: e.target.value ? Number(e.target.value) : null }))}
+                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
+                            >
+                                <option value="">Wybierz ocenę</option>
+                                {gradeTypes.map(g => <option key={g.id} value={g.id}>{g.numeric} - {g.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label-text block mb-1">Kategoria <span className="text-danger">*</span></label>
+                            <select
+                                value={addForm.gradeCategoryId || ''}
+                                onChange={e => setAddForm(f => ({ ...f, gradeCategoryId: e.target.value ? Number(e.target.value) : null }))}
+                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
+                            >
+                                <option value="">Wybierz kategorię</option>
+                                {gradeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="label-text block mb-1">Komentarz</label>
+                        <textarea
+                            value={addForm.comment}
+                            onChange={e => setAddForm(f => ({ ...f, comment: e.target.value }))}
+                            className="w-full border border-neutral-300 rounded-xs px-3 py-2 text-sm bg-white resize-none"
+                            rows={3}
+                            placeholder="Opcjonalny komentarz do oceny"
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4 border-t">
+                        <Button variant="secondary" onClick={() => setAddOpen(false)}>Anuluj</Button>
+                        <Button
+                            onClick={handleAdd}
+                            disabled={saving || !addForm.studentId || !addForm.subjectId || !addForm.gradeTypeId || !addForm.gradeCategoryId}
+                        >
+                            {saving ? 'Zapisywanie...' : 'Dodaj ocenę'}
                         </Button>
                     </div>
                 </div>

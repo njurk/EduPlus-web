@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { RefreshCw, FileText } from 'lucide-react';
-import { API_URL, getHeaders } from '../../services/api/core';
+import { API_URL, getHeaders } from '../../services/apiService';
 
 interface LogFile {
     name: string;

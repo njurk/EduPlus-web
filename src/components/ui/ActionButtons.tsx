@@ -34,6 +34,11 @@ export const ActionButtons = ({
   if (!isActive) {
     return (
       <div className={clsx("flex justify-end gap-1", className)}>
+        {onDetails && (
+          <button type="button" onClick={(e) => handleClick(e, onDetails)} title="Szczegóły" className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-xs">
+            <Eye size={16} />
+          </button>
+        )}
         {onRestore && (
           <button type="button" onClick={(e) => handleClick(e, onRestore)} title="Przywróć" className="p-1.5 text-success hover:bg-success-light rounded-xs">
             <RefreshCcw size={16} />
