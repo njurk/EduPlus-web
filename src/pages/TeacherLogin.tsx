@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { api } from '../services/apiService';
+import { api, BASE_URL } from '../services/apiService';
 import { AlertCircle, Lock, Mail, ShieldCheckIcon } from 'lucide-react';
 import { useCMSContent } from '../hooks/useCMSContent';
 
@@ -43,7 +43,7 @@ export const TeacherLogin = () => {
                 <div className="bg-primary p-8 text-center">
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <img
-                            src={'/' + getText('logoUrl')}
+                            src={`${BASE_URL}/${getText('logoUrl')}`}
                             alt={getText('logoAlt')}
                             className="w-14 h-14 object-contain"
                         />

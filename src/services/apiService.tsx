@@ -10,7 +10,8 @@ import type {
 } from '../types';
 import type { UnreadCounts } from '../types/layout';
 
-export const API_URL = 'http://192.168.88.89:5107/api';
+export const BASE_URL = 'http://192.168.88.89:5107';
+export const API_URL = `${BASE_URL}/api`;
 
 export const getHeaders = () => {
     const token = localStorage.getItem('token');
