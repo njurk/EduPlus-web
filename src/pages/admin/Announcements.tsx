@@ -88,7 +88,7 @@ const AnnouncementModal = ({ isOpen, onClose, announcement, onSaved }: Announcem
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={announcement ? "Edycja ogłoszenia" : "Nowe ogłoszenie"} maxWidth="lg"
+        <Modal isOpen={isOpen} onClose={onClose} title={announcement ? "Edycja ogłoszenia" : "Nowe ogłoszenie"} maxWidth="xl"
             footer={<><Button variant="secondary" onClick={onClose} disabled={loading}>Anuluj</Button><Button onClick={handleSave} disabled={loading}>{announcement ? 'Zapisz' : 'Utwórz'}</Button></>}
         >
             <div className="space-y-4 px-6 py-4">
@@ -173,8 +173,11 @@ export const Announcements = () => {
 
     useEffect(() => { setPageNumber(1); }, [filters.search, filters.showInactive, filters.authorName, filters.targetRoleId]);
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Czy na pewno chcesz usunąć to ogłoszenie?')) return;
+    const handleDelete = async (id: number, isActive: boolean) => {
+        const message = isActive
+            ? 'Czy na pewno chcesz usunąć to ogłoszenie?'
+            : 'Czy na pewno chcesz trwale usunąć to ogłoszenie? Tej operacji nie można cofnąć.';
+        if (!window.confirm(message)) return;
         await api.announcements.delete(id);
         await loadData();
     };
@@ -259,7 +262,7 @@ export const Announcements = () => {
                                         <ActionButtons
                                             isActive={!filters.showInactive}
                                             onEdit={!filters.showInactive ? () => { if (!a.isRead) api.announcements.markAsRead(a.id).catch(console.error); setSelectedAnnouncement(a); setIsModalOpen(true); } : undefined}
-                                            onDelete={!filters.showInactive ? () => handleDelete(a.id) : undefined}
+                                            onDelete={() => handleDelete(a.id, a.isActive)}
                                             onDetails={!filters.showInactive ? () => handleOpenDetails(a) : undefined}
                                             onRestore={filters.showInactive ? () => handleRestore(a.id) : undefined}
                                         />
@@ -311,7 +314,7 @@ export const Announcements = () => {
                     modifiedByName: 'Edytowane przez'
                 }}
                 excludeKeys={['id']}
-                maxWidth="lg"
+                maxWidth="xl"
                 htmlFields={['description']}
             />
         </div>

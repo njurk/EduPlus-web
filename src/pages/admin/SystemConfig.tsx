@@ -4,10 +4,10 @@ import { Input } from "../../components/ui/Input";
 import { TrashButton } from "../../components/ui/TrashButton";
 import { Modal } from "../../components/modals/Modal";
 import { api } from "../../services/apiService";
-import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus, HelpCircle, Calendar, Save } from "lucide-react";
+import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus, HelpCircle, Calendar, Eye } from "lucide-react";
 import { clsx } from "clsx";
-import { FilterToolbar } from "../../components/ui/FilterToolbar";
-import { validateSystemConfig, validateSchoolYearSemesters, type SchoolYearSemesterData } from "../../utils/validation";
+import { FilterToolbar, FilterSelect } from "../../components/ui/FilterToolbar";
+import { validateSystemConfig } from "../../utils/validation";
 import { DataTable, type Column } from "../../components/ui/DataTable";
 import { ActionButtons } from "../../components/ui/ActionButtons";
 import type { BaseEntity, GradeType, GradeCategory, AttendanceType, LessonHour } from "../../types";
@@ -27,207 +27,353 @@ const TABS = [
     { id: "ticketReasons", icon: HelpCircle },
 ] as const;
 
+interface SchoolYearFormData {
+    id?: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+    semester1: { id?: number; endDate: string };
+    semester2: { id?: number; startDate: string };
+}
+
+const getInitialFormData = (): SchoolYearFormData => ({
+    name: '',
+    startDate: '',
+    endDate: '',
+    isActive: true,
+    semester1: { endDate: '' },
+    semester2: { startDate: '' }
+});
+
 const SchoolYearConfig = () => {
-    const [schoolYears, setSchoolYears] = useState<any[]>([]);
-    const [selectedYear, setSelectedYear] = useState<any | null>(null);
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [detailsData, setDetailsData] = useState<{ year: any; semesters: any[] } | null>(null);
+    const [formData, setFormData] = useState<SchoolYearFormData>(getInitialFormData());
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [formData, setFormData] = useState<SchoolYearSemesterData | null>(null);
+    const [filters, setFilters] = useState({
+        search: '',
+        sortBy: 'startdate',
+        sortDesc: true,
+        showInactive: false
+    });
 
-    useEffect(() => {
-        const loadYears = async () => {
-            setLoading(true);
-            try {
-                const years = await api.schoolYears.getAll();
-                setSchoolYears(years);
-                if (years.length > 0) {
-                    setSelectedYear(years[0]);
-                }
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadYears();
-    }, []);
-
-    useEffect(() => {
-        if (!selectedYear) return;
-        const loadSemesters = async () => {
-            setLoading(true);
-            try {
-                const sems = await api.schoolYears.getSemesters(selectedYear.id);
-                const sem1 = sems.find((s: any) => s.order === 1) || sems[0];
-                const sem2 = sems.find((s: any) => s.order === 2) || sems[1];
-                setFormData({
-                    schoolYear: {
-                        id: selectedYear.id,
-                        name: selectedYear.name,
-                        startDate: selectedYear.startDate,
-                        endDate: selectedYear.endDate
-                    },
-                    semester1: {
-                        id: sem1?.id || 0,
-                        name: sem1?.name || 'Semestr I',
-                        startDate: selectedYear.startDate,
-                        endDate: sem1?.endDate || ''
-                    },
-                    semester2: {
-                        id: sem2?.id || 0,
-                        name: sem2?.name || 'Semestr II',
-                        startDate: sem1?.endDate ? addDay(sem1.endDate) : '',
-                        endDate: selectedYear.endDate
-                    }
-                });
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadSemesters();
-    }, [selectedYear]);
-
-    const addDay = (date: string) => {
-        const d = new Date(date);
-        d.setDate(d.getDate() + 1);
-        return d.toISOString().split('T')[0];
-    };
-
-    const handleDateChange = (field: string, value: string) => {
-        if (!formData) return;
-        const newData = { ...formData };
-        if (field === 'schoolYearStart') {
-            newData.schoolYear.startDate = value;
-            newData.semester1.startDate = value;
-        } else if (field === 'schoolYearEnd') {
-            newData.schoolYear.endDate = value;
-            newData.semester2.endDate = value;
-        } else if (field === 'semester1End') {
-            newData.semester1.endDate = value;
-            newData.semester2.startDate = addDay(value);
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const result = await api.schoolYears.getAll(filters);
+            setData(result || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
-        setFormData(newData);
+    }, [filters]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    const openForm = async (item?: any) => {
         setErrors({});
+        if (item) {
+            try {
+                const semesters = await api.schoolYears.getSemesters(item.id);
+                const sem1 = semesters.find((s: any) => s.order === 1) || semesters[0];
+                const sem2 = semesters.find((s: any) => s.order === 2) || semesters[1];
+                setFormData({
+                    id: item.id,
+                    name: item.name,
+                    startDate: item.startDate?.split('T')[0] || '',
+                    endDate: item.endDate?.split('T')[0] || '',
+                    isActive: item.isActive,
+                    semester1: { id: sem1?.id, endDate: sem1?.endDate?.split('T')[0] || '' },
+                    semester2: { id: sem2?.id, startDate: sem2?.startDate?.split('T')[0] || '' }
+                });
+            } catch {
+                setFormData({
+                    id: item.id,
+                    name: item.name,
+                    startDate: item.startDate?.split('T')[0] || '',
+                    endDate: item.endDate?.split('T')[0] || '',
+                    isActive: item.isActive,
+                    semester1: { endDate: '' },
+                    semester2: { startDate: '' }
+                });
+            }
+        } else {
+            setFormData(getInitialFormData());
+        }
+        setIsModalOpen(true);
     };
 
     const handleSave = async () => {
-        if (!formData) return;
-        const validationErrors = validateSchoolYearSemesters(formData);
-        if (Object.keys(validationErrors).length > 0) {
-            setErrors(validationErrors);
+        const newErrors: Record<string, string> = {};
+        if (!formData.name.trim()) newErrors.name = 'Nazwa jest wymagana';
+        if (!formData.startDate) newErrors.startDate = 'Data rozpoczęcia jest wymagana';
+        if (!formData.endDate) newErrors.endDate = 'Data zakończenia jest wymagana';
+        if (!formData.semester1.endDate) newErrors.semester1End = 'Data zakończenia semestru 1 jest wymagana';
+        if (!formData.semester2.startDate) newErrors.semester2Start = 'Data rozpoczęcia semestru 2 jest wymagana';
+        if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
+            newErrors.endDate = 'Data zakończenia musi być po dacie rozpoczęcia';
+        }
+        if (formData.semester1.endDate && formData.startDate && new Date(formData.semester1.endDate) <= new Date(formData.startDate)) {
+            newErrors.semester1End = 'Data zakończenia semestru 1 musi być po rozpoczęciu roku';
+        }
+        if (formData.semester2.startDate && formData.endDate && new Date(formData.semester2.startDate) >= new Date(formData.endDate)) {
+            newErrors.semester2Start = 'Data rozpoczęcia semestru 2 musi być przed końcem roku';
+        }
+        if (formData.semester1.endDate && formData.semester2.startDate && new Date(formData.semester1.endDate) >= new Date(formData.semester2.startDate)) {
+            newErrors.semester2Start = 'Semestr 2 musi zaczynać się po zakończeniu semestru 1';
+        }
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
-        setSaving(true);
         try {
-            await api.schoolYears.update(formData.schoolYear.id, {
-                id: formData.schoolYear.id,
-                name: formData.schoolYear.name,
-                startDate: formData.schoolYear.startDate,
-                endDate: formData.schoolYear.endDate,
-                isActive: true
-            });
-            if (formData.semester1.id) {
-                await api.semesters.update(formData.semester1.id, {
-                    id: formData.semester1.id,
-                    name: formData.semester1.name,
-                    startDate: formData.semester1.startDate,
+            if (formData.id) {
+                await api.schoolYears.update(formData.id, {
+                    id: formData.id,
+                    name: formData.name,
+                    startDate: formData.startDate,
+                    endDate: formData.endDate,
+                    isActive: formData.isActive
+                });
+                if (formData.semester1.id) {
+                    await api.semesters.update(formData.semester1.id, {
+                        id: formData.semester1.id,
+                        name: 'Semestr 1',
+                        startDate: formData.startDate,
+                        endDate: formData.semester1.endDate,
+                        schoolYearId: formData.id
+                    });
+                }
+                if (formData.semester2.id) {
+                    await api.semesters.update(formData.semester2.id, {
+                        id: formData.semester2.id,
+                        name: 'Semestr 2',
+                        startDate: formData.semester2.startDate,
+                        endDate: formData.endDate,
+                        schoolYearId: formData.id
+                    });
+                }
+            } else {
+                const createdYear = await api.schoolYears.create({
+                    name: formData.name,
+                    startDate: formData.startDate,
+                    endDate: formData.endDate,
+                    isActive: formData.isActive
+                });
+                await api.semesters.create({
+                    name: 'Semestr 1',
+                    order: 1,
+                    startDate: formData.startDate,
                     endDate: formData.semester1.endDate,
-                    schoolYearId: formData.schoolYear.id
+                    schoolYearId: createdYear.id
                 });
-            }
-            if (formData.semester2.id) {
-                await api.semesters.update(formData.semester2.id, {
-                    id: formData.semester2.id,
-                    name: formData.semester2.name,
+                await api.semesters.create({
+                    name: 'Semestr 2',
+                    order: 2,
                     startDate: formData.semester2.startDate,
-                    endDate: formData.semester2.endDate,
-                    schoolYearId: formData.schoolYear.id
+                    endDate: formData.endDate,
+                    schoolYearId: createdYear.id
                 });
             }
-            const years = await api.schoolYears.getAll();
-            setSchoolYears(years);
-            const updatedYear = years.find((y: any) => y.id === formData.schoolYear.id);
-            if (updatedYear) setSelectedYear(updatedYear);
-        } catch (err) {
-            console.error(err);
-            alert('Błąd zapisu');
-        } finally {
-            setSaving(false);
+            await loadData();
+            setIsModalOpen(false);
+        } catch (err: any) {
+            const message = err?.response?.data?.message || err?.message || 'Błąd zapisu';
+            alert(message);
         }
     };
 
-    if (loading && !formData) {
-        return <div className="p-6 text-center text-muted-foreground">Ładowanie...</div>;
-    }
+    const handleDelete = async (item: any, isActive: boolean) => {
+        const message = isActive
+            ? 'Przenieś do kosza?'
+            : 'Czy na pewno chcesz trwale usunąć ten rok szkolny?';
+        if (!window.confirm(message)) return;
+        try {
+            if (isActive) {
+                await api.schoolYears.update(item.id, { ...item, isActive: false });
+            } else {
+                await api.schoolYears.delete(item.id);
+            }
+            await loadData();
+        } catch {
+            alert('Błąd usuwania');
+        }
+    };
+
+    const handleRestore = async (item: any) => {
+        if (!window.confirm('Przywróć rok szkolny?')) return;
+        try {
+            await api.schoolYears.restore(item.id);
+            await loadData();
+        } catch {
+            alert('Błąd przywracania');
+        }
+    };
+
+    const handleSort = (field: string) => {
+        setFilters(p => p.sortBy === field
+            ? { ...p, sortDesc: !p.sortDesc }
+            : { ...p, sortBy: field, sortDesc: true });
+    };
+
+    const formatDateOnly = (date: string) => {
+        if (!date) return '-';
+        return new Date(date).toLocaleDateString('pl-PL');
+    };
+
+    const openDetails = async (item: any) => {
+        try {
+            const semesters = await api.schoolYears.getSemesters(item.id);
+            setDetailsData({ year: item, semesters: semesters.sort((a: any, b: any) => a.order - b.order) });
+            setIsDetailsOpen(true);
+        } catch {
+            alert('Błąd pobierania semestrów');
+        }
+    };
+
+    const columns: Column<any>[] = useMemo(() => [
+        { header: 'Nazwa', accessor: 'name', sortKey: 'name' },
+        { header: 'Data rozpoczęcia', sortKey: 'startdate', render: (row) => formatDateOnly(row.startDate) },
+        { header: 'Data zakończenia', sortKey: 'enddate', render: (row) => formatDateOnly(row.endDate) },
+        { header: 'Utworzono', sortKey: 'created', render: (row) => formatDateTime(row.createdAt), className: 'text-neutral-500 text-xs' },
+        { header: 'Edytowano', sortKey: 'updated', render: (row) => formatDateTime(row.updatedAt), className: 'text-neutral-500 text-xs' },
+        { header: 'Edytowane przez', render: (row) => row.modifiedByName || '-', className: 'text-neutral-500 text-xs' },
+        {
+            header: 'Akcje',
+            className: 'text-right',
+            render: (row) => (
+                <div className="flex items-center justify-end gap-1">
+                    <button
+                        onClick={() => openDetails(row)}
+                        className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                        title="Szczegóły"
+                    >
+                        <Eye size={16} />
+                    </button>
+                    <ActionButtons
+                        isActive={!filters.showInactive}
+                        onEdit={() => openForm(row)}
+                        onDelete={() => handleDelete(row, row.isActive)}
+                        onRestore={() => handleRestore(row)}
+                    />
+                </div>
+            )
+        }
+    ], [filters.showInactive]);
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-center gap-4">
-                <label className="label-text">Rok szkolny:</label>
-                <select
-                    className="input"
-                    value={selectedYear?.id || ''}
-                    onChange={(e) => {
-                        const year = schoolYears.find(y => y.id === Number(e.target.value));
-                        setSelectedYear(year);
-                    }}
-                >
-                    {schoolYears.map(year => (
-                        <option key={year.id} value={year.id}>{year.name}</option>
-                    ))}
-                </select>
-            </div>
-
-            {formData && (
-                <div className="grid gap-6">
-                    <div className="card p-4">
-                        <h3 className="font-semibold mb-4">Rok szkolny: {formData.schoolYear.name}</h3>
+        <div className="flex-1 flex flex-col">
+            <Modal
+                isOpen={isDetailsOpen}
+                onClose={() => setIsDetailsOpen(false)}
+                title={`Rok szkolny: ${detailsData?.year?.name || ''}`}
+                maxWidth="lg"
+            >
+                {detailsData && (
+                    <div className="p-6 space-y-6">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="label-text">Data rozpoczęcia <span className="text-danger">*</span></label>
-                                <Input
-                                    type="date"
-                                    value={formData.schoolYear.startDate}
-                                    onChange={(e) => handleDateChange('schoolYearStart', e.target.value)}
-                                    className={errors.schoolYearStart ? '!border-danger' : ''}
-                                />
-                                {errors.schoolYearStart && <span className="text-xs text-danger">{errors.schoolYearStart}</span>}
+                                <span className="text-sm text-muted-foreground">Data rozpoczęcia</span>
+                                <p className="font-medium">{formatDateOnly(detailsData.year.startDate)}</p>
                             </div>
                             <div>
-                                <label className="label-text">Data zakończenia <span className="text-danger">*</span></label>
-                                <Input
-                                    type="date"
-                                    value={formData.schoolYear.endDate}
-                                    onChange={(e) => handleDateChange('schoolYearEnd', e.target.value)}
-                                    className={errors.schoolYearEnd ? '!border-danger' : ''}
-                                />
-                                {errors.schoolYearEnd && <span className="text-xs text-danger">{errors.schoolYearEnd}</span>}
+                                <span className="text-sm text-muted-foreground">Data zakończenia</span>
+                                <p className="font-medium">{formatDateOnly(detailsData.year.endDate)}</p>
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                            <div className="space-y-4">
+                                {detailsData.semesters.map((sem: any) => (
+                                    <div key={sem.id} className="card">
+                                        <h5 className="font-medium mb-2">{sem.name}</h5>
+                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <span className="text-muted-foreground">Rozpoczęcie:</span>
+                                                <span className="ml-2">{formatDateOnly(sem.startDate)}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-muted-foreground">Zakończenie:</span>
+                                                <span className="ml-2">{formatDateOnly(sem.endDate)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {detailsData.semesters.length === 0 && (
+                                    <p className="text-muted-foreground text-sm">Brak semestrów</p>
+                                )}
                             </div>
                         </div>
                     </div>
+                )}
+            </Modal>
 
-                    <div className="card p-4">
-                        <h3 className="font-semibold mb-4">Semestr I</h3>
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title={formData.id ? 'Edycja roku szkolnego' : 'Nowy rok szkolny'}
+                maxWidth="lg"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Anuluj</Button>
+                        <Button onClick={handleSave}>Zapisz</Button>
+                    </>
+                }
+            >
+                <div className="p-6 space-y-6">
+                    <div>
+                        <label className="label-text">Nazwa <span className="text-danger">*</span></label>
+                        <Input
+                            value={formData.name}
+                            onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+                            placeholder="np. 2025/2026"
+                            className={errors.name ? '!border-danger' : ''}
+                        />
+                        {errors.name && <span className="text-xs text-danger">{errors.name}</span>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label-text">Data rozpoczęcia roku <span className="text-danger">*</span></label>
+                            <Input
+                                type="date"
+                                value={formData.startDate}
+                                onChange={(e) => setFormData(p => ({ ...p, startDate: e.target.value }))}
+                                className={errors.startDate ? '!border-danger' : ''}
+                            />
+                            {errors.startDate && <span className="text-xs text-danger">{errors.startDate}</span>}
+                        </div>
+                        <div>
+                            <label className="label-text">Data zakończenia roku <span className="text-danger">*</span></label>
+                            <Input
+                                type="date"
+                                value={formData.endDate}
+                                onChange={(e) => setFormData(p => ({ ...p, endDate: e.target.value }))}
+                                className={errors.endDate ? '!border-danger' : ''}
+                            />
+                            {errors.endDate && <span className="text-xs text-danger">{errors.endDate}</span>}
+                        </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3">Semestr 1</h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="label-text">Data rozpoczęcia</label>
-                                <Input
-                                    type="date"
-                                    value={formData.semester1.startDate}
-                                    disabled
-                                    className="bg-muted"
-                                />
-                                <span className="text-xs text-muted-foreground">Automatycznie: początek roku</span>
+                                <label className="label-text text-muted-foreground">Data rozpoczęcia</label>
+                                <Input type="date" value={formData.startDate} disabled className="bg-muted" />
                             </div>
                             <div>
                                 <label className="label-text">Data zakończenia <span className="text-danger">*</span></label>
                                 <Input
                                     type="date"
                                     value={formData.semester1.endDate}
-                                    onChange={(e) => handleDateChange('semester1End', e.target.value)}
+                                    onChange={(e) => setFormData(p => ({ ...p, semester1: { ...p.semester1, endDate: e.target.value } }))}
                                     className={errors.semester1End ? '!border-danger' : ''}
                                 />
                                 {errors.semester1End && <span className="text-xs text-danger">{errors.semester1End}</span>}
@@ -235,40 +381,59 @@ const SchoolYearConfig = () => {
                         </div>
                     </div>
 
-                    <div className="card p-4">
-                        <h3 className="font-semibold mb-4">Semestr II</h3>
+                    <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3">Semestr 2</h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="label-text">Data rozpoczęcia</label>
+                                <label className="label-text">Data rozpoczęcia <span className="text-danger">*</span></label>
                                 <Input
                                     type="date"
                                     value={formData.semester2.startDate}
-                                    disabled
-                                    className="bg-muted"
+                                    onChange={(e) => setFormData(p => ({ ...p, semester2: { ...p.semester2, startDate: e.target.value } }))}
+                                    className={errors.semester2Start ? '!border-danger' : ''}
                                 />
-                                <span className="text-xs text-muted-foreground">Automatycznie: dzień po końcu I sem.</span>
+                                {errors.semester2Start && <span className="text-xs text-danger">{errors.semester2Start}</span>}
                             </div>
                             <div>
-                                <label className="label-text">Data zakończenia</label>
-                                <Input
-                                    type="date"
-                                    value={formData.semester2.endDate}
-                                    disabled
-                                    className="bg-muted"
-                                />
-                                <span className="text-xs text-muted-foreground">Automatycznie: koniec roku</span>
+                                <label className="label-text text-muted-foreground">Data zakończenia</label>
+                                <Input type="date" value={formData.endDate} disabled className="bg-muted" />
                             </div>
                         </div>
                     </div>
-
-                    <div className="flex justify-end">
-                        <Button onClick={handleSave} disabled={saving}>
-                            <Save size={16} className="mr-2" />
-                            {saving ? 'Zapisuję...' : 'Zapisz zmiany'}
-                        </Button>
-                    </div>
                 </div>
-            )}
+            </Modal>
+
+            <FilterToolbar
+                search={{ value: filters.search, onChange: v => setFilters(p => ({ ...p, search: v })) }}
+                onReset={() => setFilters(p => ({ ...p, search: '' }))}
+                rightContent={
+                    <>
+                        <TrashButton
+                            isTrashActive={filters.showInactive}
+                            onToggle={() => {
+                                setLoading(true);
+                                setData([]);
+                                setFilters(p => ({ ...p, showInactive: !p.showInactive }));
+                            }}
+                        />
+                        <Button onClick={() => openForm()}>
+                            <Plus size={16} className="mr-2" /> Dodaj
+                        </Button>
+                    </>
+                }
+            />
+
+            <div className="flex-1">
+                <DataTable
+                    data={data}
+                    columns={columns}
+                    isLoading={loading}
+                    emptyMessage="Brak lat szkolnych"
+                    sortBy={filters.sortBy}
+                    sortDesc={filters.sortDesc}
+                    onSort={handleSort}
+                />
+            </div>
         </div>
     );
 };
@@ -357,15 +522,28 @@ const ConfigFormContent = ({
             )}
 
             {activeTab === "attendance" && (
-                <div>
-                    <label className="label-text">Skrót <span className="text-danger">*</span></label>
-                    <Input
-                        name="shortCode"
-                        maxLength={5}
-                        value={(formData as AttendanceType).shortCode || ""}
-                        onChange={handleInput}
-                    />
-                    {errors.shortCode && <span className="text-xs text-danger">{errors.shortCode}</span>}
+                <div className="space-y-4">
+                    <div>
+                        <label className="label-text">Skrót <span className="text-danger">*</span></label>
+                        <Input
+                            name="shortCode"
+                            maxLength={5}
+                            value={(formData as AttendanceType).shortCode || ""}
+                            onChange={handleInput}
+                        />
+                        {errors.shortCode && <span className="text-xs text-danger">{errors.shortCode}</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="isNegative"
+                            name="isNegative"
+                            checked={(formData as AttendanceType).isNegative || false}
+                            onChange={handleInput}
+                            className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <label htmlFor="isNegative" className="label-text cursor-pointer">Punkty ujemne</label>
+                    </div>
                 </div>
             )}
 
@@ -420,6 +598,7 @@ export const SystemConfig = () => {
         sortBy: "name",
         sortDesc: false,
         showInactive: false,
+        isNegativeFilter: "" as "" | "true" | "false",
     });
 
     useEffect(() => {
@@ -435,6 +614,12 @@ export const SystemConfig = () => {
             defaultDesc = false;
         } else if (activeTab === "gradeTypes") {
             defaultSort = "value";
+            defaultDesc = true;
+        } else if (activeTab === "gradeCategories") {
+            defaultSort = "weight";
+            defaultDesc = true;
+        } else if (["subjects", "classrooms", "lessonStatuses", "attendance", "ticketReasons"].includes(activeTab)) {
+            defaultSort = "created";
             defaultDesc = true;
         }
 
@@ -508,28 +693,36 @@ export const SystemConfig = () => {
 
             await loadData();
             setIsModalOpen(false);
-        } catch {
-            alert('Błąd zapisu');
+        } catch (err: any) {
+            const message = err?.response?.data?.message || err?.message || 'Błąd zapisu';
+            alert(message);
         }
     };
 
-    const handleStatusChange = async (item: BaseEntity, isActive: boolean) => {
-        if (!window.confirm(isActive ? 'Przywróć element?' : 'Przenieś do kosza?')) return;
+    const handleDelete = async (item: BaseEntity, isActive: boolean) => {
+        const message = isActive
+            ? 'Przenieś do kosza?'
+            : 'Czy na pewno chcesz trwale usunąć ten element?';
+        if (!window.confirm(message)) return;
         try {
-            await getCurrentApi().update(item.id, { ...item, isActive });
-            await loadData();
-        } catch {
-            alert('Błąd zmiany statusu');
-        }
-    };
-
-    const handleHardDelete = async (id: number) => {
-        if (!window.confirm('Usunąć trwale?')) return;
-        try {
-            await getCurrentApi().delete(id);
+            if (isActive) {
+                await getCurrentApi().update(item.id, { ...item, isActive: false });
+            } else {
+                await getCurrentApi().delete(item.id);
+            }
             await loadData();
         } catch {
             alert('Błąd usuwania');
+        }
+    };
+
+    const handleRestore = async (item: BaseEntity) => {
+        if (!window.confirm('Przywróć element?')) return;
+        try {
+            await getCurrentApi().update(item.id, { ...item, isActive: true });
+            await loadData();
+        } catch {
+            alert('Błąd przywracania');
         }
     };
 
@@ -547,7 +740,9 @@ export const SystemConfig = () => {
     };
 
     const handleSort = (field: string) => {
-        setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { sortBy: field, sortDesc: true, search: p.search, showInactive: p.showInactive });
+        setFilters(p => p.sortBy === field
+            ? { ...p, sortDesc: !p.sortDesc }
+            : { ...p, sortBy: field, sortDesc: true });
     };
 
     const columns = useMemo(() => {
@@ -569,7 +764,8 @@ export const SystemConfig = () => {
             attendance: [
                 { header: 'Nazwa', accessor: "name", sortKey: "name" },
                 { header: 'Skrót', accessor: "shortCode", className: "font-mono" },
-                { header: "Kolor", render: (row) => <div className="w-6 h-6 rounded border" style={{ backgroundColor: row.colorHex || '#6b7280' }} /> }
+                { header: "Kolor", render: (row) => <div className="w-6 h-6 rounded border" style={{ backgroundColor: row.colorHex || '#6b7280' }} /> },
+                { header: "Ujemne", render: (row) => row.isNegative ? "Tak" : "Nie", className: "text-center" }
             ]
         };
 
@@ -585,14 +781,17 @@ export const SystemConfig = () => {
             {
                 header: 'Akcje',
                 className: "text-right",
-                render: (row) => (
-                    <ActionButtons
-                        isActive={!filters.showInactive}
-                        onEdit={() => openForm(row)}
-                        onDelete={activeTab !== 'lessonStatuses' && activeTab !== 'attendance' ? (() => filters.showInactive ? handleHardDelete(row.id) : handleStatusChange(row, false)) : undefined}
-                        onRestore={activeTab !== 'lessonStatuses' && activeTab !== 'attendance' ? (() => handleStatusChange(row, true)) : undefined}
-                    />
-                ),
+                render: (row) => {
+                    const canDelete = !row.slug;
+                    return (
+                        <ActionButtons
+                            isActive={!filters.showInactive}
+                            onEdit={() => openForm(row)}
+                            onDelete={canDelete ? () => handleDelete(row, row.isActive) : undefined}
+                            onRestore={canDelete ? () => handleRestore(row) : undefined}
+                        />
+                    );
+                },
             }
         ];
     }, [activeTab, filters.showInactive]);
@@ -652,29 +851,42 @@ export const SystemConfig = () => {
                 <div className="flex-1 flex flex-col">
                     <FilterToolbar
                         search={{ value: filters.search, onChange: v => setFilters(p => ({ ...p, search: v })) }}
-                        onReset={() => setFilters(p => ({ ...p, search: '' }))}
+                        onReset={() => setFilters(p => ({ ...p, search: '', isNegativeFilter: '' as const }))}
                         rightContent={
                             <>
-                                {activeTab !== 'lessonStatuses' && activeTab !== 'attendance' && (
-                                    <TrashButton
-                                        isTrashActive={filters.showInactive}
-                                        onToggle={() => {
-                                            setLoading(true);
-                                            setData([]);
-                                            setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
-                                        }}
-                                    />
-                                )}
+                                <TrashButton
+                                    isTrashActive={filters.showInactive}
+                                    onToggle={() => {
+                                        setLoading(true);
+                                        setData([]);
+                                        setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
+                                    }}
+                                />
                                 <Button onClick={() => openForm()}>
                                     <Plus size={16} className="mr-2" /> Dodaj
                                 </Button>
                             </>
                         }
-                    />
+                    >
+                        {activeTab === "attendance" && (
+                            <FilterSelect
+                                label="Typ"
+                                value={filters.isNegativeFilter || null}
+                                onChange={(v) => setFilters(p => ({ ...p, isNegativeFilter: (v?.toString() || '') as "" | "true" | "false" }))}
+                                options={[
+                                    { value: "true", label: "Ujemne" },
+                                    { value: "false", label: "Nieujemne" }
+                                ]}
+                                parseAsNumber={false}
+                            />
+                        )}
+                    </FilterToolbar>
 
                     <div className="flex-1">
                         <DataTable
-                            data={data}
+                            data={activeTab === "attendance" && filters.isNegativeFilter !== ""
+                                ? data.filter(row => String(row.isNegative) === filters.isNegativeFilter)
+                                : data}
                             columns={columns}
                             isLoading={loading}
                             emptyMessage="Brak danych w wybranej kategorii"

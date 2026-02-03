@@ -56,7 +56,7 @@ export const DetailsModal = ({
                                     {labels[key] || key}
                                 </span>
                                 {isHtmlField ? (
-                                    <div className="text-sm text-neutral-800 mt-2" dangerouslySetInnerHTML={{ __html: value || '' }} />
+                                    <div className="text-sm text-neutral-800 mt-2 html-content" dangerouslySetInnerHTML={{ __html: value || '' }} />
                                 ) : (
                                     <span className="text-sm text-neutral-800 font-semibold text-right break-words max-w-xs">
                                         {formatValue(key, value)}

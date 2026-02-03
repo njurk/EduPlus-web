@@ -10,6 +10,7 @@ import { useCMSContent } from '../hooks/useCMSContent';
 
 export const ResetPassword = () => {
     const { getText } = useCMSContent('resetPassword');
+    const { getText: getSystemText } = useCMSContent('system');
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [step, setStep] = useState<'request' | 'reset' | 'sent'>('request');
@@ -130,7 +131,7 @@ export const ResetPassword = () => {
                     <ArrowLeft size={20} />
                 </button>
                 <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold text-neutral-800">EduPlus</h1>
+                    <h1 className="text-2xl font-bold text-neutral-800">{getSystemText('systemName')}</h1>
                     <p className="text-neutral-500 mt-1">
                         {step === 'request' && getText('title.request')}
                         {step === 'sent' && getText('title.sent')}
@@ -176,7 +177,7 @@ export const ResetPassword = () => {
                         </div>
                         <div className="space-y-2">
                             <p className="text-neutral-700">
-                                {getText('message.sent').replace('{email}', email) || `Jeśli adres ${email} istnieje w naszej bazie, za chwilę otrzymasz wiadomość z linkiem do resetowania hasła.`}
+                                {getText('message.sent').replace('{email}', email)}
                             </p>
                             <p className="text-sm text-neutral-500">
                                 {getText('message.linkExpirationTime')}

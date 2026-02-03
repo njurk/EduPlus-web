@@ -73,7 +73,7 @@ export const Dashboard = () => {
             <div className="divide-y divide-neutral-100">
               {!data?.recentTickets?.length && !loading && <p className="text-sm text-neutral-400 py-4 text-center">Brak zgłoszeń</p>}
               {data?.recentTickets?.map((ticket) => (
-                <button key={ticket.id} onClick={() => navigate(`/admin/tickets`)} className="w-full text-left flex items-center justify-between py-2 hover:bg-neutral-50 px-2 -mx-2 transition-colors">
+                <button key={ticket.id} onClick={() => navigate(`/admin/tickets?id=${ticket.id}`)} className="w-full text-left flex items-center justify-between py-2 hover:bg-neutral-50 px-2 -mx-2 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-xs text-neutral-400 whitespace-nowrap">{formatDateTime(ticket.createdAt)}</span>
                     <span className="text-sm font-medium text-neutral-800 truncate">{ticket.reasonName}</span>

@@ -7,6 +7,7 @@ export interface AttendanceType extends BaseEntity {
     name: string;
     shortCode: string;
     colorHex: string;
+    isNegative?: boolean;
 }
 
 export interface Attendance extends BaseEntity {

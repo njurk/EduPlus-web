@@ -9,3 +9,16 @@
     @apply font-sans bg-neutral-100 text-neutral-800 antialiased;
   }
 }
+
+.html-content p { @apply mb-3; }
+.html-content ul, .html-content ol { @apply mb-3 ml-4; }
+.html-content ul { @apply list-disc; }
+.html-content ol { @apply list-decimal; }
+.html-content li { @apply mb-1; }
+.html-content strong { @apply font-semibold; }
+.html-content em { @apply italic; }
+.html-content a { @apply text-primary underline hover:text-primary/80; }
+.html-content h1, .html-content h2, .html-content h3 { @apply font-bold mb-2; }
+.html-content table { @apply w-full border-collapse mb-3; }
+.html-content th, .html-content td { @apply border border-neutral-200 px-2 py-1 text-sm; }
+.html-content th { @apply bg-neutral-100 font-semibold; }

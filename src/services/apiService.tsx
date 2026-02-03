@@ -10,7 +10,7 @@ import type {
 } from '../types';
 import type { UnreadCounts } from '../types/layout';
 
-export const API_URL = 'http://localhost:5107/api';
+export const API_URL = 'http://192.168.88.89:5107/api';
 
 export const getHeaders = () => {
     const token = localStorage.getItem('token');
@@ -274,8 +274,17 @@ export const announcementsApi = {
 };
 
 export const schoolYearsApi = {
-    getAll: async (): Promise<SchoolYear[]> => {
-        const response = await fetch(`${API_URL}/SchoolYear`, { headers: getHeaders() });
+    getAll: async (params?: Record<string, any>): Promise<SchoolYear[]> => {
+        const url = new URL(`${API_URL}/SchoolYear`);
+        if (params) {
+            Object.keys(params).forEach(key => {
+                const value = params[key];
+                if (value !== undefined && value !== null && value !== '') {
+                    url.searchParams.append(key, value.toString());
+                }
+            });
+        }
+        const response = await fetch(url.toString(), { headers: getHeaders() });
         return handleResponse<SchoolYear[]>(response);
     },
     get: async (id: number): Promise<SchoolYear> => {
@@ -308,10 +317,25 @@ export const schoolYearsApi = {
             headers: getHeaders()
         });
         return handleResponse<void>(response);
+    },
+    restore: async (id: number): Promise<void> => {
+        const response = await fetch(`${API_URL}/SchoolYear/${id}/restore`, {
+            method: 'PATCH',
+            headers: getHeaders()
+        });
+        return handleResponse<void>(response);
     }
 };
 
 export const semestersApi = {
+    create: async (data: { name: string; order: number; startDate: string; endDate: string; schoolYearId: number }): Promise<SemesterDto> => {
+        const response = await fetch(`${API_URL}/Semester`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<SemesterDto>(response);
+    },
     update: async (id: number, data: { id: number; name: string; startDate: string; endDate: string; schoolYearId: number }): Promise<SemesterDto> => {
         const response = await fetch(`${API_URL}/Semester/${id}`, {
             method: 'PUT',
@@ -807,6 +831,10 @@ export const ticketsApi = {
             headers: getHeaders()
         });
         return handleResponse<void>(response);
+    },
+    getById: async (id: number): Promise<Ticket> => {
+        const response = await fetch(`${API_URL}/Ticket/${id}`, { headers: getHeaders() });
+        return handleResponse<Ticket>(response);
     }
 };
 

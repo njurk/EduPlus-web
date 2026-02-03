@@ -18,6 +18,7 @@ import { Editor } from 'primereact/editor';
 import 'primereact/resources/themes/lara-light-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+import { useSearchParams } from 'react-router-dom';
 
 interface TicketDetailViewProps {
     ticket: Ticket;
@@ -68,6 +69,7 @@ type ViewMode = 'list' | 'resolve' | 'viewClosed';
 export const Tickets = () => {
     const { getText } = useCMSContent('tickets');
     const { unreadTicketIds } = useUnread();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [data, setData] = useState<PaginatedResponse<Ticket> | null>(null);
     const [loading, setLoading] = useState(false);
     const [pageNumber, setPageNumber] = useState(1);
@@ -84,6 +86,27 @@ export const Tickets = () => {
     useEffect(() => {
         api.ticketReasons.getActive().then(setReasons).catch(console.error);
     }, []);
+
+    useEffect(() => {
+        const ticketId = searchParams.get('id');
+        if (ticketId) {
+            api.tickets.getById(Number(ticketId)).then((ticket: Ticket) => {
+                if (ticket) {
+                    if (ticket.isClosed) {
+                        setSelectedTicket(ticket);
+                        setViewMode('viewClosed');
+                    } else {
+                        setSelectedTicket(ticket);
+                        setIsDetailsOpen(true);
+                    }
+                    if (!ticket.isRead) {
+                        api.tickets.markAsRead(ticket.id).catch(console.error);
+                    }
+                }
+            }).catch(console.error);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const loadData = useCallback(async () => {
         setLoading(true);
