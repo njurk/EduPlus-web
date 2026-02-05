@@ -1,17 +1,3 @@
-import type { BaseEntity } from './common';
-import type { User } from './users';
-
-export interface Announcement extends BaseEntity {
-  title: string;
-  description: string;
-  authorId: number;
-  author?: User;
-  authorName?: string;
-  modifiedByName?: string;
-  targetRoles?: string;
-  isRead?: boolean;
-}
-
 export interface DashboardStats {
   totalUsers: number;
   totalStudents: number;

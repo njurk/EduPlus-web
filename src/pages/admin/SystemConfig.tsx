@@ -782,6 +782,15 @@ export const SystemConfig = () => {
                 header: 'Akcje',
                 className: "text-right",
                 render: (row) => {
+                    const editOnly = ['attendance', 'lessonStatuses'].includes(activeTab);
+                    if (editOnly) {
+                        return (
+                            <ActionButtons
+                                isActive={true}
+                                onEdit={() => openForm(row)}
+                            />
+                        );
+                    }
                     const canDelete = !row.slug;
                     return (
                         <ActionButtons
@@ -862,9 +871,11 @@ export const SystemConfig = () => {
                                         setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
                                     }}
                                 />
-                                <Button onClick={() => openForm()}>
-                                    <Plus size={16} className="mr-2" /> Dodaj
-                                </Button>
+                                {!['attendance', 'lessonStatuses'].includes(activeTab) && (
+                                    <Button onClick={() => openForm()}>
+                                        <Plus size={16} className="mr-2" /> Dodaj
+                                    </Button>
+                                )}
                             </>
                         }
                     >
