@@ -7,7 +7,9 @@ import { DataTable } from '../../components/ui/DataTable';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { formatDateTime, formatDateOnly } from '../../utils/formatters';
 import { Modal } from '../../components/modals/Modal';
-import type { PaginatedResponse } from '../../types';
+import { YearSelector } from '../../components/ui/YearSelector';
+import { SemesterSelector } from '../../components/ui/SemesterSelector';
+import type { PaginatedResponse, SchoolYear, SemesterDto } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
 import { Pagination } from '../../components/ui/Pagination';
 
@@ -33,13 +35,17 @@ export const Excuses = () => {
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Excuse> | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [years, setYears] = useState<SchoolYear[]>([]);
+    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
     const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
     const [filters, setFilters] = useState({
         search: '',
         sortBy: 'createdAt',
         sortDesc: true,
         statusFilter: '' as string,
-        classId: null as number | null
+        classId: null as number | null,
+        yearId: null as number | null,
+        semesterId: null as number | null
     });
     const [detailsModal, setDetailsModal] = useState<ExcuseDetails | null>(null);
     const [detailsLoading, setDetailsLoading] = useState(false);
@@ -47,10 +53,29 @@ export const Excuses = () => {
     const [selectedStatus, setSelectedStatus] = useState<string>('');
 
     useEffect(() => {
-        api.classes.getAll({ pageSize: 1000 }).then(r => setClasses(r.map((c: any) => ({ id: c.id, name: `${c.level}${c.letter}` }))));
+        api.schoolYears.getAll().then(data => {
+            setYears(data);
+            const today = new Date().toISOString().split('T')[0];
+            const current = data.find(y => y.startDate <= today && y.endDate >= today) || data.find(y => y.isActive) || data[0];
+            if (current) setFilters(f => ({ ...f, yearId: current.id }));
+        });
     }, []);
 
+    useEffect(() => {
+        if (filters.yearId) {
+            Promise.all([
+                api.classManagement.getSemesters(filters.yearId),
+                api.classManagement.getClassesByYear(filters.yearId)
+            ]).then(([sem, cls]) => {
+                setSemesters(sem);
+                setClasses(cls.data.map((c: any) => ({ id: c.id, name: `${c.level}${c.letter}` })));
+                if (sem.length > 0) setFilters(f => ({ ...f, semesterId: sem[0].id }));
+            });
+        }
+    }, [filters.yearId]);
+
     const loadData = useCallback(async () => {
+        if (!filters.yearId) return;
         setLoading(true);
         try {
             const result = await api.excuses.getAll({
@@ -60,14 +85,15 @@ export const Excuses = () => {
                 sortBy: filters.sortBy,
                 sortDesc: filters.sortDesc,
                 statusFilter: filters.statusFilter || undefined,
-                classId: filters.classId || undefined
+                classId: filters.classId || undefined,
+                semesterId: filters.semesterId || undefined
             });
             setPaginatedData(result);
         } finally { setLoading(false); }
     }, [filters, pageNumber]);
 
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
-    useEffect(() => { setPageNumber(1); }, [filters.search, filters.statusFilter, filters.classId]);
+    useEffect(() => { setPageNumber(1); }, [filters.search, filters.statusFilter, filters.classId, filters.yearId, filters.semesterId]);
 
     const handleSort = (field: string) => {
         setFilters(f => ({ ...f, sortBy: field, sortDesc: f.sortBy === field ? !f.sortDesc : true }));
@@ -120,12 +146,17 @@ export const Excuses = () => {
 
     return (
         <div className="space-y-4">
-            <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
+                <div className="flex gap-2">
+                    <YearSelector years={years} selectedYear={filters.yearId} onChange={v => setFilters(f => ({ ...f, yearId: v, semesterId: null, classId: null }))} />
+                    <SemesterSelector semesters={semesters} selectedOrder={semesters.find(s => s.id === filters.semesterId)?.order ?? null} onChange={v => { const sem = semesters.find(s => s.order === v); setFilters(f => ({ ...f, semesterId: sem?.id ?? null })); }} showAll />
+                </div>
+            </div>
             <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
                 <FilterToolbar
                     search={{ value: filters.search, onChange: (v: string) => setFilters(f => ({ ...f, search: v })), placeholder: 'Szukaj...' }}
                     onReset={() => setFilters(f => ({ ...f, search: '', statusFilter: '', classId: null }))}
-                    rightContent={null}
                 >
                     <FilterSelect
                         label="Status:"

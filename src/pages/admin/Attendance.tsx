@@ -79,6 +79,7 @@ export const Attendance = () => {
         setLoading(true);
         try {
             const teacher = filters.teacherId ? teachers.find(t => t.id === filters.teacherId) : null;
+            const semester = filters.semesterOrder != null ? semesters.find(s => s.order === filters.semesterOrder) : null;
             const result = await api.attendance.getAllAdmin({
                 pageNumber,
                 pageSize: 20,
@@ -89,11 +90,12 @@ export const Attendance = () => {
                 date: filters.lessonDate || undefined,
                 teacherName: teacher ? `${teacher.lastName} ${teacher.firstName}` : undefined,
                 attendanceTypeShortCode: filters.attendanceTypeId ? attendanceTypes.find(t => t.id === filters.attendanceTypeId)?.shortCode : undefined,
-                orderNumber: filters.orderNumber ?? undefined
+                orderNumber: filters.orderNumber ?? undefined,
+                semesterId: semester?.id ?? undefined
             });
             setPaginatedData(result);
         } finally { setLoading(false); }
-    }, [filters, pageNumber, attendanceTypes, teachers]);
+    }, [filters, pageNumber, attendanceTypes, teachers, semesters]);
 
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
 
@@ -187,7 +189,7 @@ export const Attendance = () => {
                             onSort={handleSort}
                             columns={[
                                 { header: 'Utworzono', sortKey: 'created', muted: true, render: a => formatDateTime(a.createdAt) },
-                                { header: 'Nr', sortKey: 'ordernumber', bold: true, render: a => a.orderNumber },
+                                { header: 'Nr lekcji', sortKey: 'ordernumber', bold: true, render: a => a.orderNumber },
                                 { header: 'Data', sortKey: 'lessondate', muted: true, render: a => formatDateOnly(a.lessonDate) },
                                 { header: 'Przedmiot', bold: true, render: a => a.subjectName },
                                 { header: 'Nauczyciel', render: a => a.teacherName || '-' },

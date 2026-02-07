@@ -632,7 +632,7 @@ export const attendanceTypesApi = {
 };
 
 export const attendanceApi = {
-    getAllAdmin: async (params?: { pageNumber?: number, pageSize?: number, includeInactive?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, classId?: number, date?: string, subjectName?: string, teacherName?: string, attendanceTypeShortCode?: string, orderNumber?: number }): Promise<PaginatedResponse<AttendanceAdminDto>> => {
+    getAllAdmin: async (params?: { pageNumber?: number, pageSize?: number, includeInactive?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, classId?: number, date?: string, subjectName?: string, teacherName?: string, attendanceTypeShortCode?: string, orderNumber?: number, semesterId?: number }): Promise<PaginatedResponse<AttendanceAdminDto>> => {
         const url = new URL(`${API_URL}/attendance/admin`);
         if (params?.pageNumber) url.searchParams.append('pageNumber', params.pageNumber.toString());
         if (params?.pageSize) url.searchParams.append('pageSize', params.pageSize.toString());
@@ -646,6 +646,7 @@ export const attendanceApi = {
         if (params?.teacherName) url.searchParams.append('teacherName', params.teacherName);
         if (params?.attendanceTypeShortCode) url.searchParams.append('attendanceTypeShortCode', params.attendanceTypeShortCode);
         if (params?.orderNumber) url.searchParams.append('orderNumber', params.orderNumber.toString());
+        if (params?.semesterId) url.searchParams.append('semesterId', params.semesterId.toString());
         const response = await fetch(url.toString(), { headers: getHeaders() });
         return handleResponse<PaginatedResponse<AttendanceAdminDto>>(response);
     },
@@ -661,7 +662,7 @@ export const attendanceApi = {
 
 export const excusesApi = {
     ...createCrudResource<any>('excuse'),
-    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, statusFilter?: string, classId?: number }): Promise<PaginatedResponse<any>> => {
+    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, statusFilter?: string, classId?: number, semesterId?: number }): Promise<PaginatedResponse<any>> => {
         const url = new URL(`${API_URL}/excuse`);
         if (params) {
             Object.keys(params).forEach(key => {
@@ -903,7 +904,8 @@ export const pageContentApi = {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
             body: formData
         });
-        return handleResponse<string>(response);
+        if (!response.ok) throw new Error(await response.text());
+        return response.text();
     }
 };
 

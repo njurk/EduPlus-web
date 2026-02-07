@@ -85,7 +85,7 @@ export const Users = () => {
                 setTableData(r);
             } else {
                 if (filters.onlyUnassignedRelations) {
-                    const users = await api.users.getAll({ onlyUnassignedRelations: true, pageSize: 1000 });
+                    const users = await api.users.getAll({ onlyUnassignedRelations: true, pageSize: 1000, search: filters.search || undefined, roleLevel: filters.roleLevel });
                     setTableData(users.data);
                 } else {
                     const rels = await api.parentStudents.getAll(filters.search, filters.sortBy, filters.sortDesc);
@@ -254,9 +254,8 @@ export const Users = () => {
                             <button
                                 key={r.id}
                                 onClick={() => setSelectedRoleIds(p => p.includes(r.id) ? p.filter(id => id !== r.id) : [...p, r.id])}
-                                className={clsx("px-3 py-1.5 text-sm border rounded flex gap-2 transition-colors", selectedRoleIds.includes(r.id) ? "bg-primary text-white border-primary" : "bg-white text-neutral-600 hover:border-primary")}
+                                className={clsx("px-3 py-1.5 text-sm border rounded transition-colors", selectedRoleIds.includes(r.id) ? "bg-primary text-white border-primary" : "bg-white text-neutral-600 hover:border-primary")}
                             >
-                                {selectedRoleIds.includes(r.id) && <Check size={14} />}
                                 {r.name}
                             </button>
                         ))}
@@ -336,7 +335,7 @@ export const Users = () => {
                 }
                 className="p-4 border-b bg-white"
             >
-                {mainTab === 'users' && roles.length > 0 && (
+                {(mainTab === 'users' || (mainTab === 'relations' && filters.onlyUnassignedRelations)) && roles.length > 0 && (
                     <FilterSelect
                         value={filters.roleLevel ?? ''}
                         onChange={v => setFilters(p => ({ ...p, roleLevel: v ? Number(v) : undefined }))}

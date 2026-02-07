@@ -377,7 +377,7 @@ export const Grades = () => {
                         </div>
                         <div className="border-t border-neutral-200 py-3 space-y-2">
                             <div><span className="font-medium">Ocena:</span> <span className="font-bold">{detailsGrade.gradeTypeName}</span></div>
-                            <div><span className="font-medium">Kategoria:</span> {detailsGrade.categoryName}</div>
+                            <div><span className="font-medium">Kategoria:</span> <span className="font-medium" style={{ color: detailsGrade.categoryColorHex }}>{detailsGrade.categoryName}</span></div>
                             <div><span className="font-medium">Nauczyciel:</span> {detailsGrade.teacherName}</div>
                         </div>
                         <div className="border-t border-neutral-200 py-3 space-y-2 text-neutral-600">

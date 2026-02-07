@@ -2,7 +2,7 @@
 import type { Target, Page, PageContent } from '../../types';
 import { api, BASE_URL } from '../../services/apiService';
 import { Button } from '../../components/ui/Button';
-import { Edit2, Save, X, Layout, FileText, Type, RefreshCcw, Upload } from 'lucide-react';
+import { Edit2, Save, X, RefreshCcw, Upload } from 'lucide-react';
 import clsx from 'clsx';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { SearchBar } from '../../components/ui/SearchBar';
@@ -128,7 +128,7 @@ export const CMS = () => {
     return (
         <div>
             <div className="pb-4 bg-neutral-50/30 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-neutral-800">Zarządzanie treściami</h2>
+                <h2 className="text-xl font-bold text-neutral-800">Zarządzanie treściami w systemie</h2>
                 <Button variant="primary" onClick={() => window.location.reload()} className="flex items-center gap-2">
                     <RefreshCcw size={16} /> Odśwież
                 </Button>
@@ -137,7 +137,7 @@ export const CMS = () => {
                 <div className="flex flex-1 overflow-hidden">
                     <div className="w-1/4 border-r bg-neutral-50 flex flex-col">
                         <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
-                            <Layout size={14} /> Sekcja
+                            Sekcje
                         </div>
                         <div className="overflow-y-auto flex-1 p-2 space-y-1">
                             {loadingTargets && <LoadingSpinner className="h-16" />}
@@ -159,7 +159,7 @@ export const CMS = () => {
 
                     <div className="w-1/4 border-r bg-white flex flex-col">
                         <div className="p-3 font-semibold text-xs uppercase text-neutral-500 border-b flex items-center gap-2">
-                            <FileText size={14} /> Strona
+                            Strony
                         </div>
                         <div className="overflow-y-auto flex-1 p-2 space-y-1">
                             {loadingPages && <LoadingSpinner className="h-16" />}
@@ -183,7 +183,7 @@ export const CMS = () => {
                         <div className="p-3 border-b">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="font-semibold text-xs uppercase text-neutral-500 flex items-center gap-2">
-                                    <Type size={14} /> treść
+                                    treści
                                 </div>
                             </div>
                             <SearchBar
@@ -204,9 +204,9 @@ export const CMS = () => {
                                 <div className="text-center text-neutral-400 mt-12">Brak</div>
                             )}
 
-                            <div className="space-y-6 max-w-3xl">
+                            <div className="space-y-3 max-w-3xl">
                                 {contents.map(c => (
-                                    <div key={c.id} className="border border-neutral-200 rounded-xs p-4 shadow-sm hover:shadow-md bg-white">
+                                    <div key={c.id} className="border border-neutral-200 rounded-xs p-3 shadow-sm bg-white">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
                                                 <span className="text-xs font-mono text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">{c.key}</span>
@@ -227,18 +227,17 @@ export const CMS = () => {
                                                 {isImageKey(c.key) ? (
                                                     <div className="space-y-3">
                                                         {(uploadPreview || c.value) && (
-                                                            <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded border border-neutral-200">
+                                                            <div className="flex items-center gap-3">
                                                                 <img
                                                                     src={uploadPreview || `${BASE_URL}/${c.value}`}
                                                                     alt="Podgląd"
-                                                                    className="h-16 w-16 object-contain rounded bg-white border border-neutral-200 p-1"
+                                                                    className="h-16 w-16 object-contain rounded"
                                                                 />
                                                                 <span className="text-sm text-neutral-600">{uploadFile?.name || c.value}</span>
                                                             </div>
                                                         )}
-                                                        <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-neutral-300 rounded cursor-pointer hover:border-primary hover:bg-primary-light/30 transition-colors">
-                                                            <Upload size={16} className="text-neutral-500" />
-                                                            <span className="text-sm text-neutral-600">{uploadFile ? 'Zmień plik' : 'Wybierz plik'}</span>
+                                                        <label className="text-sm text-primary flex p-1 hover:text-primary-hover cursor-pointer">
+                                                            <Upload size={16} className="my-0.5 text-neutral-500 mr-2" />Wybierz plik
                                                             <input
                                                                 type="file"
                                                                 accept=".png,.jpg,.jpeg,.svg,.webp,.ico"
@@ -274,11 +273,11 @@ export const CMS = () => {
                                             <div className="text-neutral-800 text-sm whitespace-pre-wrap leading-relaxed pl-1 border-l-2 border-transparent">
                                                 {isImageKey(c.key) && c.value ? (
                                                     <div className="flex items-center gap-3">
-                                                        <img src={`${BASE_URL}/${c.value}`} alt={c.key} className="h-12 w-12 object-contain rounded bg-neutral-50 border border-neutral-200 p-1" />
+                                                        <img src={`${BASE_URL}/${c.value}`} alt={c.key} className="h-12 w-12 object-contain" />
                                                         <span className="text-neutral-500 text-xs font-mono">{c.value}</span>
                                                     </div>
                                                 ) : (
-                                                    c.value || <span className="text-neutral-300 italic">Brak treści</span>
+                                                    c.value || <span className="text-neutral-300 italic">Brak</span>
                                                 )}
                                             </div>
                                         )}

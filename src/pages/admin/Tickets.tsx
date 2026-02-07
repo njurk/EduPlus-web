@@ -73,7 +73,7 @@ export const Tickets = () => {
     const [data, setData] = useState<PaginatedResponse<Ticket> | null>(null);
     const [loading, setLoading] = useState(false);
     const [pageNumber, setPageNumber] = useState(1);
-    const [filters, setFilters] = useState({ search: '', sortBy: 'created', sortDesc: true, status: 'open' as 'open' | 'closed' | 'all', reasonId: '' as number | '' });
+    const [filters, setFilters] = useState({ search: '', sortBy: 'created', sortDesc: true, status: 'all' as 'open' | 'closed' | 'all', reasonId: '' as number | '' });
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [reasons, setReasons] = useState<TicketReason[]>([]);
