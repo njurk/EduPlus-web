@@ -160,7 +160,7 @@ export const ResetPassword = () => {
                                 type="email"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
-                                placeholder="example@gmail.com"
+                                placeholder="jankowalski@gmail.com"
                                 required
                             />
                         </div>

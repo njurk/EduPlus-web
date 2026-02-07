@@ -175,7 +175,7 @@ export const Logs = () => {
                         ))}
                         {!logContent && (
                             <div className="text-neutral-500 text-center py-8">
-                                Brak wybranego pliku logów
+                                Brak wybranego pliku
                             </div>
                         )}
                     </div>

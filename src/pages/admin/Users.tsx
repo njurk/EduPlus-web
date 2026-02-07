@@ -45,7 +45,7 @@ export const Users = () => {
         sortBy: 'created',
         sortDesc: true,
         showInactive: false,
-        onlyUnassignedParents: false,
+        onlyUnassignedRelations: false,
         roleLevel: initialRoleLevel
     });
 
@@ -84,9 +84,9 @@ export const Users = () => {
                 const r = await api.roles.getAll({ search: filters.search, sortBy: filters.sortBy, sortDesc: filters.sortDesc });
                 setTableData(r);
             } else {
-                if (filters.onlyUnassignedParents) {
-                    const parents = await api.users.getAll({ onlyUnassignedParents: true, pageSize: 1000 });
-                    setTableData(parents.data);
+                if (filters.onlyUnassignedRelations) {
+                    const users = await api.users.getAll({ onlyUnassignedRelations: true, pageSize: 1000 });
+                    setTableData(users.data);
                 } else {
                     const rels = await api.parentStudents.getAll(filters.search, filters.sortBy, filters.sortDesc);
                     setTableData(rels);
@@ -102,12 +102,12 @@ export const Users = () => {
         setTableData([]);
         setUsersData(null);
         setPageNumber(1);
-        setFilters(prev => ({ ...prev, search: '', showInactive: false, onlyUnassignedParents: false, sortBy: 'created', sortDesc: true }));
+        setFilters(prev => ({ ...prev, search: '', showInactive: false, onlyUnassignedRelations: false, sortBy: 'created', sortDesc: true }));
     }, [mainTab]);
 
     useEffect(() => {
         setPageNumber(1);
-    }, [filters.search, filters.roleLevel, filters.showInactive, filters.onlyUnassignedParents]);
+    }, [filters.search, filters.roleLevel, filters.showInactive, filters.onlyUnassignedRelations]);
 
     useEffect(() => {
         if (viewMode === 'form' && !roles.length) {
@@ -285,7 +285,7 @@ export const Users = () => {
                 </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-neutral-400" size={18} />
-                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder={'Szukaj użytkownika...'} className="pl-10" />
+                    <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder={'Szukaj...'} className="pl-10" />
                 </div>
 
                 <div className="border rounded-lg overflow-y-auto divide-y divide-neutral-100 max-h-[350px]">
@@ -298,7 +298,7 @@ export const Users = () => {
                             {selectedAssignmentIds.includes(c.id) ? <Check size={20} className="text-primary" /> : <Plus size={18} className="text-neutral-300" />}
                         </div>
                     ))}
-                    {!filteredCandidates.length && <div className="p-12 text-center text-neutral-400 text-sm">Nie znaleziono kandydatw</div>}
+                    {!filteredCandidates.length && <div className="p-12 text-center text-neutral-400 text-sm">Brak</div>}
                 </div>
                 <div className="text-sm text-neutral-600 font-medium">Zaznaczono elementów: {selectedAssignmentIds.length}</div>
             </div>
@@ -326,11 +326,11 @@ export const Users = () => {
                         </>
                     ) : mainTab === 'relations' ? (
                         <Button
-                            variant={filters.onlyUnassignedParents ? 'primary' : 'secondary'}
-                            onClick={() => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedParents: !p.onlyUnassignedParents })); }}
+                            variant={filters.onlyUnassignedRelations ? 'primary' : 'secondary'}
+                            onClick={() => { setLoading(true); setFilters(p => ({ ...p, onlyUnassignedRelations: !p.onlyUnassignedRelations })); }}
                         >
                             <EyeIcon size={16} className="mr-2" />
-                            {filters.onlyUnassignedParents ? 'Pokaż powiązanych' : 'Pokaż niepowiązanych'}
+                            {filters.onlyUnassignedRelations ? 'Pokaż wszystkich' : 'Pokaż tylko niepowiązanych'}
                         </Button>
                     ) : undefined
                 }
@@ -358,19 +358,19 @@ export const Users = () => {
                                 sortDesc={filters.sortDesc}
                                 onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                                 columns={[
-                                    { header: 'Użytkownik', sortKey: 'name', render: (u) => <div><div className={clsx("font-medium", !u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-xs text-neutral-500">{u.email}</div></div> },
-                                    { header: 'Telefon', render: (u) => <span className="text-neutral-600">{u.phone || '-'}</span> },
+                                    { header: 'Użytkownik', sortKey: 'name', bold: true, render: (u) => <div><div className={clsx(!u.isActive && "text-neutral-500")}>{formatName(u)}</div><div className="text-neutral-500">{u.email}</div></div> },
+                                    { header: 'Telefon', render: (u) => u.phone || '-' },
                                     {
-                                        header: 'Rola', render: (u) =>
+                                        header: 'Rola', muted: true, render: (u) =>
                                             <div className="flex gap-1 flex-wrap">
                                                 {u.roleNames ? u.roleNames.split(', ').map((r: string, idx: number) => (
-                                                    <span key={idx} className="text-neutral-500 text-xs">{r}</span>
-                                                )) : <span className="text-neutral-400 text-xs">-</span>}
+                                                    <span key={idx}>{r}</span>
+                                                )) : '-'}
                                             </div>
                                     },
-                                    { header: 'Utworzono', sortKey: 'created', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.createdAt)}</span> },
-                                    { header: 'Edytowano', sortKey: 'updated', render: (u) => <span className="text-neutral-500 text-xs">{formatDateTime(u.updatedAt)}</span> },
-                                    { header: 'Edytowane przez', render: (u) => <span className="text-neutral-500 text-xs">{u.modifiedByName || 'System'}</span> },
+                                    { header: 'Utworzono', sortKey: 'created', muted: true, render: (u) => formatDateTime(u.createdAt) },
+                                    { header: 'Edytowano', sortKey: 'updated', muted: true, render: (u) => formatDateTime(u.updatedAt) },
+                                    { header: 'Edytowane przez', muted: true, render: (u) => u.modifiedByName || 'System' },
                                     {
                                         header: 'Akcje', className: 'text-right', render: (u) => (
                                             <ActionButtons
@@ -423,12 +423,12 @@ export const Users = () => {
                         sortDesc={filters.sortDesc}
                         onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                         columns={[
-                            { header: 'Nazwa roli', accessor: 'name', sortKey: 'name', className: 'font-medium text-neutral-900' },
-                            { header: 'Poziom', accessor: 'level', sortKey: 'level', className: 'text-neutral-600' },
-                            { header: 'Opis', render: (r) => <span className="text-neutral-500 truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
-                            { header: 'Utworzono', sortKey: 'created', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.createdAt)}</span> },
-                            { header: 'Edytowano', sortKey: 'updated', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.updatedAt)}</span> },
-                            { header: 'Edytowane przez', render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
+                            { header: 'Nazwa roli', accessor: 'name', sortKey: 'name', bold: true },
+                            { header: 'Poziom', accessor: 'level', sortKey: 'level' },
+                            { header: 'Opis', muted: true, render: (r) => <span className="truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
+                            { header: 'Utworzono', sortKey: 'created', muted: true, render: (r) => formatDateTime(r.createdAt) },
+                            { header: 'Edytowano', sortKey: 'updated', muted: true, render: (r) => formatDateTime(r.updatedAt) },
+                            { header: 'Edytowane przez', muted: true, render: (r) => r.modifiedByName || 'System' },
                             {
                                 header: 'Akcje', className: 'text-right', render: (r) => (
                                     <ActionButtons onEdit={() => { setEditRole({ id: r.id, name: r.name, description: r.description }); setIsRoleModalOpen(true); }} />
@@ -437,7 +437,7 @@ export const Users = () => {
                         ]}
                     />
                 ) : (
-                    filters.onlyUnassignedParents ? (
+                    filters.onlyUnassignedRelations ? (
                         <DataTable
                             data={tableData}
                             isLoading={loading}
@@ -445,12 +445,13 @@ export const Users = () => {
                             sortDesc={filters.sortDesc}
                             onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                             columns={[
-                                { header: 'Rodzic', sortKey: 'name', render: (p) => <div><div className="font-medium text-neutral-900">{p.lastName && p.firstName ? formatName(p) : `ID: ${p.id}`}</div><div className="text-xs text-neutral-500">{p.email || '-'}</div></div> },
-                                { header: 'Status', render: () => <span className="italic text-neutral-500">Brak powiązań</span> },
-                                { header: 'Utworzono', sortKey: 'created', render: (p) => <span className="text-xs text-neutral-500">{formatDateTime(p.createdAt)}</span> },
-                                { header: 'Edytowano', sortKey: 'updated', render: (p) => <span className="text-xs text-neutral-500">{formatDateTime(p.updatedAt)}</span> },
-                                { header: 'Edytowane przez', render: (p) => <span className="text-xs text-neutral-500">{p.modifiedByName || 'System'}</span> },
-                                { header: 'Akcje', className: 'text-right', render: (p) => <button onClick={() => handleEditRelation(p.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> {'Przypisz'}</button> }
+                                { header: 'Użytkownik', sortKey: 'name', bold: true, render: (u) => <div><div>{u.lastName && u.firstName ? formatName(u) : `ID: ${u.id}`}</div><div className="text-neutral-500">{u.email || '-'}</div></div> },
+                                { header: 'Rola', muted: true, render: (u) => u.roleNames || '-' },
+                                { header: 'Status', muted: true, render: () => <span className="italic">Brak powiązań</span> },
+                                { header: 'Utworzono', sortKey: 'created', muted: true, render: (u) => formatDateTime(u.createdAt) },
+                                { header: 'Edytowano', sortKey: 'updated', muted: true, render: (u) => formatDateTime(u.updatedAt) },
+                                { header: 'Edytowane przez', muted: true, render: (u) => u.modifiedByName || 'System' },
+                                { header: 'Akcje', className: 'text-right', render: (u) => <button onClick={() => handleEditRelation(u.id)} className="text-primary hover:bg-primary-light px-3 py-1 rounded text-xs flex items-center gap-1 ml-auto transition-colors"><UserPlus size={14} /> {'Przypisz'}</button> }
                             ]}
                         />
                     ) : (
@@ -461,11 +462,11 @@ export const Users = () => {
                             sortDesc={filters.sortDesc}
                             onSort={field => setFilters(p => p.sortBy === field ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: field, sortDesc: true })}
                             columns={[
-                                { header: 'Rodzic', sortKey: 'parentName', render: (r) => <div><div className="font-medium text-neutral-900">{r.parentName}</div><div className="text-xs text-neutral-500 font-normal">{r.parentEmail}</div></div> },
-                                { header: 'Uczeń', accessor: 'studentName', sortKey: 'studentName', className: 'font-medium text-neutral-900' },
-                                { header: 'Utworzono', sortKey: 'created', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.createdAt)}</span> },
-                                { header: 'Edytowano', sortKey: 'updated', render: (r) => <span className="text-xs text-neutral-500">{formatDateTime(r.updatedAt || r.createdAt)}</span> },
-                                { header: 'Edytowane przez', render: (r) => <span className="text-xs text-neutral-500">{r.modifiedByName || 'System'}</span> },
+                                { header: 'Rodzic', sortKey: 'parentName', bold: true, render: (r) => <div><div>{r.parentName}</div><div className="text-neutral-500">{r.parentEmail}</div></div> },
+                                { header: 'Uczeń', accessor: 'studentName', sortKey: 'studentName', bold: true },
+                                { header: 'Utworzono', sortKey: 'created', muted: true, render: (r) => formatDateTime(r.createdAt) },
+                                { header: 'Edytowano', sortKey: 'updated', muted: true, render: (r) => formatDateTime(r.updatedAt || r.createdAt) },
+                                { header: 'Edytowane przez', muted: true, render: (r) => r.modifiedByName || 'System' },
                                 {
                                     header: 'Akcje', className: 'text-right', render: (r) => (
                                         <ActionButtons

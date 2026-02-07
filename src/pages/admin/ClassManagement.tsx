@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo, memo } from 'react';
+﻿import { useState, useEffect, useCallback, memo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/modals/Modal';
@@ -17,14 +17,11 @@ import { formatDateTime, formatName } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { useCMSContent } from '../../hooks/useCMSContent';
 
-const CandidateRow = memo(({ student, index, isSelected, onToggle }: { student: User, index: number, isSelected: boolean, onToggle: (id: number) => void }) => (
+const CandidateRow = memo(({ student, isSelected, onToggle }: { student: User, isSelected: boolean, onToggle: (id: number) => void }) => (
     <div onClick={() => onToggle(student.id)} className={clsx("flex items-center justify-between p-2 border-b cursor-pointer text-sm select-none hover:bg-neutral-100", isSelected && "bg-primary-light text-primary-text")}>
-        <div className="flex gap-3">
-            <span className="text-neutral-400 w-6 text-right">{index + 1}.</span>
-            <div>
-                <div className="font-semibold">{student.lastName} {student.firstName}</div>
-                <div className="text-xs opacity-75">{student.email}</div>
-            </div>
+        <div>
+            <div className="font-semibold">{student.lastName} {student.firstName}</div>
+            <div className="text-xs opacity-75">{student.email}</div>
         </div>
         {isSelected && <Check size={18} className="text-primary" />}
     </div>
@@ -69,11 +66,13 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
     const loadDicts = async () => {
         if (dicts.subjects.length) return;
-        const [usersResponse, sub] = await Promise.all([
-            api.users.getAll({ roleLevel: 4, pageSize: 1000 }),
-            api.subjects.getAll()
-        ]);
-        setDicts(prev => ({ ...prev, students: usersResponse.data.filter((u: User) => u.isActive), subjects: sub }));
+        const sub = await api.subjects.getAll();
+        setDicts(prev => ({ ...prev, subjects: sub }));
+    };
+
+    const loadCandidates = async () => {
+        const candidates = await api.classManagement.getStudentCandidates(classId, candidateSearch);
+        setDicts(prev => ({ ...prev, students: candidates }));
     };
 
     useEffect(() => {
@@ -115,11 +114,11 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
         setModals({ ...modals, subject: false });
     });
 
-    const availableCandidates = useMemo(() => {
-        const existing = new Set(details?.students.map(s => s.studentId) || []);
-        const q = candidateSearch.toLowerCase();
-        return dicts.students.filter(s => !existing.has(s.id) && (s.lastName.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)));
-    }, [dicts.students, details?.students, candidateSearch]);
+    useEffect(() => {
+        if (modals.student) {
+            loadCandidates();
+        }
+    }, [modals.student, candidateSearch]);
 
     if (!details) return null;
 
@@ -129,7 +128,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                 footer={<><Button variant="secondary" onClick={() => setModals({ ...modals, student: false })}>Anuluj</Button><Button onClick={saveStudents} disabled={!selections.candidates.length}>Przypisz</Button></>}>
                 <div className="flex flex-col h-[50vh]">
                     <div className="p-3 border-b bg-white"><div className="relative"><Search className="absolute left-2 top-2.5 text-neutral-400" size={16} /><Input value={candidateSearch} onChange={e => setCandidateSearch(e.target.value)} placeholder="Szukaj..." className="pl-8 text-sm" autoFocus /></div></div>
-                    <div className="overflow-y-auto flex-1">{availableCandidates.slice(0, 50).map((s, idx) => <CandidateRow key={s.id} index={idx} student={s} isSelected={selections.candidates.includes(s.id)} onToggle={(id: number) => setSelections(p => ({ ...p, candidates: p.candidates.includes(id) ? p.candidates.filter(x => x !== id) : [...p.candidates, id] }))} />)}</div>
+                    <div className="overflow-y-auto flex-1">{dicts.students.slice(0, 50).map(s => <CandidateRow key={s.id} student={s} isSelected={selections.candidates.includes(s.id)} onToggle={(id: number) => setSelections(p => ({ ...p, candidates: p.candidates.includes(id) ? p.candidates.filter(x => x !== id) : [...p.candidates, id] }))} />)}</div>
                 </div>
             </Modal>
 
@@ -221,17 +220,18 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                             onSort={f => setStudentSort(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { sortBy: f, sortDesc: true })}
                             columns={[
                                 { header: 'Lp.', sortKey: 'id', accessor: 'orderNumber', className: 'w-12 text-center' },
-                                { header: 'Uczeń', sortKey: 'lastName', render: (row) => formatName(row.student), className: 'font-medium' },
+                                { header: 'Uczeń', sortKey: 'lastName', render: (row) => formatName(row.student), bold: true },
                                 { header: 'Email', sortKey: 'email', render: (row) => row.student?.email },
-                                { header: 'Utworzono', sortKey: 'createdat', render: (row) => formatDateTime(row.createdAt), className: 'text-xs text-neutral-500' },
-                                { header: 'Edytowano', sortKey: 'updatedat', render: (row) => formatDateTime(row.updatedAt), className: 'text-xs text-neutral-500' },
-                                { header: 'Edytowane przez', accessor: 'modifiedByName', className: 'text-xs text-neutral-500' },
+                                { header: 'Utworzono', sortKey: 'createdat', muted: true, render: (row) => formatDateTime(row.createdAt) },
+                                { header: 'Edytowano', sortKey: 'updatedat', muted: true, render: (row) => formatDateTime(row.updatedAt) },
+                                { header: 'Edytowane przez', accessor: 'modifiedByName', muted: true },
                                 {
                                     header: 'Akcje',
                                     className: 'text-right',
                                     render: (row) => <ActionButtons
+                                        isActive={row.isActive}
                                         onDelete={() => handleAction(() => api.classManagement.removeStudentFromClass(row.id), row.isActive ? 'Czy na pewno chcesz usunąć tego ucznia z klasy?' : 'Czy na pewno chcesz trwale usunąć tego ucznia? Ta operacja jest nieodwracalna.')}
-                                        onRestore={!row.isActive ? () => handleAction(() => api.classManagement.restoreStudentInClass(row.id)) : undefined}
+                                        onRestore={!row.isActive ? () => handleAction(() => api.classManagement.restoreStudentInClass(row.id), 'Czy na pewno chcesz przywrócić tego ucznia?') : undefined}
                                     />
                                 }
                             ]}
@@ -257,15 +257,16 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                             sortDesc={subjectSort.sortDesc}
                             onSort={f => setSubjectSort(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { sortBy: f, sortDesc: true })}
                             columns={[
-                                { header: 'Przedmiot', sortKey: 'subjectName', accessor: 'subjectName', className: 'font-medium pl-4' },
+                                { header: 'Przedmiot', sortKey: 'subjectName', accessor: 'subjectName', bold: true, className: 'pl-4' },
                                 { header: 'Nauczyciel', sortKey: 'teacherName', render: (row) => row.teacherName || '-' },
-                                { header: 'Utworzono', sortKey: 'createdat', render: (row) => formatDateTime(row.createdAt), className: 'text-xs text-neutral-500' },
-                                { header: 'Edytowano', sortKey: 'updatedat', render: (row) => formatDateTime(row.updatedAt), className: 'text-xs text-neutral-500' },
-                                { header: 'Edytowane przez', accessor: 'modifiedByName', className: 'text-xs text-neutral-500' },
+                                { header: 'Utworzono', sortKey: 'createdat', muted: true, render: (row) => formatDateTime(row.createdAt) },
+                                { header: 'Edytowano', sortKey: 'updatedat', muted: true, render: (row) => formatDateTime(row.updatedAt) },
+                                { header: 'Edytowane przez', accessor: 'modifiedByName', muted: true },
                                 {
                                     header: 'Akcje',
                                     className: 'text-right',
                                     render: (row) => <ActionButtons
+                                        isActive={row.isActive}
                                         onEdit={row.isActive ? async () => {
                                             setTeachersLoading(true);
                                             const teachers = await api.subjects.getTeachers(row.subjectId);
@@ -275,7 +276,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                             setModals({ ...modals, editSubject: true });
                                         } : undefined}
                                         onDelete={() => handleAction(() => api.classManagement.removeSubjectFromClass(row.id), row.isActive ? 'Czy na pewno chcesz usunąć ten przedmiot z klasy?' : 'Czy na pewno chcesz trwale usunąć ten przedmiot? Ta operacja jest nieodwracalna.')}
-                                        onRestore={!row.isActive ? () => handleAction(() => api.classManagement.restoreSubjectInClass(row.id)) : undefined}
+                                        onRestore={!row.isActive ? () => handleAction(() => api.classManagement.restoreSubjectInClass(row.id), 'Czy na pewno chcesz przywrócić ten przedmiot?') : undefined}
                                     />
                                 }
                             ]}
@@ -321,7 +322,7 @@ export const ClassManagement = () => {
         }).then(res => {
             setPaginatedData(res);
         }).catch(console.error).finally(() => setLoading(false));
-    }, [selected.year, showInactive, filters, pageNumber]);
+    }, [selected.year, selected.class, showInactive, filters, pageNumber]);
 
     useEffect(() => { loadClasses(); }, [loadClasses]);
 
@@ -338,14 +339,16 @@ export const ClassManagement = () => {
         } catch (e: any) { alert(e.message || 'Błąd zapisu'); }
     };
 
-    const delClass = (id: number) => { if (confirm('Usunąć?')) api.classManagement.deleteClass(id).then(loadClasses).catch(() => alert('Błąd usuwania')); };
-    const restoreClass = (item: ClassEntity) => { if (confirm('Przywrócić?')) api.classManagement.updateClass(item.id, { ...item, isActive: true }).then(loadClasses).catch(() => alert('Wystąpił błąd')); };
+    const delClass = (id: number) => {
+        if (confirm('Czy na pewno chcesz usunąć tę klasę?')) api.classManagement.deleteClass(id).then(loadClasses).catch(() => alert('Błąd usuwania'));
+    };
+    const restoreClass = (item: ClassEntity) => { if (confirm('Czy na pewno chcesz przywrócić tę klasę?')) api.classManagement.updateClass(item.id, { ...item, isActive: true }).then(loadClasses).catch(() => alert('Wystąpił błąd')); };
 
     const classColumns: Column<ClassEntity>[] = [
-        { header: 'Klasa', sortKey: 'class', className: 'text-neutral-800 font-medium', render: (row) => `${row.level}${row.letter}` },
+        { header: 'Klasa', sortKey: 'class', bold: true, render: (row) => `${row.level}${row.letter}` },
         { header: 'Uczniów', sortKey: 'studentCount', render: (row) => row.studentCount || 0 },
-        { header: 'Utworzono', sortKey: 'created', render: (row) => formatDateTime(row.createdAt), className: 'text-xs text-neutral-500' },
-        { header: 'Edytowano', sortKey: 'updated', render: (row) => formatDateTime(row.updatedAt), className: 'text-xs text-neutral-500' },
+        { header: 'Utworzono', sortKey: 'created', muted: true, render: (row) => formatDateTime(row.createdAt) },
+        { header: 'Edytowano', sortKey: 'updated', muted: true, render: (row) => formatDateTime(row.updatedAt) },
         {
             header: 'Akcje', className: 'text-right', render: (row) => (
                 <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>

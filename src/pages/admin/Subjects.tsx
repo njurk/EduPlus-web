@@ -176,11 +176,11 @@ export const Subjects = () => {
                             sortDesc={sortDesc}
                             onSort={handleSort}
                             columns={[
-                                { header: 'Przedmiot', sortKey: 'subjectName', render: (row: SubjectTeacherRow) => <span className="font-medium">{row.subjectName}</span> },
+                                { header: 'Przedmiot', sortKey: 'subjectName', bold: true, render: (row: SubjectTeacherRow) => row.subjectName },
                                 { header: 'Nauczyciel', sortKey: 'teacherName', render: (row: SubjectTeacherRow) => row.teacherName },
-                                { header: 'Utworzono', sortKey: 'createdat', render: (row: SubjectTeacherRow) => <span className="text-neutral-500 text-xs">{formatDateTime(row.createdAt)}</span> },
-                                { header: 'Edytowano', sortKey: 'updatedat', render: (row: SubjectTeacherRow) => <span className="text-neutral-500 text-xs">{formatDateTime(row.updatedAt)}</span> },
-                                { header: 'Edytowane przez', render: (row: SubjectTeacherRow) => <span className="text-neutral-500 text-xs">{row.modifiedByName || 'System'}</span> },
+                                { header: 'Utworzono', sortKey: 'createdat', muted: true, render: (row: SubjectTeacherRow) => formatDateTime(row.createdAt) },
+                                { header: 'Edytowano', sortKey: 'updatedat', muted: true, render: (row: SubjectTeacherRow) => formatDateTime(row.updatedAt) },
+                                { header: 'Edytowane przez', muted: true, render: (row: SubjectTeacherRow) => row.modifiedByName || 'System' },
                                 {
                                     header: 'Akcje',
                                     className: 'text-right',
@@ -207,7 +207,7 @@ export const Subjects = () => {
 
             <Modal isOpen={addModal} onClose={() => setAddModal(false)} title="Przypisz nauczyciela do przedmiotu" maxWidth="md"
                 footer={<><Button variant="secondary" onClick={() => setAddModal(false)}>Anuluj</Button><Button onClick={handleAdd} disabled={!selectedSubject || !selectedTeacher}>Przypisz</Button></>}>
-                <div className="space-y-4">
+                <div className="p-6 space-y-4">
                     <div>
                         <label className="label-text block mb-1">Przedmiot</label>
                         <select className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
@@ -227,7 +227,7 @@ export const Subjects = () => {
 
             <Modal isOpen={editModal} onClose={() => { setEditModal(false); setEditingRow(null); }} title="Zmień nauczyciela przedmiotu" maxWidth="md"
                 footer={<><Button variant="secondary" onClick={() => { setEditModal(false); setEditingRow(null); }}>Anuluj</Button><Button onClick={handleEdit} disabled={!selectedTeacher || selectedTeacher === editingRow?.teacherId.toString()}>Zapisz</Button></>}>
-                <div className="space-y-4">
+                <div className="p-6 space-y-4">
                     <div>
                         <label className="label-text block mb-1">Przedmiot</label>
                         <div className="w-full border border-neutral-200 rounded-xs px-3 h-9 text-sm bg-neutral-50 flex items-center">{editingRow?.subjectName}</div>

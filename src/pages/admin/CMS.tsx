@@ -1,8 +1,8 @@
 ﻿import { useState, useEffect } from 'react';
 import type { Target, Page, PageContent } from '../../types';
-import { api } from '../../services/apiService';
+import { api, BASE_URL } from '../../services/apiService';
 import { Button } from '../../components/ui/Button';
-import { Edit2, Save, X, Layout, FileText, Type, RefreshCcw } from 'lucide-react';
+import { Edit2, Save, X, Layout, FileText, Type, RefreshCcw, Upload } from 'lucide-react';
 import clsx from 'clsx';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { SearchBar } from '../../components/ui/SearchBar';
@@ -39,6 +39,10 @@ export const CMS = () => {
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
     const [pageTitles, setPageTitles] = useState<Record<number, string>>({});
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+
+    const isImageKey = (key: string) => key.endsWith('Url');
 
     useEffect(() => {
         setLoadingTargets(true);
@@ -75,12 +79,6 @@ export const CMS = () => {
                         if (navContent) {
                             titles[page.id] = navContent.value;
                         }
-                    } else {
-                        const pageContents = await api.pageContent.getByPageId(page.id);
-                        const titleContent = pageContents.find(pc => pc.key === 'title');
-                        if (titleContent) {
-                            titles[page.id] = titleContent.value;
-                        }
                     }
                 } catch (err) {
                     console.error(`Błąd pobierania tytułu strony o ID: ${page.id}`, err);
@@ -99,7 +97,13 @@ export const CMS = () => {
     const handleSaveContent = async (id: number) => {
         setSaving(true);
         try {
-            const updated = await api.pageContent.update(id, editValue);
+            let valueToSave = editValue;
+
+            if (uploadFile) {
+                valueToSave = await api.pageContent.uploadImage(uploadFile);
+            }
+
+            const updated = await api.pageContent.update(id, valueToSave);
             setContents(prev => prev.map(c => c.id === id ? updated : c));
 
             if (updated.key.startsWith('nav.') && updated.pageId === 14) {
@@ -112,6 +116,8 @@ export const CMS = () => {
             }
 
             setEditingContentId(null);
+            setUploadFile(null);
+            setUploadPreview(null);
         } catch {
             alert("Błąd zapisu");
         } finally {
@@ -183,7 +189,7 @@ export const CMS = () => {
                             <SearchBar
                                 value={search}
                                 onChange={setSearch}
-                                placeholder="Szukaj po key lub value..."
+                                placeholder="Szukaj..."
                                 className="max-w-md"
                             />
                         </div>
@@ -207,7 +213,7 @@ export const CMS = () => {
                                             </div>
                                             {editingContentId !== c.id && (
                                                 <button
-                                                    onClick={() => { setEditingContentId(c.id); setEditValue(c.value); }}
+                                                    onClick={() => { setEditingContentId(c.id); setEditValue(c.value); setUploadFile(null); setUploadPreview(null); }}
                                                     className="text-primary hover:text-primary-hover p-1"
                                                     title="Edytuj"
                                                 >
@@ -218,24 +224,62 @@ export const CMS = () => {
 
                                         {editingContentId === c.id ? (
                                             <div className="space-y-3 animation-fade-in">
-                                                <textarea
-                                                    value={editValue}
-                                                    onChange={e => setEditValue(e.target.value)}
-                                                    className="w-full min-h-[120px] p-3 border border-primary rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                                    autoFocus
-                                                />
+                                                {isImageKey(c.key) ? (
+                                                    <div className="space-y-3">
+                                                        {(uploadPreview || c.value) && (
+                                                            <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded border border-neutral-200">
+                                                                <img
+                                                                    src={uploadPreview || `${BASE_URL}/${c.value}`}
+                                                                    alt="Podgląd"
+                                                                    className="h-16 w-16 object-contain rounded bg-white border border-neutral-200 p-1"
+                                                                />
+                                                                <span className="text-sm text-neutral-600">{uploadFile?.name || c.value}</span>
+                                                            </div>
+                                                        )}
+                                                        <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-neutral-300 rounded cursor-pointer hover:border-primary hover:bg-primary-light/30 transition-colors">
+                                                            <Upload size={16} className="text-neutral-500" />
+                                                            <span className="text-sm text-neutral-600">{uploadFile ? 'Zmień plik' : 'Wybierz plik'}</span>
+                                                            <input
+                                                                type="file"
+                                                                accept=".png,.jpg,.jpeg,.svg,.webp,.ico"
+                                                                className="hidden"
+                                                                onChange={e => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        setUploadFile(file);
+                                                                        setUploadPreview(URL.createObjectURL(file));
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                ) : (
+                                                    <textarea
+                                                        value={editValue}
+                                                        onChange={e => setEditValue(e.target.value)}
+                                                        className="w-full min-h-[120px] p-3 border border-primary rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                        autoFocus
+                                                    />
+                                                )}
                                                 <div className="flex justify-end gap-2">
-                                                    <Button variant="secondary" onClick={() => setEditingContentId(null)} disabled={saving} className="text-xs py-1 h-8">
+                                                    <Button variant="secondary" onClick={() => { setEditingContentId(null); setUploadFile(null); setUploadPreview(null); }} disabled={saving} className="text-xs py-1 h-8">
                                                         <X size={14} className="mr-1" /> Anuluj
                                                     </Button>
-                                                    <Button onClick={() => handleSaveContent(c.id)} disabled={saving} className="text-xs py-1 h-8">
+                                                    <Button onClick={() => handleSaveContent(c.id)} disabled={saving || (isImageKey(c.key) && !uploadFile)} className="text-xs py-1 h-8">
                                                         {saving ? <RefreshCcw className="animate-spin" size={14} /> : <Save size={14} className="mr-1" />} Zapisz
                                                     </Button>
                                                 </div>
                                             </div>
                                         ) : (
                                             <div className="text-neutral-800 text-sm whitespace-pre-wrap leading-relaxed pl-1 border-l-2 border-transparent">
-                                                {c.value || <span className="text-neutral-300 italic">Brak treści</span>}
+                                                {isImageKey(c.key) && c.value ? (
+                                                    <div className="flex items-center gap-3">
+                                                        <img src={`${BASE_URL}/${c.value}`} alt={c.key} className="h-12 w-12 object-contain rounded bg-neutral-50 border border-neutral-200 p-1" />
+                                                        <span className="text-neutral-500 text-xs font-mono">{c.value}</span>
+                                                    </div>
+                                                ) : (
+                                                    c.value || <span className="text-neutral-300 italic">Brak treści</span>
+                                                )}
                                             </div>
                                         )}
                                     </div>

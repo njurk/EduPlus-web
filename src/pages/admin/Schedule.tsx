@@ -209,7 +209,7 @@ export const Schedule = () => {
                 {loading ? (
                     <LoadingSpinner className="h-64" />
                 ) : (
-                    <table className="w-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
+                    <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed' }}>
                         <thead>
                             <tr>
                                 <th className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center font-semibold" style={{ width: '64px' }}>Nr</th>
@@ -221,8 +221,8 @@ export const Schedule = () => {
                                 <tr key={hour.id}>
                                     <td className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center align-middle" style={{ width: '64px' }}>
                                         <div className="font-bold text-neutral-700">{hour.orderNumber}</div>
-                                        <div className="text-[10px] text-neutral-400">{String(hour.startTime).slice(0, 5)}</div>
-                                        <div className="text-[10px] text-neutral-400">{String(hour.endTime).slice(0, 5)}</div>
+                                        <div className="text-xs text-neutral-400">{String(hour.startTime).slice(0, 5)}</div>
+                                        <div className="text-xs text-neutral-400">{String(hour.endTime).slice(0, 5)}</div>
                                     </td>
                                     {days.map((_, di) => {
                                         const lesson = getLesson(di, hour.orderNumber);
@@ -235,8 +235,8 @@ export const Schedule = () => {
                                                 {lesson ? (
                                                     <div className="pl-1">
                                                         <div className="font-medium text-neutral-900 truncate">{lesson.subjectName}</div>
-                                                        {lesson.classroomName && <div className="text-[10px] text-neutral-400 truncate">{lesson.classroomName}</div>}
-                                                        <div className="text-neutral-500 truncate text-[11px]">{lesson.teacherName}</div>
+                                                        {lesson.classroomName && <div className="text-xs text-neutral-400 truncate">{lesson.classroomName}</div>}
+                                                        <div className="text-neutral-500 truncate text-xs">{lesson.teacherName}</div>
                                                     </div>
                                                 ) : <div className="text-center text-neutral-300">{editMode ? '+' : ''}</div>}
                                             </td>

@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/apiService';
-import { Eye, Trash2, RotateCcw, Pencil } from 'lucide-react';
+import { Eye, Pencil } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { formatDateTime, formatDateOnly } from '../../utils/formatters';
-import { TrashButton } from '../../components/ui/TrashButton';
 import { Modal } from '../../components/modals/Modal';
 import type { PaginatedResponse } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
@@ -39,7 +38,6 @@ export const Excuses = () => {
         search: '',
         sortBy: 'createdAt',
         sortDesc: true,
-        showInactive: false,
         statusFilter: '' as string,
         classId: null as number | null
     });
@@ -61,7 +59,6 @@ export const Excuses = () => {
                 search: filters.search,
                 sortBy: filters.sortBy,
                 sortDesc: filters.sortDesc,
-                showInactive: filters.showInactive,
                 statusFilter: filters.statusFilter || undefined,
                 classId: filters.classId || undefined
             });
@@ -70,7 +67,7 @@ export const Excuses = () => {
     }, [filters, pageNumber]);
 
     useEffect(() => { const id = setTimeout(loadData, 300); return () => clearTimeout(id); }, [loadData]);
-    useEffect(() => { setPageNumber(1); }, [filters.search, filters.showInactive, filters.statusFilter, filters.classId]);
+    useEffect(() => { setPageNumber(1); }, [filters.search, filters.statusFilter, filters.classId]);
 
     const handleSort = (field: string) => {
         setFilters(f => ({ ...f, sortBy: field, sortDesc: f.sortBy === field ? !f.sortDesc : true }));
@@ -102,21 +99,11 @@ export const Excuses = () => {
         await loadData();
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Czy na pewno chcesz usunąć to usprawiedliwienie?')) return;
-        await api.excuses.delete(id);
-        await loadData();
-    };
-
-    const handleRestore = async (id: number) => {
-        await api.excuses.restore(id);
-        await loadData();
-    };
 
     const getStatusBadge = (isAccepted: boolean | null) => {
-        if (isAccepted === true) return <span className="text-success text-xs font-medium">Zaakceptowane</span>;
-        if (isAccepted === false) return <span className="text-danger text-xs font-medium">Odrzucone</span>;
-        return <span className="text-warning text-xs font-medium">Oczekujące</span>;
+        if (isAccepted === true) return <span className="text-success font-medium">Zaakceptowane</span>;
+        if (isAccepted === false) return <span className="text-danger font-medium">Odrzucone</span>;
+        return <span className="text-warning font-medium">Oczekujące</span>;
     };
 
     const statusOptions = [
@@ -138,7 +125,7 @@ export const Excuses = () => {
                 <FilterToolbar
                     search={{ value: filters.search, onChange: (v: string) => setFilters(f => ({ ...f, search: v })), placeholder: 'Szukaj...' }}
                     onReset={() => setFilters(f => ({ ...f, search: '', statusFilter: '', classId: null }))}
-                    rightContent={<TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />}
+                    rightContent={null}
                 >
                     <FilterSelect
                         label="Status:"
@@ -161,29 +148,19 @@ export const Excuses = () => {
                 <div className="flex-1">
                     {loading ? <LoadingSpinner /> : (
                         <DataTable data={paginatedData?.data || []} columns={[
-                            { header: 'Przesłano', sortKey: 'createdAt', render: (e: Excuse) => <span className="text-xs">{formatDateTime(e.createdAt)}</span> },
-                            { header: 'Rodzic', sortKey: 'parent', render: (e: Excuse) => <span className="font-medium">{e.parentName}</span> },
-                            { header: 'Uczeń', sortKey: 'student', render: (e: Excuse) => <span className="font-medium">{e.studentName}</span> },
+                            { header: 'Przesłano', sortKey: 'createdAt', muted: true, render: (e: Excuse) => formatDateTime(e.createdAt) },
+                            { header: 'Rodzic', sortKey: 'parent', bold: true, render: (e: Excuse) => e.parentName },
+                            { header: 'Uczeń', sortKey: 'student', bold: true, render: (e: Excuse) => e.studentName },
                             { header: 'Klasa', render: (e: Excuse) => e.className || '-' },
                             { header: 'Godziny', render: (e: Excuse) => e.attendanceCount, className: 'text-center w-16' },
                             { header: 'Status', sortKey: 'isaccepted', render: (e: Excuse) => getStatusBadge(e.isAccepted) },
-                            { header: 'Rozpatrzono', sortKey: 'acceptedat', render: (e: Excuse) => e.acceptedAt ? <span className="text-xs">{formatDateTime(e.acceptedAt)}</span> : '-' },
-                            { header: 'Rozpatrzył', render: (e: Excuse) => e.modifiedByName || '-' },
+                            { header: 'Rozpatrzono', sortKey: 'acceptedat', muted: true, render: (e: Excuse) => e.acceptedAt ? formatDateTime(e.acceptedAt) : '-' },
+                            { header: 'Rozpatrzył', muted: true, render: (e: Excuse) => e.modifiedByName || '-' },
                             {
                                 header: 'Akcje', className: 'text-right w-24', render: (e: Excuse) => (
                                     <div className="flex justify-end gap-1">
                                         <Button variant="soft" onClick={() => openDetails(e.id, false)} className="p-1"><Eye size={14} /></Button>
-                                        {filters.showInactive ? (
-                                            <>
-                                                <Button variant="soft" onClick={() => handleRestore(e.id)} className="p-1 text-success"><RotateCcw size={14} /></Button>
-                                                <Button variant="soft" onClick={() => handleDelete(e.id)} className="p-1 text-danger"><Trash2 size={14} /></Button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Button variant="soft" onClick={() => openDetails(e.id, true)} className="p-1 text-primary"><Pencil size={14} /></Button>
-                                                <Button variant="soft" onClick={() => handleDelete(e.id)} className="p-1 text-danger"><Trash2 size={14} /></Button>
-                                            </>
-                                        )}
+                                        <Button variant="soft" onClick={() => openDetails(e.id, true)} className="p-1 text-primary"><Pencil size={14} /></Button>
                                     </div>
                                 )
                             }

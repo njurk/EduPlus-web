@@ -6,10 +6,8 @@ import { Save, User, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import type { User as UserType, ChangePasswordDto, UserUpdateDto } from '../../types';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { validateUserProfileUpdate, validatePasswordChange, REGEX } from '../../utils/validation';
-import { useCMSContent } from '../../hooks/useCMSContent';
 
 export const Settings = () => {
-    const { getText } = useCMSContent('settings');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -185,7 +183,7 @@ export const Settings = () => {
     return (
         <div className="max-w-2xl mx-auto font-sans space-y-8">
             <div className="flex justify-between items-center">
-                <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
+                <h1 className="text-xl font-bold text-neutral-800">Ustawienia konta</h1>
             </div>
             {message && (
                 <div className={`p-4 rounded-md flex items-center gap-2 text-sm ${message.type === 'success' ? 'bg-success-light text-success-text' : 'bg-danger-light text-danger-text'}`}>
@@ -197,6 +195,7 @@ export const Settings = () => {
                 <div className="bg-white border border-neutral-200 rounded shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex items-center gap-2">
                         <User className="text-primary" size={20} />
+                        <h2 className="text-base font-semibold text-neutral-800">Dane osobowe</h2>
                     </div>
                     <form onSubmit={handleProfileUpdate} className="p-6 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -271,6 +270,7 @@ export const Settings = () => {
                 <div className="bg-white border border-neutral-200 rounded shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex items-center gap-2">
                         <Lock className="text-primary" size={20} />
+                        <h2 className="text-base font-semibold text-neutral-800">Zmiana hasła</h2>
                     </div>
                     <form onSubmit={handleChangePassword} className="p-6 space-y-6">
                         <div>

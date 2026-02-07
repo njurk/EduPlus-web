@@ -148,7 +148,7 @@ export const authApi = {
 
 export const usersApi = {
     ...createCrudResource<User>('user'),
-    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, onlyUnassignedParents?: boolean, roleLevel?: number }): Promise<PaginatedResponse<User>> => {
+    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, onlyUnassignedRelations?: boolean, roleLevel?: number }): Promise<PaginatedResponse<User>> => {
         const query = new URLSearchParams();
         if (params?.pageNumber) query.append('pageNumber', params.pageNumber.toString());
         if (params?.pageSize) query.append('pageSize', params.pageSize.toString());
@@ -156,7 +156,7 @@ export const usersApi = {
         if (params?.sortBy) query.append('sortBy', params.sortBy);
         if (params?.sortDesc) query.append('sortDesc', 'true');
         if (params?.showInactive) query.append('showInactive', 'true');
-        if (params?.onlyUnassignedParents) query.append('onlyUnassignedParents', 'true');
+        if (params?.onlyUnassignedRelations) query.append('onlyUnassignedRelations', 'true');
         if (params?.roleLevel) query.append('roleLevel', params.roleLevel.toString());
 
         const response = await fetch(`${API_URL}/user?${query.toString()}`, { headers: getHeaders() });
@@ -893,6 +893,17 @@ export const pageContentApi = {
             body: JSON.stringify(newValue)
         });
         return handleResponse<PageContent>(response);
+    },
+    uploadImage: async (file: File): Promise<string> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/PageContent/upload-image`, {
+            method: 'POST',
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            body: formData
+        });
+        return handleResponse<string>(response);
     }
 };
 
@@ -947,14 +958,14 @@ const downloadBlob = async (url: URL, filename: string) => {
 };
 
 export const exportApi = {
-    downloadSchedule: async (params: { classId: number; yearId?: number; semesterId?: number; format: 'pdf' | 'xlsx' | 'csv' | 'docx' }): Promise<void> => {
+    downloadSchedule: async (params: { classId: number; yearId?: number; semesterId?: number; format: 'pdf' | 'xlsx' | 'docx' }): Promise<void> => {
         const url = new URL(`${API_URL}/export/schedule/${params.format}`);
         url.searchParams.set('classId', params.classId.toString());
         if (params.yearId) url.searchParams.set('yearId', params.yearId.toString());
         if (params.semesterId) url.searchParams.set('semesterId', params.semesterId.toString());
         await downloadBlob(url, `plan-lekcji-${generateTimestamp()}.${params.format}`);
     },
-    downloadGrades: async (params: { classId: number; semesterId: number; schoolYearId: number; subjectId?: number; studentId?: number; format: 'pdf' | 'xlsx' | 'csv' }): Promise<void> => {
+    downloadGrades: async (params: { classId: number; semesterId: number; schoolYearId: number; subjectId?: number; studentId?: number; format: 'pdf' | 'xlsx' }): Promise<void> => {
         const url = new URL(`${API_URL}/export/grades/${params.format}`);
         url.searchParams.set('classId', params.classId.toString());
         url.searchParams.set('semesterId', params.semesterId.toString());

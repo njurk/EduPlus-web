@@ -368,19 +368,19 @@ export const Tickets = () => {
                             sortDesc={filters.sortDesc}
                             onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
                             columns={[
-                                { header: 'Data zgłoszenia', sortKey: 'created', className: 'w-36', render: (t) => <span className="text-neutral-600 text-xs">{formatDateTime(t.createdAt)}</span> },
+                                { header: 'Data zgłoszenia', sortKey: 'created', className: 'w-36', muted: true, render: (t) => formatDateTime(t.createdAt) },
                                 {
-                                    header: 'Email', sortKey: 'email', render: (t) => (
+                                    header: 'Email', sortKey: 'email', bold: true, render: (t) => (
                                         <div className="flex items-center gap-2">
-                                            <span className="text-neutral-900 font-medium">{t.email}</span>
+                                            {t.email}
                                             <Badge variant="new" show={unreadTicketIds.includes(t.id)} />
                                         </div>
                                     )
                                 },
-                                { header: 'Powód', sortKey: 'reason', render: (t) => <span className="text-neutral-900">{t.reasonName}</span> },
-                                { header: 'Status', className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-xs text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-xs text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },
-                                { header: 'Data zamknięcia', sortKey: 'closedat', render: (t) => t.closedAt ? <span className="text-neutral-500 text-xs">{formatDateTime(t.closedAt)}</span> : <span className="text-neutral-300">-</span> },
-                                { header: 'Zamknięte przez', render: (t) => <span className="text-neutral-500 text-xs">{t.modifiedByName || 'System'}</span> },
+                                { header: 'Powód', sortKey: 'reason', render: (t) => t.reasonName },
+                                { header: 'Status', className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },
+                                { header: 'Data zamknięcia', sortKey: 'closedat', muted: true, render: (t) => t.closedAt ? formatDateTime(t.closedAt) : '-' },
+                                { header: 'Zamknięte przez', muted: true, render: (t) => t.modifiedByName || 'System' },
                                 {
                                     header: 'Akcje', className: 'w-32 text-right', render: (t) => (
                                         <ActionButtons

@@ -407,14 +407,14 @@ export const Lessons = () => {
                                 sortDesc={filters.sortDesc}
                                 onSort={field => setFilters(f => f.sortBy === field ? { ...f, sortDesc: !f.sortDesc } : { ...f, sortBy: field, sortDesc: true })}
                                 columns={[
-                                    { header: 'Utworzono', sortKey: 'created', render: l => <span className="text-xs text-neutral-500">{formatDateTime(l.createdAt)}</span> },
-                                    { header: 'Data lekcji', sortKey: 'date', render: l => <span className="text-xs text-neutral-500">{formatDateOnly(l.date)}</span> },
-                                    { header: 'Nr lekcji', sortKey: 'ordernumber', render: l => <span className="font-medium">{l.orderNumber}</span> },
+                                    { header: 'Utworzono', sortKey: 'created', muted: true, render: l => formatDateTime(l.createdAt) },
+                                    { header: 'Data lekcji', sortKey: 'date', muted: true, render: l => formatDateOnly(l.date) },
+                                    { header: 'Nr lekcji', sortKey: 'ordernumber', bold: true, render: l => l.orderNumber },
                                     { header: 'Klasa', render: l => l.className },
                                     { header: 'Sala', render: l => l.classroomName || '-' },
-                                    { header: 'Przedmiot', render: l => <span className="font-medium">{l.subjectName}</span> },
-                                    { header: 'Nauczyciel', render: l => <span className="text-sm">{l.teacherName}</span> },
-                                    { header: 'Status', render: l => <span className="text-xs">{l.statusName}</span> },
+                                    { header: 'Przedmiot', bold: true, render: l => l.subjectName },
+                                    { header: 'Nauczyciel', render: l => l.teacherName },
+                                    { header: 'Status', render: l => l.statusName },
                                     {
                                         header: 'Akcje', className: 'text-right', render: l => (
                                             <ActionButtons

@@ -39,7 +39,7 @@ export const Grades = () => {
     const [addSubjects, setAddSubjects] = useState<any[]>([]);
 
     const [exportOpen, setExportOpen] = useState(false);
-    const [exportFormat, setExportFormat] = useState<'pdf' | 'xlsx' | 'csv'>('pdf');
+    const [exportFormat, setExportFormat] = useState<'pdf' | 'xlsx'>('pdf');
     const [exportType, setExportType] = useState<'class' | 'student'>('class');
     const [exportFilters, setExportFilters] = useState({
         yearId: null as number | null,
@@ -331,15 +331,15 @@ export const Grades = () => {
                             sortDesc={filters.sortDesc}
                             onSort={field => setFilters(f => f.sortBy === field ? { ...f, sortDesc: !f.sortDesc } : { ...f, sortBy: field, sortDesc: true })}
                             columns={[
-                                { header: 'Uczeń', sortKey: 'studentname', render: g => <span className="font-medium">{g.studentName}</span> },
+                                { header: 'Uczeń', sortKey: 'studentname', bold: true, render: g => g.studentName },
                                 { header: 'Klasa', sortKey: 'classname', render: g => g.className },
                                 { header: 'Przedmiot', sortKey: 'subjectname', render: g => g.subjectName },
-                                { header: 'Ocena', sortKey: 'gradevalue', render: g => <span className="text-s">{g.gradeTypeName}</span> },
-                                { header: 'Kategoria', sortKey: 'categoryname', render: g => <span className="text-xs font-medium" style={{ color: g.categoryColorHex }}>{g.categoryName}</span> },
-                                { header: 'Nauczyciel', sortKey: 'teachername', render: g => <span className="text-xs">{g.teacherName}</span> },
-                                { header: 'Wystawiono', sortKey: 'createdat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.createdAt)}</span> },
-                                { header: 'Edytowano', sortKey: 'updatedat', render: g => <span className="text-neutral-500 text-xs">{formatDateTime(g.updatedAt)}</span> },
-                                { header: 'Edytowane przez', render: g => <span className="text-neutral-500 text-xs">{g.modifiedByName || 'System'}</span> },
+                                { header: 'Ocena', sortKey: 'gradevalue', render: g => g.gradeTypeName },
+                                { header: 'Kategoria', sortKey: 'categoryname', bold: true, render: g => <span style={{ color: g.categoryColorHex }}>{g.categoryName}</span> },
+                                { header: 'Nauczyciel', sortKey: 'teachername', render: g => g.teacherName },
+                                { header: 'Wystawiono', sortKey: 'createdat', muted: true, render: g => formatDateTime(g.createdAt) },
+                                { header: 'Edytowano', sortKey: 'updatedat', muted: true, render: g => formatDateTime(g.updatedAt) },
+                                { header: 'Edytowane przez', muted: true, render: g => g.modifiedByName || 'System' },
                                 {
                                     header: 'Akcje', className: 'text-right', render: g => (
                                         <ActionButtons
@@ -536,7 +536,7 @@ export const Grades = () => {
                     <div>
                         <label className="label-text block mb-1">Format</label>
                         <div className="flex gap-4">
-                            {(['pdf', 'xlsx', 'csv'] as const).map(fmt => (
+                            {(['pdf', 'xlsx'] as const).map(fmt => (
                                 <label key={fmt} className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="radio"

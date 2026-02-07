@@ -242,9 +242,9 @@ const SchoolYearConfig = () => {
         { header: 'Nazwa', accessor: 'name', sortKey: 'name' },
         { header: 'Data rozpoczęcia', sortKey: 'startdate', render: (row) => formatDateOnly(row.startDate) },
         { header: 'Data zakończenia', sortKey: 'enddate', render: (row) => formatDateOnly(row.endDate) },
-        { header: 'Utworzono', sortKey: 'created', render: (row) => formatDateTime(row.createdAt), className: 'text-neutral-500 text-xs' },
-        { header: 'Edytowano', sortKey: 'updated', render: (row) => formatDateTime(row.updatedAt), className: 'text-neutral-500 text-xs' },
-        { header: 'Edytowane przez', render: (row) => row.modifiedByName || '-', className: 'text-neutral-500 text-xs' },
+        { header: 'Utworzono', sortKey: 'created', render: (row) => formatDateTime(row.createdAt), muted: true },
+        { header: 'Edytowano', sortKey: 'updated', render: (row) => formatDateTime(row.updatedAt), muted: true },
+        { header: 'Edytowane przez', render: (row) => row.modifiedByName || '-', muted: true },
         {
             header: 'Akcje',
             className: 'text-right',
@@ -775,9 +775,9 @@ export const SystemConfig = () => {
 
         return [
             ...specificCols,
-            { header: 'Utworzono', sortKey: "created", render: (row) => formatDateTime(row.createdAt), className: "text-neutral-500 text-xs" },
-            { header: 'Edytowano', sortKey: "updated", render: (row) => formatDateTime(row.updatedAt), className: "text-neutral-500 text-xs" },
-            { header: 'Edytowane przez', render: (row) => row.modifiedByName || '-', className: "text-neutral-500 text-xs" },
+            { header: 'Utworzono', sortKey: "created", render: (row) => formatDateTime(row.createdAt), muted: true },
+            { header: 'Edytowano', sortKey: "updated", render: (row) => formatDateTime(row.updatedAt), muted: true },
+            { header: 'Edytowane przez', render: (row) => row.modifiedByName || '-', muted: true },
             {
                 header: 'Akcje',
                 className: "text-right",
@@ -863,14 +863,16 @@ export const SystemConfig = () => {
                         onReset={() => setFilters(p => ({ ...p, search: '', isNegativeFilter: '' as const }))}
                         rightContent={
                             <>
-                                <TrashButton
-                                    isTrashActive={filters.showInactive}
-                                    onToggle={() => {
-                                        setLoading(true);
-                                        setData([]);
-                                        setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
-                                    }}
-                                />
+                                {!['lessonStatuses'].includes(activeTab) && (
+                                    <TrashButton
+                                        isTrashActive={filters.showInactive}
+                                        onToggle={() => {
+                                            setLoading(true);
+                                            setData([]);
+                                            setFilters((p) => ({ ...p, showInactive: !p.showInactive }));
+                                        }}
+                                    />
+                                )}
                                 {!['attendance', 'lessonStatuses'].includes(activeTab) && (
                                     <Button onClick={() => openForm()}>
                                         <Plus size={16} className="mr-2" /> Dodaj

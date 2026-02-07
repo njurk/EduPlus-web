@@ -26,6 +26,7 @@ const Clock = () => {
 
 export const AdminLayout = () => {
   const { getText } = useCMSContent('layout');
+  const { getText: getSystemText } = useCMSContent('system');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, unreadAnnouncementIds: [], unreadTicketIds: [] });
   const navigate = useNavigate();
@@ -175,7 +176,7 @@ export const AdminLayout = () => {
             ))}
           </div>
           <div className="px-4 py-2 border-t border-neutral-800">
-            <p className="text-xs text-neutral-500 font-mono">{getText('version')}</p>
+            <p className="text-xs text-neutral-500 font-mono">{getSystemText('version')}</p>
           </div>
         </div>
       </aside>

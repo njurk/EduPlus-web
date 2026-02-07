@@ -8,6 +8,7 @@ import { useCMSContent } from '../hooks/useCMSContent';
 
 export const AdminLogin = () => {
     const { getText } = useCMSContent('adminLogin');
+    const { getText: getSystemText } = useCMSContent('system');
     const navigate = useNavigate();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export const AdminLogin = () => {
                 <div className="bg-neutral-900 p-8 text-center">
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <img
-                            src={`${BASE_URL}/${getText('logoUrl')}`}
+                            src={`${BASE_URL}/${getSystemText('logoUrl')}`}
                             alt={getText('logoAlt')}
                             className="w-14 h-14 object-contain"
                         />
@@ -65,7 +66,7 @@ export const AdminLogin = () => {
                                 </div>
                                 <Input
                                     className="pl-10"
-                                    placeholder="example@gmail.com"
+                                    placeholder="jankowalski@gmail.com"
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -109,7 +110,7 @@ export const AdminLogin = () => {
                 </div>
                 <div className="bg-neutral-50 p-4 flex justify-between items-center border-t border-neutral-100">
                     <p className="text-xs text-neutral-500">
-                        &copy; {new Date().getFullYear()} {getText('footer')}
+                        &copy; {new Date().getFullYear()} {getSystemText('version')}
                     </p>
                     <Link
                         to="/login"

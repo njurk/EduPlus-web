@@ -5,7 +5,7 @@ import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import type { Announcement, Role, PaginatedResponse } from '../../types';
 import { api } from '../../services/apiService';
-import { Plus, User, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
@@ -244,19 +244,17 @@ export const Announcements = () => {
                             sortDesc={filters.sortDesc}
                             onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
                             columns={[
-                                { header: 'Data', sortKey: 'created', render: (a) => <div className="text-xs w-28 text-neutral-600">{formatDateTime(a.createdAt)}</div> },
-                                {
-                                    header: 'Tytuł', className: 'w-1/4', render: (a) => (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-neutral-900 font-medium">{a.title}</span>
-                                            <Badge variant="new" show={unreadAnnouncementIds.includes(a.id)} />
-                                        </div>
-                                    )
-                                },
-                                { header: 'Autor', sortKey: 'author', className: 'w-32', render: (a) => <div className="flex items-center gap-2 text-sm text-neutral-600"><User size={14} />{a.authorName}</div> },
-                                { header: 'Adresaci', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{a.targetRoles || 'Wszyscy'}</span> },
-                                { header: 'Edytowano', sortKey: 'updated', className: 'w-32', render: (a) => <span className="text-xs text-neutral-500">{formatDateTime(a.updatedAt)}</span> },
-                                { header: 'Edytowane przez', className: 'w-40', render: (a) => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
+                                { header: 'Data', sortKey: 'created', className: 'w-28', muted: true, render: (a) => formatDateTime(a.createdAt) },
+                                { header: 'Tytuł', className: 'w-1/4', bold: true, render: (a) => (
+                                    <div className="flex items-center gap-2">
+                                        {a.title}
+                                        <Badge variant="new" show={unreadAnnouncementIds.includes(a.id)} />
+                                    </div>
+                                )},
+                                { header: 'Autor', sortKey: 'author', className: 'w-32', render: (a) => a.authorName },
+                                { header: 'Adresaci', className: 'w-32', muted: true, render: (a) => a.targetRoles || 'Wszyscy' },
+                                { header: 'Edytowano', sortKey: 'updated', className: 'w-32', muted: true, render: (a) => formatDateTime(a.updatedAt) },
+                                { header: 'Edytowane przez', className: 'w-40', muted: true, render: (a) => a.modifiedByName || 'System' },
                                 {
                                     header: 'Akcje', className: 'w-20 text-right', render: (a) => (
                                         <ActionButtons

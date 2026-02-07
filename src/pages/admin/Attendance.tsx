@@ -186,15 +186,15 @@ export const Attendance = () => {
                             sortDesc={filters.sortDesc}
                             onSort={handleSort}
                             columns={[
-                                { header: 'Utworzono', sortKey: 'created', render: a => <span className="text-xs text-neutral-500">{formatDateTime(a.createdAt)}</span> },
-                                { header: 'Nr', sortKey: 'ordernumber', render: a => <span className="font-medium">{a.orderNumber}</span> },
-                                { header: 'Data', sortKey: 'lessondate', render: a => <span className="text-xs">{formatDateOnly(a.lessonDate)}</span> },
-                                { header: 'Przedmiot', render: a => <span className="font-medium">{a.subjectName}</span> },
-                                { header: 'Nauczyciel', render: a => <span className="text-sm">{a.teacherName || '-'}</span> },
-                                { header: 'Uczeń', sortKey: 'studentname', render: a => <span className="font-medium">{a.studentName}</span> },
-                                { header: 'Typ', render: a => <span className="font-medium" style={{ color: a.colorHex }}>{a.typeName}</span> },
-                                { header: 'Edytowano', sortKey: 'updated', render: a => <span className="text-xs text-neutral-500">{formatDateTime(a.updatedAt)}</span> },
-                                { header: 'Edytowane przez', render: a => <span className="text-xs text-neutral-500">{a.modifiedByName || 'System'}</span> },
+                                { header: 'Utworzono', sortKey: 'created', muted: true, render: a => formatDateTime(a.createdAt) },
+                                { header: 'Nr', sortKey: 'ordernumber', bold: true, render: a => a.orderNumber },
+                                { header: 'Data', sortKey: 'lessondate', muted: true, render: a => formatDateOnly(a.lessonDate) },
+                                { header: 'Przedmiot', bold: true, render: a => a.subjectName },
+                                { header: 'Nauczyciel', render: a => a.teacherName || '-' },
+                                { header: 'Uczeń', sortKey: 'studentname', bold: true, render: a => a.studentName },
+                                { header: 'Typ', bold: true, render: a => <span style={{ color: a.colorHex }}>{a.typeName}</span> },
+                                { header: 'Edytowano', sortKey: 'updated', muted: true, render: a => formatDateTime(a.updatedAt) },
+                                { header: 'Edytowane przez', muted: true, render: a => a.modifiedByName || 'System' },
                                 {
                                     header: 'Akcje', className: 'text-right', render: a => (
                                         <ActionButtons
