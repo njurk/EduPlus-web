@@ -19,7 +19,6 @@ export const ActionButtons = ({
   onRestore,
   onDetails,
   className,
-  editLabel = 'Edytuj',
   editIcon: EditIcon = Edit2
 }: ActionButtonsProps) => {
 
@@ -35,17 +34,17 @@ export const ActionButtons = ({
     return (
       <div className={clsx("flex justify-end gap-1", className)}>
         {onDetails && (
-          <button type="button" onClick={(e) => handleClick(e, onDetails)} title="Szczegóły" className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-xs">
+          <button type="button" onClick={(e) => handleClick(e, onDetails)} className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-xs">
             <Eye size={16} />
           </button>
         )}
         {onRestore && (
-          <button type="button" onClick={(e) => handleClick(e, onRestore)} title="Przywróć" className="p-1.5 text-success hover:bg-success-light rounded-xs">
+          <button type="button" onClick={(e) => handleClick(e, onRestore)} className="p-1.5 text-success hover:bg-success-light rounded-xs">
             <RefreshCcw size={16} />
           </button>
         )}
         {onDelete && (
-          <button type="button" onClick={(e) => handleClick(e, onDelete)} title="Usuń trwale" className="p-1.5 text-danger hover:bg-danger-light rounded-xs">
+          <button type="button" onClick={(e) => handleClick(e, onDelete)} className="p-1.5 text-danger hover:bg-danger-light rounded-xs">
             <Trash2 size={16} />
           </button>
         )}
@@ -56,17 +55,17 @@ export const ActionButtons = ({
   return (
     <div className={clsx("flex justify-end gap-1", className)}>
       {onDetails && (
-        <button type="button" onClick={(e) => handleClick(e, onDetails)} title="Szczegóły" className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-xs">
+        <button type="button" onClick={(e) => handleClick(e, onDetails)} className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-xs">
           <Eye size={16} />
         </button>
       )}
       {onEdit && (
-        <button type="button" onClick={(e) => handleClick(e, onEdit)} title={editLabel} className="p-1.5 text-primary hover:bg-neutral-100 rounded-xs">
+        <button type="button" onClick={(e) => handleClick(e, onEdit)} className="p-1.5 text-primary hover:bg-neutral-100 rounded-xs">
           <EditIcon size={16} />
         </button>
       )}
       {onDelete && (
-        <button type="button" onClick={(e) => handleClick(e, onDelete)} title="Usuń" className="p-1.5 text-danger hover:bg-neutral-100 rounded-xs">
+        <button type="button" onClick={(e) => handleClick(e, onDelete)} className="p-1.5 text-danger hover:bg-neutral-100 rounded-xs">
           <Trash2 size={16} />
         </button>
       )}

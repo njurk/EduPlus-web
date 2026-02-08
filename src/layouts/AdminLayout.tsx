@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Users, Settings, Home, LogOut, FilePenIcon, Folder, Layout, Megaphone, Calendar, HelpCircle, GraduationCap, ClipboardCheck, BookOpen, ClockIcon, FileCheck, Terminal } from 'lucide-react';
+import { Menu, X, Home, LogOut, Settings, Users, BookOpen, ClipboardCheck, Star, Table, Megaphone, FilePenIcon, Folder, Layout, LibraryBig, FileCheck, HelpCircle, Terminal } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useCMSContent } from '../hooks/useCMSContent';
+import { formatFullDate } from '../utils/formatters';
 import { api, API_URL } from '../services/apiService';
 import { Badge } from '../components/ui/Badge';
 import { UnreadContext } from '../hooks/useUnread';
@@ -19,7 +20,7 @@ const Clock = () => {
   return (
     <div className="text-right hidden sm:block">
       <div className="text-sm font-bold text-neutral-800">{time.toLocaleTimeString('pl-PL')}</div>
-      <div className="text-xs text-neutral-600">{time.toLocaleDateString('pl-PL')}</div>
+      <div className="text-xs text-neutral-600">{formatFullDate(time)}</div>
     </div>
   );
 };
@@ -83,16 +84,16 @@ export const AdminLayout = () => {
       items: [
         { label: getText('nav.users'), path: '/admin/users', icon: Users },
         { label: getText('nav.classes'), path: '/admin/class-management', icon: Folder },
-        { label: getText('nav.subjects'), path: '/admin/subjects', icon: BookOpen },
+        { label: getText('nav.subjects'), path: '/admin/subjects', icon: LibraryBig },
         { label: getText('nav.announcements'), path: '/admin/announcements', icon: Megaphone, badge: unreadCounts.announcements },
       ]
     },
     {
       title: getText('nav.section.teaching'),
       items: [
-        { label: getText('nav.schedule'), path: '/admin/schedule', icon: Calendar },
-        { label: getText('nav.lessons'), path: '/admin/lessons', icon: ClockIcon },
-        { label: getText('nav.grades'), path: '/admin/grades', icon: GraduationCap },
+        { label: getText('nav.schedule'), path: '/admin/schedule', icon: Table },
+        { label: getText('nav.lessons'), path: '/admin/lessons', icon: BookOpen },
+        { label: getText('nav.grades'), path: '/admin/grades', icon: Star },
         { label: getText('nav.attendance'), path: '/admin/attendance', icon: ClipboardCheck },
         { label: getText('nav.excuses'), path: '/admin/excuses', icon: FileCheck },
       ]
@@ -202,15 +203,13 @@ export const AdminLayout = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate('/admin/settings')}
-                  className="p-2 text-neutral-500 hover:text-primary hover:bg-neutral-50 transition-all rounded-full"
-                  title="Ustawienia"
+                  className="p-2 text-neutral-500"
                 >
                   <Settings size={20} />
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="p-2 text-neutral-500 hover:text-danger hover:bg-neutral-50 transition-all rounded-full"
-                  title="Wyloguj"
+                  className="p-2 text-neutral-500"
                 >
                   <LogOut size={20} />
                 </button>

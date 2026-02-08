@@ -424,7 +424,7 @@ export const Users = () => {
                         columns={[
                             { header: 'Nazwa roli', accessor: 'name', sortKey: 'name', bold: true },
                             { header: 'Poziom', accessor: 'level', sortKey: 'level' },
-                            { header: 'Opis', muted: true, render: (r) => <span className="truncate max-w-xs block" title={r.description}>{r.description || '-'}</span> },
+                            { header: 'Opis', muted: true, render: (r) => <span className="truncate max-w-xs block">{r.description || '-'}</span> },
                             { header: 'Utworzono', sortKey: 'created', muted: true, render: (r) => formatDateTime(r.createdAt) },
                             { header: 'Edytowano', sortKey: 'updated', muted: true, render: (r) => formatDateTime(r.updatedAt) },
                             { header: 'Edytowane przez', muted: true, render: (r) => r.modifiedByName || 'System' },

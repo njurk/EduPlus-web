@@ -1,11 +1,11 @@
 ﻿import { useState, useEffect } from 'react';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { api } from '../../services/apiService';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { api } from '../services/apiService';
 import { Save, User, Lock, AlertCircle, CheckCircle } from 'lucide-react';
-import type { User as UserType, ChangePasswordDto, UserUpdateDto } from '../../types';
-import { PasswordInput } from '../../components/ui/PasswordInput';
-import { validateUserProfileUpdate, validatePasswordChange, REGEX } from '../../utils/validation';
+import type { User as UserType, ChangePasswordDto, UserUpdateDto } from '../types';
+import { PasswordInput } from '../components/ui/PasswordInput';
+import { validateUserProfileUpdate, validatePasswordChange, REGEX } from '../utils/validation';
 
 export const Settings = () => {
     const [loading, setLoading] = useState(false);

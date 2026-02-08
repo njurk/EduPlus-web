@@ -135,6 +135,7 @@ export interface Grade {
     subjectId: number;
     gradeTypeId: number;
     gradeCategoryId: number;
+    gradeColumnId?: number | null;
     comment?: string;
     createdAt: string;
     updatedAt: string;
@@ -165,6 +166,7 @@ export interface GradeDto {
     subjectId: number;
     gradeTypeId: number;
     gradeCategoryId: number;
+    gradeColumnId?: number | null;
     comment?: string;
 }
 

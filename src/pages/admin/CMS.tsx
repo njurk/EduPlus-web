@@ -2,7 +2,7 @@
 import type { Target, Page, PageContent } from '../../types';
 import { api, BASE_URL } from '../../services/apiService';
 import { Button } from '../../components/ui/Button';
-import { Edit2, Save, X, RefreshCcw, Upload } from 'lucide-react';
+import { Edit2, Save, RefreshCcw, Upload } from 'lucide-react';
 import clsx from 'clsx';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { SearchBar } from '../../components/ui/SearchBar';
@@ -215,7 +215,6 @@ export const CMS = () => {
                                                 <button
                                                     onClick={() => { setEditingContentId(c.id); setEditValue(c.value); setUploadFile(null); setUploadPreview(null); }}
                                                     className="text-primary hover:text-primary-hover p-1"
-                                                    title="Edytuj"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
@@ -262,7 +261,7 @@ export const CMS = () => {
                                                 )}
                                                 <div className="flex justify-end gap-2">
                                                     <Button variant="secondary" onClick={() => { setEditingContentId(null); setUploadFile(null); setUploadPreview(null); }} disabled={saving} className="text-xs py-1 h-8">
-                                                        <X size={14} className="mr-1" /> Anuluj
+                                                        Anuluj
                                                     </Button>
                                                     <Button onClick={() => handleSaveContent(c.id)} disabled={saving || (isImageKey(c.key) && !uploadFile)} className="text-xs py-1 h-8">
                                                         {saving ? <RefreshCcw className="animate-spin" size={14} /> : <Save size={14} className="mr-1" />} Zapisz

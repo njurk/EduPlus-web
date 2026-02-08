@@ -20,3 +20,6 @@ export const formatName = (user?: { firstName: string; lastName: string } | null
     if (!user) return 'Nieznany użytkownik';
     return `${user.lastName} ${user.firstName}`;
 };
+
+export const formatFullDate = (date: Date): string =>
+    date.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });

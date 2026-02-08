@@ -23,7 +23,6 @@ export const Pagination = ({ currentPage, totalPages, totalCount, pageSize = 20,
                     onClick={() => onPageChange(1)}
                     disabled={currentPage === 1}
                     className="p-1.5 rounded-xs border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Pierwsza strona"
                 >
                     <ChevronsLeft size={16} />
                 </button>
@@ -31,7 +30,6 @@ export const Pagination = ({ currentPage, totalPages, totalCount, pageSize = 20,
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                     className="p-1.5 rounded-xs border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Poprzednia strona"
                 >
                     <ChevronLeft size={16} />
                 </button>
@@ -42,7 +40,6 @@ export const Pagination = ({ currentPage, totalPages, totalCount, pageSize = 20,
                     onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                     className="p-1.5 rounded-xs border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Następna strona"
                 >
                     <ChevronRight size={16} />
                 </button>
@@ -50,7 +47,6 @@ export const Pagination = ({ currentPage, totalPages, totalCount, pageSize = 20,
                     onClick={() => onPageChange(totalPages)}
                     disabled={currentPage === totalPages}
                     className="p-1.5 rounded-xs border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Ostatnia strona"
                 >
                     <ChevronsRight size={16} />
                 </button>

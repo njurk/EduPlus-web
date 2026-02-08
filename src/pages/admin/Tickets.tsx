@@ -237,7 +237,7 @@ export const Tickets = () => {
                     <button onClick={backToList} className="text-neutral-500 hover:text-primary transition-colors">
                         <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-xl font-bold text-neutral-800">Obsługa zgłoszenia nr {selectedTicket.id}</h1>
+                    <h1 className="text-xl font-bold text-neutral-800">Zgłoszenie nr {selectedTicket.id}</h1>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -368,6 +368,7 @@ export const Tickets = () => {
                             sortDesc={filters.sortDesc}
                             onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
                             columns={[
+                                { header: 'Nr', accessor: 'id', sortKey: 'id', className: 'w-16', bold: true },
                                 { header: 'Data zgłoszenia', sortKey: 'created', className: 'w-36', muted: true, render: (t) => formatDateTime(t.createdAt) },
                                 {
                                     header: 'Email', sortKey: 'email', bold: true, render: (t) => (
@@ -436,7 +437,7 @@ export const Tickets = () => {
                         <Button variant="secondary" onClick={() => setIsDetailsOpen(false)}>Zamknij okno</Button>
                         {selectedTicket && !selectedTicket.isClosed && (
                             <Button onClick={() => { setIsDetailsOpen(false); openResolve(selectedTicket); }}>
-                                Obsłuż zgłoszenie
+                                Odpowiedz
                             </Button>
                         )}
                     </>

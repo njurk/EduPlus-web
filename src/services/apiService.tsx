@@ -547,6 +547,28 @@ export const classManagementApi = {
 export const gradeTypesApi = createCrudResource<GradeType>('GradeType');
 export const gradeCategoriesApi = createCrudResource<GradeCategory>('GradeCategory');
 
+export const gradeColumnsApi = {
+    getAll: async (classId: number, subjectId: number, semesterId: number): Promise<any[]> => {
+        const response = await fetch(`${API_URL}/gradecolumn?classId=${classId}&subjectId=${subjectId}&semesterId=${semesterId}`, { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    create: async (data: { classId: number; subjectId: number; semesterId: number; gradeCategoryId: number; name?: string }): Promise<any> => {
+        const response = await fetch(`${API_URL}/gradecolumn`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
+        return handleResponse(response);
+    },
+    update: async (id: number, data: { gradeCategoryId: number; name?: string }): Promise<any> => {
+        const response = await fetch(`${API_URL}/gradecolumn/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) });
+        return handleResponse(response);
+    },
+    delete: async (id: number): Promise<void> => {
+        const response = await fetch(`${API_URL}/gradecolumn/${id}`, { method: 'DELETE', headers: getHeaders() });
+        if (!response.ok) {
+            const err = await response.json().catch(() => null);
+            throw new Error(err?.message || 'Błąd usuwania kolumny');
+        }
+    }
+};
+
 export const classGradesApi = {
     getClassGrades: async (classId: number, subjectId: number, semester: number, yearId?: number): Promise<StudentGradesRowDto[]> => {
         const url = `${API_URL}/grade/class-grades/${classId}/${subjectId}?semester=${semester}${yearId ? `&schoolYearId=${yearId}` : ''}`;
@@ -662,7 +684,7 @@ export const attendanceApi = {
 
 export const excusesApi = {
     ...createCrudResource<any>('excuse'),
-    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, statusFilter?: string, classId?: number, semesterId?: number }): Promise<PaginatedResponse<any>> => {
+    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, statusFilter?: string, classId?: number, semesterId?: number, teacherId?: number }): Promise<PaginatedResponse<any>> => {
         const url = new URL(`${API_URL}/excuse`);
         if (params) {
             Object.keys(params).forEach(key => {
@@ -738,6 +760,12 @@ export const scheduleApi = {
             method: 'DELETE',
             headers: getHeaders()
         });
+        return handleResponse(response);
+    },
+    getTeacherSchedule: async (teacherId: number, semesterId?: number): Promise<ScheduleLesson[]> => {
+        const url = new URL(`${API_URL}/WeeklySchedule/teacher/${teacherId}`);
+        if (semesterId) url.searchParams.append('semesterId', semesterId.toString());
+        const response = await fetch(url.toString(), { headers: getHeaders() });
         return handleResponse(response);
     }
 };
@@ -1000,6 +1028,7 @@ export const api = {
     classManagement: classManagementApi,
     gradeTypes: gradeTypesApi,
     gradeCategories: gradeCategoriesApi,
+    gradeColumns: gradeColumnsApi,
     classGrades: classGradesApi,
     grades: gradesApi,
     attendanceTypes: attendanceTypesApi,

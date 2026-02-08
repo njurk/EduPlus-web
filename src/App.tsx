@@ -9,7 +9,7 @@ import { SystemConfig } from './pages/admin/SystemConfig';
 import { TeacherLogin } from './pages/TeacherLogin';
 import { AdminLogin } from './pages/AdminLogin';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { Settings } from './pages/admin/Settings';
+import { Settings } from './pages/Settings';
 import { ClassManagement } from './pages/admin/ClassManagement';
 import { Schedule } from './pages/admin/Schedule';
 import { Announcements } from './pages/admin/Announcements';
@@ -25,7 +25,24 @@ import { Logs } from './pages/admin/Logs';
 import { Subjects } from './pages/admin/Subjects';
 import { SubmitTicket } from './pages/SubmitTicket';
 import { useCMSContent } from './hooks/useCMSContent';
+import { TeacherSchedule } from './pages/teacher/Schedule';
+import { Registry } from './pages/teacher/Registry';
+import { TeacherExcuses } from './pages/teacher/Excuses';
+import { TeacherAnnouncements } from './pages/teacher/Announcements';
 
+const DefaultRedirect = () => {
+  const token = localStorage.getItem('token');
+  if (!token) return <Navigate to="/login" replace />;
+
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const roles: string[] = user.roles || [];
+    if (roles.includes('Administrator')) return <Navigate to="/admin/dashboard" replace />;
+    if (roles.includes('Nauczyciel')) return <Navigate to="/teacher" replace />;
+  } catch { }
+
+  return <Navigate to="/login" replace />;
+};
 export default function App() {
   const { getText } = useCMSContent('system');
 
@@ -71,11 +88,15 @@ export default function App() {
         <Route path="/teacher" element={<TeacherLayout />}>
           <Route index element={<TeacherDashboard />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="schedule" element={<TeacherSchedule />} />
+          <Route path="registry" element={<Registry />} />
+          <Route path="excuses" element={<TeacherExcuses />} />
+          <Route path="announcements" element={<TeacherAnnouncements />} />
         </Route>
       </Route>
 
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<DefaultRedirect />} />
+      <Route path="*" element={<DefaultRedirect />} />
     </Routes>
   );
 }

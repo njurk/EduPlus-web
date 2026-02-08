@@ -64,7 +64,7 @@ export const FilterToolbar = ({ children, rightContent, search, onReset, showRes
             {search && <SearchBar value={search.value} onChange={search.onChange} placeholder={search.placeholder} className="max-w-xs" />}
             {children}
             {showReset && (
-                <button onClick={onReset} className="flex items-center gap-1 text-xs text-neutral-500 hover:text-primary transition-colors px-2 py-1 rounded hover:bg-neutral-100" title="Resetuj filtry">
+                <button onClick={onReset} className="flex items-center gap-1 text-xs text-neutral-500 hover:text-primary transition-colors px-2 py-1 rounded hover:bg-neutral-100">
                     <RotateCcw size={14} />
                     <span className="hidden sm:inline">Reset</span>
                 </button>

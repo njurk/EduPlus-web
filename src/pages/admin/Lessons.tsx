@@ -28,7 +28,6 @@ interface LessonDetailViewProps {
 const LessonDetailView = ({ lesson, attendance: initialAttendance, onBack, onAttendanceChange, onLessonUpdate, editMode = false }: LessonDetailViewProps) => {
     const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
     const [attendance, setAttendance] = useState<LessonAttendanceDto[]>(initialAttendance);
-    const [updatingStudent, setUpdatingStudent] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
     const [classrooms, setClassrooms] = useState<any[]>([]);
     const [statuses, setStatuses] = useState<any[]>([]);
@@ -47,21 +46,23 @@ const LessonDetailView = ({ lesson, attendance: initialAttendance, onBack, onAtt
     useEffect(() => { setAttendance(initialAttendance); }, [initialAttendance]);
     useEffect(() => { setEditData({ classroomId: lesson.classroomId, statusId: lesson.statusId, topic: lesson.topic, teacherId: lesson.teacherId }); }, [lesson]);
 
-    const handleAttendanceChange = async (studentId: number, attendanceTypeId: number | null) => {
+    const [pendingChanges, setPendingChanges] = useState<Map<number, number | null>>(new Map());
+
+    const handleAttendanceChange = (studentId: number, attendanceTypeId: number | null) => {
         if (!editMode) return;
-        setUpdatingStudent(studentId);
-        try {
-            await api.lessons.updateAttendance(lesson.id, studentId, attendanceTypeId);
-            const selectedType = attendanceTypeId ? attendanceTypes.find(t => t.id === attendanceTypeId) : null;
-            setAttendance(prev => prev.map(a => a.studentId === studentId ? { ...a, attendanceTypeId: attendanceTypeId ?? undefined, attendanceTypeName: selectedType?.name ?? '', shortCode: selectedType?.shortCode ?? '', colorHex: selectedType?.colorHex ?? '' } : a));
-            onAttendanceChange?.();
-        } catch (e) { console.error('błąd aktualizowania frekwencji:', e); } finally { setUpdatingStudent(null); }
+        setPendingChanges(prev => new Map(prev).set(studentId, attendanceTypeId));
+        const selectedType = attendanceTypeId ? attendanceTypes.find(t => t.id === attendanceTypeId) : null;
+        setAttendance(prev => prev.map(a => a.studentId === studentId ? { ...a, attendanceTypeId: attendanceTypeId ?? undefined, attendanceTypeName: selectedType?.name ?? '', shortCode: selectedType?.shortCode ?? '', colorHex: selectedType?.colorHex ?? '' } : a));
     };
 
     const handleSave = async () => {
         setSaving(true);
         try {
             await api.lessons.update(lesson.id, { classroomId: editData.classroomId, statusId: editData.statusId, topic: editData.topic, teacherId: editData.teacherId });
+            for (const [studentId, typeId] of pendingChanges) {
+                await api.lessons.updateAttendance(lesson.id, studentId, typeId);
+            }
+            onAttendanceChange?.();
             onLessonUpdate?.();
             onBack();
         } catch (e) { console.error('Błąd zapisu lekcji:', e); } finally { setSaving(false); }
@@ -103,7 +104,30 @@ const LessonDetailView = ({ lesson, attendance: initialAttendance, onBack, onAtt
                                             <td className="px-4 py-3 text-sm text-neutral-500">{a.studentNumber}</td>
                                             <td className="px-4 py-3 text-sm font-medium text-neutral-800">{a.studentName}</td>
                                             <td className="px-4 py-3 text-center">
-                                                {editMode ? <select value={a.attendanceTypeId ?? ''} onChange={e => handleAttendanceChange(a.studentId, e.target.value ? Number(e.target.value) : null)} disabled={updatingStudent === a.studentId} style={a.colorHex ? { backgroundColor: a.colorHex, color: 'white', borderColor: a.colorHex } : undefined} className={`px-3 py-1.5 text-xs font-bold rounded border cursor-pointer transition-all min-w-[100px] ${!a.colorHex ? 'bg-white text-neutral-500 border-neutral-300' : ''} ${updatingStudent === a.studentId ? 'opacity-50' : ''}`}><option value="">—</option>{attendanceTypes.map(type => <option key={type.id} value={type.id}>{type.shortCode.toUpperCase()} - {type.name}</option>)}</select> : a.shortCode ? <span style={a.colorHex ? { backgroundColor: a.colorHex, color: 'white' } : undefined} className={`inline-flex items-center justify-center w-8 h-8 rounded text-xs font-bold ${!a.colorHex ? 'bg-neutral-100 text-neutral-700' : ''}`} title={a.attendanceTypeName}>{a.shortCode.toUpperCase()}</span> : <span className="text-neutral-300">-</span>}
+                                                {editMode ? (
+                                                    <select
+                                                        value={a.attendanceTypeId ?? ''}
+                                                        onChange={e => handleAttendanceChange(a.studentId, e.target.value ? Number(e.target.value) : null)}
+                                                        style={a.colorHex ? { backgroundColor: a.colorHex, color: 'white', borderColor: a.colorHex } : undefined}
+                                                        className={`px-3 py-1.5 text-xs font-bold rounded border cursor-pointer transition-all min-w-[100px] ${!a.colorHex ? 'bg-white text-neutral-500 border-neutral-300' : ''}`}
+                                                    >
+                                                        <option value="">—</option>
+                                                        {attendanceTypes.map(type => (
+                                                            <option key={type.id} value={type.id}>
+                                                                {type.shortCode.toUpperCase()} - {type.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ) : a.shortCode ? (
+                                                    <span
+                                                        style={a.colorHex ? { backgroundColor: a.colorHex, color: 'white' } : undefined}
+                                                        className={`inline-flex items-center justify-center w-8 h-8 rounded text-xs font-bold ${!a.colorHex ? 'bg-neutral-100 text-neutral-700' : ''}`}
+                                                    >
+                                                        {a.shortCode.toUpperCase()}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-neutral-300">-</span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

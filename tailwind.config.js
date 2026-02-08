@@ -16,6 +16,11 @@ export default {
           DEFAULT: colors.green[700],
           hover: colors.green[800],
           light: colors.green[100],
+          200: colors.green[200],
+          400: colors.green[400],
+          800: colors.green[800],
+          900: colors.green[900],
+          950: colors.green[950],
         },
         danger: {
           DEFAULT: colors.red[600],
