@@ -8,6 +8,7 @@ import { Pagination } from '../../components/ui/Pagination';
 import { formatDateTime, formatDateOnly } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { TrashButton } from '../../components/ui/TrashButton';
+import { AttendanceSquare } from '../../components/ui/AttendanceSquare';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { Modal } from '../../components/modals/Modal';
@@ -111,7 +112,7 @@ const LessonDetailView = ({ lesson, attendance: initialAttendance, onBack, onAtt
                                                         style={a.colorHex ? { backgroundColor: a.colorHex, color: 'white', borderColor: a.colorHex } : undefined}
                                                         className={`px-3 py-1.5 text-xs font-bold rounded border cursor-pointer transition-all min-w-[100px] ${!a.colorHex ? 'bg-white text-neutral-500 border-neutral-300' : ''}`}
                                                     >
-                                                        <option value="">—</option>
+                                                        <option value="">-</option>
                                                         {attendanceTypes.map(type => (
                                                             <option key={type.id} value={type.id}>
                                                                 {type.shortCode.toUpperCase()} - {type.name}
@@ -119,12 +120,12 @@ const LessonDetailView = ({ lesson, attendance: initialAttendance, onBack, onAtt
                                                         ))}
                                                     </select>
                                                 ) : a.shortCode ? (
-                                                    <span
-                                                        style={a.colorHex ? { backgroundColor: a.colorHex, color: 'white' } : undefined}
-                                                        className={`inline-flex items-center justify-center w-8 h-8 rounded text-xs font-bold ${!a.colorHex ? 'bg-neutral-100 text-neutral-700' : ''}`}
-                                                    >
-                                                        {a.shortCode.toUpperCase()}
-                                                    </span>
+                                                    <AttendanceSquare
+                                                        shortCode={a.shortCode.toUpperCase()}
+                                                        colorHex={a.colorHex || '#e5e7eb'}
+                                                        isSelected={true}
+                                                        readOnly
+                                                    />
                                                 ) : (
                                                     <span className="text-neutral-300">-</span>
                                                 )}

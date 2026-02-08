@@ -8,7 +8,8 @@ interface GradeSquareProps {
 export const GradeSquare = ({ grade, onClick }: GradeSquareProps) => (
     <div
         onClick={onClick}
-        className="w-8 h-8 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-neutral-800 font-bold text-sm cursor-pointer rounded-sm"
+        className="w-6 h-6 flex items-center justify-center font-bold text-s text-white cursor-pointer rounded-sm"
+        style={{ backgroundColor: grade.gradeCategory?.colorHex || '#e5e7eb' }}
     >
         {grade.gradeType?.numeric}
     </div>

@@ -1,23 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../../services/apiService';
-import type { SchoolYear, SemesterDto, ClassEntity, ClassSubject, Grade } from '../../types';
+import type { SchoolYear, SemesterDto, ClassEntity, Grade } from '../../types';
+import { validateGradeForm } from '../../utils/validation';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 import { FilterToolbar, FilterSelect, FilterDate } from '../../components/ui/FilterToolbar';
 import { Pagination } from '../../components/ui/Pagination';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { GradeSquare } from '../../components/ui/GradeSquare';
+import { AttendanceSquare } from '../../components/ui/AttendanceSquare';
 import { Modal } from '../../components/modals/Modal';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { Plus, PlayCircle, Trash2, Pencil, CheckCircle } from 'lucide-react';
+import { Plus, PlayCircle, Trash2, Pencil } from 'lucide-react';
 
 const getTeacherId = (): number => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.id || 0;
 };
 
-type Tab = 'grades' | 'lessons';
+type Tab = 'grades' | 'lessons' | 'students';
 
 export const Registry = () => {
     const teacherId = getTeacherId();
@@ -31,6 +33,9 @@ export const Registry = () => {
     const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
     const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
     const [activeTab, setActiveTab] = useState<Tab>('grades');
+
+    const [studentParents, setStudentParents] = useState<any[]>([]);
+    const [studentParentsLoading, setStudentParentsLoading] = useState(false);
 
     const [gradeTypes, setGradeTypes] = useState<any[]>([]);
     const [gradeCategories, setGradeCategories] = useState<any[]>([]);
@@ -46,11 +51,14 @@ export const Registry = () => {
     const [bulkAddOpen, setBulkAddOpen] = useState(false);
     const [bulkColumnId, setBulkColumnId] = useState<number | null>(null);
     const [bulkGrades, setBulkGrades] = useState<Record<number, number>>({});
+    const [bulkComments, setBulkComments] = useState<Record<number, string>>({});
 
 
     const [editGradeOpen, setEditGradeOpen] = useState(false);
     const [editGrade, setEditGrade] = useState<Grade | null>(null);
+    const [editGradeStudentName, setEditGradeStudentName] = useState('');
     const [editGradeForm, setEditGradeForm] = useState({ gradeTypeId: 0, gradeCategoryId: 0, comment: '', gradeColumnId: null as number | null });
+    const [editGradeErrors, setEditGradeErrors] = useState<Record<string, string>>({});
 
     const [lessons, setLessons] = useState<any[]>([]);
     const [lessonsTotal, setLessonsTotal] = useState(0);
@@ -68,6 +76,7 @@ export const Registry = () => {
     const [attendanceLoading, setAttendanceLoading] = useState(false);
     const [attendanceTypes, setAttendanceTypes] = useState<any[]>([]);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [editLesson, setEditLesson] = useState<any>(null);
 
     const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
     const [availableSchedules, setAvailableSchedules] = useState<any[]>([]);
@@ -99,37 +108,25 @@ export const Registry = () => {
         if (!selectedYearId) return;
         Promise.all([
             api.classManagement.getSemesters(selectedYearId),
-            api.classManagement.getClassesByYear(selectedYearId, { includeInactive: false, pageSize: 100 }),
-            api.grades.getCurrentSemester(selectedYearId).catch(() => 1)
-        ]).then(([sem, cls, currentSem]) => {
+            api.classManagement.getClassesByYear(selectedYearId, { includeInactive: false, pageSize: 100 })
+        ]).then(([sem, cls]) => {
             setSemesters(sem);
             setAllClasses(cls.data);
-            const semToSelect = sem.find((s: SemesterDto) => s.order === currentSem) || sem[0];
+            const today = new Date().toISOString().split('T')[0];
+            const semToSelect = sem.find((s: SemesterDto) => s.startDate && s.endDate && s.startDate <= today && s.endDate >= today) || sem[0];
             if (semToSelect) setSelectedSemesterOrder(semToSelect.order);
         });
     }, [selectedYearId]);
 
     useEffect(() => {
-        if (!selectedYearId || allClasses.length === 0) return;
-        const loadAssignments = async () => {
-            const assignments: { classId: number; subjectId: number; subjectName: string }[] = [];
-            for (const cls of allClasses) {
-                const details = await api.classManagement.getClassDetails(cls.id);
-                details.subjects
-                    .filter((s: ClassSubject) => s.teacherId === teacherId && s.isActive)
-                    .forEach((s: ClassSubject) => {
-                        assignments.push({ classId: cls.id, subjectId: s.subjectId, subjectName: s.subjectName || '' });
-                    });
-            }
-            setTeacherAssignments(assignments);
-        };
-        loadAssignments();
-    }, [allClasses, teacherId, selectedYearId]);
+        if (!selectedYearId) return;
+        api.grades.getTeacherAssignments(selectedYearId).then(setTeacherAssignments);
+    }, [selectedYearId]);
 
     const teacherClasses = allClasses.filter(c => teacherAssignments.some(a => a.classId === c.id));
     const availableSubjects = teacherAssignments.filter(a => a.classId === selectedClassId);
 
-    const currentSemester = semesters.find(s => s.order === selectedSemesterOrder);
+    const currentSemester = useMemo(() => semesters.find(s => s.order === selectedSemesterOrder), [semesters, selectedSemesterOrder]);
 
     const loadGradesGrid = useCallback(async () => {
         if (!selectedClassId || !selectedSubjectId || !currentSemester) return;
@@ -211,19 +208,23 @@ export const Registry = () => {
 
 
 
-    const openEditGrade = (grade: Grade) => {
+    const openEditGrade = (grade: Grade, studentName?: string) => {
         setEditGrade(grade);
+        setEditGradeStudentName(studentName || '');
         setEditGradeForm({
             gradeTypeId: grade.gradeTypeId,
             gradeCategoryId: grade.gradeCategoryId,
             comment: grade.comment || '',
             gradeColumnId: grade.gradeColumnId || null
         });
+        setEditGradeErrors({});
         setEditGradeOpen(true);
     };
 
     const handleEditGrade = async () => {
         if (!editGrade) return;
+        const errors = validateGradeForm(editGradeForm);
+        if (Object.keys(errors).length > 0) { setEditGradeErrors(errors); return; }
         await api.grades.update(editGrade.id, {
             gradeTypeId: editGradeForm.gradeTypeId,
             gradeCategoryId: editGradeForm.gradeCategoryId,
@@ -232,6 +233,7 @@ export const Registry = () => {
         });
         setEditGradeOpen(false);
         setEditGrade(null);
+        setEditGradeErrors({});
         loadGradesGrid();
     };
 
@@ -246,6 +248,7 @@ export const Registry = () => {
     const openBulkAdd = (colId: number) => {
         setBulkColumnId(colId);
         setBulkGrades({});
+        setBulkComments({});
         setBulkAddOpen(true);
     };
 
@@ -253,16 +256,13 @@ export const Registry = () => {
         if (!bulkColumnId || !selectedSubjectId) return;
         const col = gradeColumns.find((c: any) => c.id === bulkColumnId);
         const entries = Object.entries(bulkGrades).filter(([, typeId]) => typeId > 0);
-        for (const [studentId, gradeTypeId] of entries) {
-            await api.grades.create({
-                studentId: Number(studentId),
-                subjectId: selectedSubjectId,
-                gradeTypeId,
-                gradeCategoryId: col?.gradeCategoryId || gradeCategories[0]?.id,
-                gradeColumnId: bulkColumnId,
-                comment: undefined
-            });
-        }
+        if (entries.length === 0) return;
+        await api.grades.createBulk({
+            subjectId: selectedSubjectId,
+            gradeCategoryId: col?.gradeCategoryId || gradeCategories[0]?.id,
+            gradeColumnId: bulkColumnId,
+            grades: entries.map(([studentId, gradeTypeId]) => ({ studentId: Number(studentId), gradeTypeId, comment: bulkComments[Number(studentId)] || undefined }))
+        });
         setBulkAddOpen(false);
         loadGradesGrid();
     };
@@ -279,12 +279,6 @@ export const Registry = () => {
         }
     };
 
-    const handleAttendanceChange = async (studentId: number, attendanceTypeId: number | null) => {
-        if (!detailLesson) return;
-        await api.lessons.updateAttendance(detailLesson.id, studentId, attendanceTypeId);
-        const att = await api.lessons.getAttendance(detailLesson.id);
-        setAttendance(att);
-    };
 
     const openCreateLesson = async () => {
         setIsCreateLessonOpen(true);
@@ -302,27 +296,43 @@ export const Registry = () => {
         }
     };
 
+    const handleAttendanceChange = async (studentId: number, attendanceTypeId: number | null) => {
+        if (!editLesson) return;
+        const att = await api.lessons.updateAttendance(editLesson.id, studentId, attendanceTypeId);
+        setAttendance(att);
+    };
+
+    const openEditLesson = async (lesson: any) => {
+        setEditLesson({ ...lesson });
+        setAttendanceLoading(true);
+        try {
+            const att = await api.lessons.getAttendance(lesson.id);
+            setAttendance(att);
+        } finally {
+            setAttendanceLoading(false);
+        }
+    };
+
+    const handleUpdateLesson = async () => {
+        if (!editLesson) return;
+        await api.lessons.update(editLesson.id, { topic: editLesson.topic, statusId: editLesson.statusId });
+        setEditLesson(null);
+        loadLessons();
+    };
+
     const handleCreateFromSchedule = async (scheduleId: number) => {
         await api.lessons.createFromSchedule(scheduleId, createDate, teacherId);
         setIsCreateLessonOpen(false);
         loadLessons();
     };
 
-    const getStatusBadge = (statusName: string) => {
-        const colors: Record<string, string> = {
-            'Zrealizowana': 'bg-success-light text-success-text',
-            'Planowana': 'bg-info-light text-info-text',
-            'Odwołana': 'bg-danger-light text-danger-text'
-        };
-        return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[statusName] || 'bg-neutral-100 text-neutral-600'}`}>{statusName}</span>;
-    };
 
     const lessonColumns: Column<any>[] = [
-        { header: 'Data', sortKey: 'date', bold: true, render: (l) => new Date(l.date).toLocaleDateString('pl-PL') },
-        { header: 'Nr', sortKey: 'orderNumber', className: 'w-14 text-center', render: (l) => l.orderNumber },
+        { header: 'Data', sortKey: 'date', bold: true, className: 'w-20', render: (l) => new Date(l.date).toLocaleDateString('pl-PL') },
+        { header: 'Nr lekcji', className: 'w-14 text-center', render: (l) => l.orderNumber },
         { header: 'Temat', muted: true, render: (l) => <span className="truncate block max-w-xs">{l.topic || '-'}</span> },
-        { header: 'Status', render: (l) => getStatusBadge(l.statusName) },
-        { header: '', className: 'w-20', render: (l) => <ActionButtons isActive onDetails={() => openLessonDetails(l)} /> }
+        { header: 'Status', className: 'w-28', render: (l) => <span className="truncate block max-w-xs">{l.statusName || '-'}</span> },
+        { header: 'Akcje', className: 'w-24', render: (l) => <ActionButtons isActive onEdit={() => openEditLesson(l)} onDetails={() => openLessonDetails(l)} /> }
     ];
 
     const handleClassChange = (classId: number | null) => {
@@ -394,76 +404,86 @@ export const Registry = () => {
                         >
                             Lekcje
                         </button>
+                        <button
+                            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'students' ? 'border-primary text-primary' : 'border-transparent text-neutral-500 hover:text-neutral-700'}`}
+                            onClick={() => {
+                                setActiveTab('students');
+                                if (selectedClassId) {
+                                    setStudentParentsLoading(true);
+                                    api.classManagement.getStudentsWithParents(selectedClassId)
+                                        .then(setStudentParents)
+                                        .catch(console.error)
+                                        .finally(() => setStudentParentsLoading(false));
+                                }
+                            }}
+                        >
+                            Dane kontaktowe
+                        </button>
                     </div>
 
                     {activeTab === 'grades' && (
                         <div className="bg-white border border-neutral-200 rounded-xs overflow-hidden">
-                            <div className="flex justify-between items-center px-4 py-3 border-b border-neutral-100">
-                                <span className="text-sm font-medium text-neutral-600">{studentRows.length} uczniów</span>
-                                <Button onClick={() => { setColumnForm({ name: '', gradeCategoryId: gradeCategories[0]?.id || 0 }); setAddColumnOpen(true); }} className="flex items-center gap-1 text-xs">
-                                    <Plus size={14} /> Dodaj kolumnę
-                                </Button>
-                            </div>
-
                             {gradesLoading ? <LoadingSpinner className="py-8" /> : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm border-collapse">
                                         <thead className="bg-neutral-50">
                                             <tr>
-                                                <th className="px-3 py-2 text-center font-medium text-neutral-600 border-r border-neutral-200 w-[40px]">Nr</th>
-                                                <th className="px-3 py-2 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[160px]">Uczeń</th>
+                                                <th className="px-3 py-1.5 text-center font-medium text-neutral-600 border-r border-neutral-200 w-[40px]">Nr</th>
+                                                <th className="px-3 py-1.5 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[160px]">Uczeń</th>
                                                 {gradeColumns.map((col: any) => (
-                                                    <th key={col.id} className="px-2 py-2 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[100px]">
+                                                    <th key={col.id} className="px-2 py-1.5 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[100px]">
                                                         <div className="flex flex-col items-start gap-1">
-                                                            <span className="text-sm font-medium">{col.name || ''}</span>
-                                                            {col.categoryName && <span className="text-xs text-neutral-400 font-normal">{col.categoryName}</span>}
                                                             <div className="flex gap-2">
-                                                                <button onClick={() => openBulkAdd(col.id)} className="text-primary hover:text-primary-dark" title="Dodaj oceny">
-                                                                    <Plus size={16} />
+                                                                <button onClick={() => setEditColumn({ ...col })} className="text-neutral-400 hover:text-neutral-600">
+                                                                    <Pencil size={14} />
                                                                 </button>
-                                                                <button onClick={() => setEditColumn({ ...col })} className="text-neutral-400 hover:text-neutral-600" title="Edytuj kolumnę">
-                                                                    <Pencil size={16} />
-                                                                </button>
-                                                                <button onClick={() => handleDeleteColumn(col.id)} className="text-neutral-400 hover:text-danger" title="Usuń kolumnę">
-                                                                    <Trash2 size={16} />
+                                                                <button onClick={() => handleDeleteColumn(col.id)} className="text-neutral-400 hover:text-danger">
+                                                                    <Trash2 size={14} />
                                                                 </button>
                                                             </div>
+                                                            <span className="text-sm font-medium">{col.name || ''}</span>
+                                                            {col.categoryName && <span className="text-xs text-neutral-400 font-normal">{col.categoryName}</span>}
+                                                            <button onClick={() => openBulkAdd(col.id)} className="text-primary hover:text-primary-dark self-center mt-1">
+                                                                <Plus size={22} />
+                                                            </button>
                                                         </div>
                                                     </th>
                                                 ))}
-                                                <th className="px-2 py-2 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[80px]">
-                                                    <span className="text-sm">Inne</span>
+                                                <th className="px-2 py-1.5 text-center font-medium text-neutral-600 border-r border-neutral-200 min-w-[50px]">
+                                                    <button onClick={() => setAddColumnOpen(true)} className="text-primary hover:text-primary-dark">
+                                                        <Plus size={20} />
+                                                    </button>
                                                 </th>
-                                                <th className="px-2 py-2 text-left font-medium text-neutral-600 min-w-[60px]">Śr.</th>
+                                                <th className="px-2 py-1.5 text-left font-medium text-neutral-600 min-w-[60px]">średnia</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-neutral-100">
                                             {studentRows.map((row: any) => (
                                                 <tr key={row.studentId} className="hover:bg-neutral-50">
-                                                    <td className="px-3 py-2 text-center text-sm border-r border-neutral-200">{row.orderNumber || ''}</td>
-                                                    <td className="px-3 py-2 font-medium border-r border-neutral-200 whitespace-nowrap text-sm">
+                                                    <td className="px-3 py-1.5 text-center text-sm border-r border-neutral-200">{row.orderNumber || ''}</td>
+                                                    <td className="px-3 py-1.5 font-medium border-r border-neutral-200 whitespace-nowrap text-sm">
                                                         {row.lastName} {row.firstName}
                                                     </td>
                                                     {gradeColumns.map((col: any) => {
                                                         const cellGrades = getStudentGradesForColumn(row.grades || [], col.id);
                                                         return (
-                                                            <td key={col.id} className="px-2 py-2 text-left border-r border-neutral-200">
+                                                            <td key={col.id} className="px-2 py-1.5 text-left border-r border-neutral-200">
                                                                 <div className="flex flex-wrap gap-1">
                                                                     {cellGrades.map((g: Grade) => (
-                                                                        <GradeSquare key={g.id} grade={g} onClick={() => openEditGrade(g)} />
+                                                                        <GradeSquare key={g.id} grade={g} onClick={() => openEditGrade(g, `${row.lastName} ${row.firstName}`)} />
                                                                     ))}
                                                                 </div>
                                                             </td>
                                                         );
                                                     })}
-                                                    <td className="px-2 py-2 text-left border-r border-neutral-200">
+                                                    <td className="px-2 py-1.5 text-left border-r border-neutral-200">
                                                         <div className="flex flex-wrap gap-1">
                                                             {getStudentOrphanGrades(row.grades || []).map((g: Grade) => (
-                                                                <GradeSquare key={g.id} grade={g} onClick={() => openEditGrade(g)} />
+                                                                <GradeSquare key={g.id} grade={g} onClick={() => openEditGrade(g, `${row.lastName} ${row.firstName}`)} />
                                                             ))}
                                                         </div>
                                                     </td>
-                                                    <td className="px-2 py-2 text-left">
+                                                    <td className="px-2 py-1.5 text-left">
                                                         <span className="font-bold text-neutral-700">
                                                             {row.average > 0 ? row.average.toFixed(2) : '-'}
                                                         </span>
@@ -482,16 +502,14 @@ export const Registry = () => {
 
                     {activeTab === 'lessons' && (
                         <div className="bg-white border border-neutral-200 rounded-xs overflow-hidden">
-                            <div className="flex justify-between items-center px-4 py-3 border-b border-neutral-100">
-                                <span className="text-sm font-medium text-neutral-600">{lessonsTotal} lekcji</span>
-                                <Button onClick={openCreateLesson} className="flex items-center gap-1 text-xs">
-                                    <CheckCircle size={14} />Zarejestruj lekcję
-                                </Button>
-                            </div>
-
                             <FilterToolbar
                                 search={{ value: lessonsSearch, onChange: v => { setLessonsSearch(v); setLessonsPage(1); }, placeholder: 'Szukaj...' }}
                                 onReset={() => { setLessonsSearch(''); setLessonsDateFilter(''); setLessonsStatusFilter(null); setLessonsPage(1); }}
+                                rightContent={
+                                    <Button onClick={openCreateLesson} className="flex items-center gap-1 text-xs">
+                                        <Plus size={14} />Dodaj lekcję
+                                    </Button>
+                                }
                             >
                                 <FilterSelect
                                     label="Status"
@@ -518,18 +536,55 @@ export const Registry = () => {
                             <Pagination currentPage={lessonsPage} totalPages={Math.ceil(lessonsTotal / 20)} totalCount={lessonsTotal} pageSize={20} onPageChange={setLessonsPage} />
                         </div>
                     )}
+
+                    {activeTab === 'students' && (
+                        <div className="bg-white border border-neutral-200 rounded-xs overflow-hidden">
+                            {studentParentsLoading ? <LoadingSpinner className="py-8" /> : (
+                                <table className="w-full text-sm border-collapse">
+                                    <thead className="bg-neutral-50">
+                                        <tr>
+                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600 w-10">Nr</th>
+                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600">Uczeń</th>
+                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600">Rodzic</th>
+                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600">E-mail</th>
+                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600">Telefon</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-100">
+                                        {studentParents.length === 0 ? (
+                                            <tr><td colSpan={5} className="text-center text-neutral-400 py-8">Brak danych</td></tr>
+                                        ) : studentParents.map((s: any) => (
+                                            s.parents.length === 0 ? (
+                                                <tr key={s.studentId}>
+                                                    <td className="px-3 py-1.5 text-neutral-500">{s.orderNumber}</td>
+                                                    <td className="px-3 py-1.5 font-medium">{s.studentName}</td>
+                                                    <td className="px-3 py-1.5 text-neutral-400" colSpan={3}>Brak konta rodzica</td>
+                                                </tr>
+                                            ) : s.parents.map((p: any, idx: number) => (
+                                                <tr key={`${s.studentId}-${p.id}`}>
+                                                    {idx === 0 && (
+                                                        <>
+                                                            <td className="px-3 py-1.5 text-neutral-500" rowSpan={s.parents.length}>{s.orderNumber}</td>
+                                                            <td className="px-3 py-1.5 font-medium" rowSpan={s.parents.length}>{s.studentName}</td>
+                                                        </>
+                                                    )}
+                                                    <td className="px-3 py-1.5">{p.name}</td>
+                                                    <td className="px-3 py-1.5 text-neutral-600">{p.email || '-'}</td>
+                                                    <td className="px-3 py-1.5 text-neutral-600">{p.phone || '-'}</td>
+                                                </tr>
+                                            ))
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    )}
                 </>
             )}
 
-            {!selectedClassId && (
+            {(!selectedClassId || !selectedSubjectId) && (
                 <div className="bg-white border border-neutral-200 rounded-xs p-12 text-center text-neutral-400">
-                    Wybierz klasę i przedmiot, aby wyświetlić dziennik
-                </div>
-            )}
-
-            {selectedClassId && !selectedSubjectId && (
-                <div className="bg-white border border-neutral-200 rounded-xs p-12 text-center text-neutral-400">
-                    Wybierz przedmiot
+                    Wybierz klasę i przedmiot
                 </div>
             )}
 
@@ -576,13 +631,14 @@ export const Registry = () => {
 
 
 
-            <Modal isOpen={bulkAddOpen} onClose={() => setBulkAddOpen(false)} title={`Dodaj oceny — ${gradeColumns.find((c: any) => c.id === bulkColumnId)?.name || gradeColumns.find((c: any) => c.id === bulkColumnId)?.categoryName || ''}`} maxWidth="lg">
+            <Modal isOpen={bulkAddOpen} onClose={() => setBulkAddOpen(false)} title={`Dodaj oceny - ${gradeColumns.find((c: any) => c.id === bulkColumnId)?.name || gradeColumns.find((c: any) => c.id === bulkColumnId)?.categoryName || ''}`} maxWidth="xl">
                 <div className="p-6">
                     <table className="w-full text-sm border-collapse">
                         <thead className="bg-neutral-50">
                             <tr>
                                 <th className="px-3 py-2 text-left font-medium text-neutral-600">Uczeń</th>
-                                <th className="px-3 py-2 text-left font-medium text-neutral-600 w-48">Ocena</th>
+                                <th className="px-3 py-2 text-left font-medium text-neutral-600 w-40">Ocena</th>
+                                <th className="px-3 py-2 text-left font-medium text-neutral-600 min-w-[200px]">Komentarz</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100">
@@ -595,9 +651,17 @@ export const Registry = () => {
                                             value={bulkGrades[row.studentId] || ''}
                                             onChange={e => setBulkGrades(prev => ({ ...prev, [row.studentId]: +e.target.value }))}
                                         >
-                                            <option value="">—</option>
+                                            <option value="">-</option>
                                             {gradeTypes.map(t => <option key={t.id} value={t.id}>{t.numeric} ({t.name})</option>)}
                                         </select>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <input
+                                            className="border border-neutral-300 rounded-xs px-2 py-1 text-sm bg-white w-full"
+                                            value={bulkComments[row.studentId] || ''}
+                                            onChange={e => setBulkComments(prev => ({ ...prev, [row.studentId]: e.target.value }))}
+                                            placeholder=""
+                                        />
                                     </td>
                                 </tr>
                             ))}
@@ -612,14 +676,14 @@ export const Registry = () => {
                 </div>
             </Modal>
 
-            <Modal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} title={detailLesson ? `${detailLesson.subjectName} — ${detailLesson.className}` : 'Szczegóły lekcji'} maxWidth="lg">
+            <Modal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} title={detailLesson ? `${detailLesson.subjectName} - ${detailLesson.className}` : 'Szczegóły lekcji'} maxWidth="lg">
                 {detailLesson && (
                     <div className="p-6 space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="gap-4 text-sm">
                             <div><span className="text-neutral-500">Data:</span> <span className="font-medium">{new Date(detailLesson.date).toLocaleDateString('pl-PL')}</span></div>
-                            <div><span className="text-neutral-500">Godzina:</span> <span className="font-medium">{detailLesson.orderNumber}</span></div>
-                            <div><span className="text-neutral-500">Temat:</span> <span className="font-medium">{detailLesson.topic || '—'}</span></div>
-                            <div><span className="text-neutral-500">Status:</span> {getStatusBadge(detailLesson.statusName)}</div>
+                            <div><span className="text-neutral-500">Godzina lekcyjna:</span> <span className="font-medium">{detailLesson.orderNumber}</span></div>
+                            <div><span className="text-neutral-500">Status:</span> {detailLesson.statusName}</div>
+                            <div><span className="text-neutral-500">Temat:</span> <span className="font-medium">{detailLesson.topic || '-'}</span></div>
                         </div>
 
                         <div className="border-t pt-4">
@@ -639,15 +703,13 @@ export const Registry = () => {
                                                 <td className="px-3 py-2">
                                                     <div className="flex gap-1">
                                                         {attendanceTypes.map(at => (
-                                                            <button
+                                                            <AttendanceSquare
                                                                 key={at.id}
-                                                                onClick={() => handleAttendanceChange(a.studentId, a.attendanceTypeId === at.id ? null : at.id)}
-                                                                className={`w-8 h-8 rounded text-xs font-bold transition-colors ${a.attendanceTypeId === at.id ? 'ring-2 ring-offset-1 ring-primary' : 'opacity-40 hover:opacity-70'}`}
-                                                                style={{ backgroundColor: at.colorHex || '#e5e7eb', color: '#000' }}
-                                                                title={at.name}
-                                                            >
-                                                                {at.shortName || at.name?.charAt(0)}
-                                                            </button>
+                                                                shortCode={at.shortCode || at.name?.charAt(0)}
+                                                                colorHex={at.colorHex || '#e5e7eb'}
+                                                                isSelected={a.attendanceTypeId === at.id}
+                                                                readOnly
+                                                            />
                                                         ))}
                                                     </div>
                                                 </td>
@@ -664,26 +726,98 @@ export const Registry = () => {
                 )}
             </Modal>
 
-            <Modal isOpen={isCreateLessonOpen} onClose={() => setIsCreateLessonOpen(false)} title="Realizuj lekcję z planu">
+            <Modal isOpen={!!editLesson} onClose={() => setEditLesson(null)} title="Edytuj lekcje">
+                {editLesson && (
+                    <div className="p-6 space-y-4">
+                        <div className="text-sm">
+                            <div><span className="text-neutral-500">Data:</span> <span className="font-medium">{new Date(editLesson.date).toLocaleDateString('pl-PL')}</span></div>
+                            <div><span className="text-neutral-500">Godzina lekcyjna:</span> <span className="font-medium">{editLesson.orderNumber}</span></div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-neutral-700 mb-1">Status</label>
+                            <select
+                                className="w-full px-3 py-2 border border-neutral-300 rounded-xs text-sm bg-white"
+                                value={editLesson.statusId || ''}
+                                onChange={(e) => setEditLesson({ ...editLesson, statusId: +e.target.value })}
+                            >
+                                {lessonStatuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-neutral-700 mb-1">Temat</label>
+                            <textarea
+                                className="w-full px-3 py-2 border border-neutral-300 rounded-xs text-sm resize-none"
+                                rows={3}
+                                value={editLesson.topic || ''}
+                                onChange={(e) => setEditLesson({ ...editLesson, topic: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="border-t pt-4">
+                            <h3 className="text-sm font-semibold text-neutral-700 mb-3">Frekwencja</h3>
+                            {attendanceLoading ? <LoadingSpinner className="py-4" /> : (
+                                <table className="w-full text-sm border-collapse">
+                                    <thead className="bg-neutral-50">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left font-medium text-neutral-600">Uczen</th>
+                                            <th className="px-3 py-2 text-left font-medium text-neutral-600">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-100">
+                                        {attendance.map((a: any) => (
+                                            <tr key={a.studentId}>
+                                                <td className="px-3 py-2 font-medium">{a.studentName}</td>
+                                                <td className="px-3 py-2">
+                                                    <div className="flex gap-1">
+                                                        {attendanceTypes.map(at => (
+                                                            <AttendanceSquare
+                                                                key={at.id}
+                                                                shortCode={at.shortCode || at.name?.charAt(0)}
+                                                                colorHex={at.colorHex || '#e5e7eb'}
+                                                                isSelected={a.attendanceTypeId === at.id}
+                                                                onClick={() => handleAttendanceChange(a.studentId, a.attendanceTypeId === at.id ? null : at.id)}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {attendance.length === 0 && (
+                                            <tr><td colSpan={2} className="text-center text-neutral-400 py-4">Brak danych o frekwencji</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button variant="secondary" onClick={() => setEditLesson(null)}>Anuluj</Button>
+                            <Button onClick={handleUpdateLesson}>Zapisz</Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            <Modal isOpen={isCreateLessonOpen} onClose={() => setIsCreateLessonOpen(false)} title="Nowa lekcja">
                 <div className="p-6 space-y-4">
                     <div>
                         <label className="label-text">Data</label>
                         <input type="date" value={createDate} onChange={e => { setCreateDate(e.target.value); loadSchedules(e.target.value); }} className="border border-neutral-300 rounded-xs px-3 py-2 text-sm bg-white w-full" />
                     </div>
                     <div className="border-t pt-4">
-                        <h3 className="text-sm font-semibold text-neutral-700 mb-3">Dostępne lekcje z planu</h3>
+                        <h3 className="text-sm font-semibold text-neutral-700 mb-3">Lekcje według planu</h3>
                         {schedulesLoading ? <LoadingSpinner className="py-4" /> : (
                             <div className="space-y-2">
                                 {availableSchedules.length === 0 ? (
-                                    <p className="text-sm text-neutral-400 text-center py-4">Brak dostępnych lekcji na ten dzień</p>
+                                    <p className="text-sm text-neutral-400 text-center py-4">Brak lekcji na ten dzień</p>
                                 ) : availableSchedules.map(s => (
                                     <div key={s.id} className="flex items-center justify-between p-3 border border-neutral-200 rounded-xs hover:bg-neutral-50 transition-colors">
                                         <div>
-                                            <div className="font-medium text-sm">{s.subjectName} — {s.className}</div>
-                                            <div className="text-xs text-neutral-500">Lekcja {s.orderNumber} • {s.classroomName || 'Brak sali'}</div>
+                                            <div className="font-medium text-sm">{s.subjectName} - {s.className}</div>
+                                            <div className="text-xs text-neutral-500">Lekcja {s.orderNumber} - {s.classroomName || 'Brak sali'}</div>
                                         </div>
                                         <Button onClick={() => handleCreateFromSchedule(s.id)} className="flex items-center gap-1 text-xs">
-                                            <PlayCircle size={14} /> Realizuj
+                                            <PlayCircle size={14} /> Dodaj
                                         </Button>
                                     </div>
                                 ))}
@@ -693,7 +827,7 @@ export const Registry = () => {
                 </div>
             </Modal>
 
-            <Modal isOpen={editGradeOpen} onClose={() => { setEditGradeOpen(false); setEditGrade(null); }} title="Edytuj ocenę">
+            <Modal isOpen={editGradeOpen} onClose={() => { setEditGradeOpen(false); setEditGrade(null); }} title={`Edytuj ocenę - ${editGradeStudentName}`}>
                 {editGrade && (
                     <div className="p-6 space-y-4">
                         <div>
@@ -703,16 +837,17 @@ export const Registry = () => {
                             </select>
                         </div>
                         <div>
-                            <label className="label-text">Kategoria</label>
-                            <select className="border border-neutral-300 rounded-xs px-3 py-2 text-sm bg-white w-full" value={editGradeForm.gradeCategoryId} onChange={e => setEditGradeForm(prev => ({ ...prev, gradeCategoryId: +e.target.value }))}>
-                                <option value={0}>Brak</option>
+                            <label className="label-text">Kategoria <span className="text-danger">*</span></label>
+                            <select className={`border rounded-xs px-3 py-2 text-sm bg-white w-full ${editGradeErrors.gradeCategoryId ? 'border-danger' : 'border-neutral-300'}`} value={editGradeForm.gradeCategoryId} onChange={e => { setEditGradeForm(prev => ({ ...prev, gradeCategoryId: +e.target.value })); setEditGradeErrors(prev => ({ ...prev, gradeCategoryId: '' })); }}>
+                                <option value={0}>Wybierz</option>
                                 {gradeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
+                            {editGradeErrors.gradeCategoryId && <span className="text-xs text-danger">{editGradeErrors.gradeCategoryId}</span>}
                         </div>
                         <div>
                             <label className="label-text">Kolumna</label>
                             <select className="border border-neutral-300 rounded-xs px-3 py-2 text-sm bg-white w-full" value={editGradeForm.gradeColumnId || ''} onChange={e => setEditGradeForm(prev => ({ ...prev, gradeColumnId: e.target.value ? +e.target.value : null }))}>
-                                <option value="">Bez kolumny (Inne)</option>
+                                <option value="">Bez kolumny</option>
                                 {gradeColumns.map((c: any) => <option key={c.id} value={c.id}>{c.name || c.categoryName}</option>)}
                             </select>
                         </div>

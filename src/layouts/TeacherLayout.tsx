@@ -77,7 +77,7 @@ export const TeacherLayout = () => {
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 <div className="flex items-center justify-between h-14 px-4 bg-primary border-b border-primary-hover">
-                    <span className="font-bold text-lg tracking-tight text-white">{getText('systemName')}</span>
+                    <span className="font-bold text-lg tracking-tight text-white">{getSystemText('systemName')}</span>
                     <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white hover:text-neutral-200">
                         <X size={20} />
                     </button>

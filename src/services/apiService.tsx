@@ -528,6 +528,10 @@ export const classManagementApi = {
         const details = await classManagementApi.getClassDetails(classId);
         return details.students || [];
     },
+    getStudentsWithParents: async (classId: number): Promise<any[]> => {
+        const response = await fetch(`${API_URL}/class/${classId}/student-parents`, { headers: getHeaders() });
+        return handleResponse(response);
+    },
     restoreSubjectInClass: async (relationId: number) => {
         const response = await fetch(`${API_URL}/class/subjects/${relationId}/restore`, {
             method: 'PUT',
@@ -631,6 +635,18 @@ export const gradesApi = {
         const response = await fetch(`${API_URL}/grade/${id}/restore`, {
             method: 'PATCH',
             headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+    getTeacherAssignments: async (yearId: number): Promise<any[]> => {
+        const response = await fetch(`${API_URL}/grade/teacher-assignments?yearId=${yearId}`, { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    createBulk: async (data: { subjectId: number; gradeCategoryId: number; gradeColumnId?: number | null; grades: { studentId: number; gradeTypeId: number }[] }): Promise<any> => {
+        const response = await fetch(`${API_URL}/grade/bulk`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
         });
         return handleResponse(response);
     }
@@ -801,7 +817,7 @@ export const lessonsApi = {
         const response = await fetch(`${API_URL}/lesson/${id}/attendance`, { headers: getHeaders() });
         return handleResponse(response);
     },
-    updateAttendance: async (lessonId: number, studentId: number, attendanceTypeId: number | null): Promise<void> => {
+    updateAttendance: async (lessonId: number, studentId: number, attendanceTypeId: number | null): Promise<any[]> => {
         const response = await fetch(`${API_URL}/lesson/${lessonId}/attendance/${studentId}`, {
             method: 'PATCH',
             headers: getHeaders(),

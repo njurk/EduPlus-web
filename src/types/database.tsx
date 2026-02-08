@@ -148,6 +148,7 @@ export interface Grade {
     };
     gradeCategory?: {
         name: string;
+        colorHex?: string;
     };
 }
 
