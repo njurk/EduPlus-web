@@ -5,7 +5,7 @@ import { api } from '../services/apiService';
 import { Save, User, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import type { User as UserType, ChangePasswordDto, UserUpdateDto } from '../types';
 import { PasswordInput } from '../components/ui/PasswordInput';
-import { validateUserProfileUpdate, validatePasswordChange, REGEX } from '../utils/validation';
+import { validateUserProfileUpdate, validatePasswordChange, validateProfileField } from '../utils/validation';
 
 export const Settings = () => {
     const [loading, setLoading] = useState(false);
@@ -39,22 +39,6 @@ export const Settings = () => {
             setMessage({ type: 'error', text: 'Nie udało się pobrać danych profilu.' });
         } finally {
             setLoading(false);
-        }
-    };
-
-    const validateProfileField = (field: keyof UserType, value: string): string => {
-        const val = value ? value.trim() : '';
-        switch (field) {
-            case 'firstName':
-                return !val ? "Imię jest wymagane." : "";
-            case 'lastName':
-                return !val ? "Nazwisko jest wymagane." : "";
-            case 'postalCode':
-                return (val && !REGEX.POSTAL_CODE.test(val)) ? "Niepoprawny format" : "";
-            case 'phone':
-                return (val && !REGEX.PHONE.test(val)) ? "Nieprawidłowy numer telefonu." : "";
-            default:
-                return "";
         }
     };
 

@@ -76,6 +76,8 @@ export interface ClassEntity {
     letter: string;
     schoolYearId: number;
     isActive: boolean;
+    homeroomTeacherId?: number;
+    homeroomTeacherName?: string;
     createdAt: string;
     updatedAt: string;
     studentCount?: number;
@@ -127,6 +129,23 @@ export interface CreateTicketDto {
     email: string;
     reasonId: number;
     content: string;
+}
+
+export interface Excuse {
+    id: number;
+    parentName: string;
+    studentName: string;
+    className: string | null;
+    isAccepted: boolean | null;
+    acceptedAt: string | null;
+    modifiedByName: string | null;
+    reason: string;
+    createdAt: string;
+    attendanceCount: number;
+}
+
+export interface ExcuseDetails extends Excuse {
+    attendances: { id: number; date: string; subjectName: string; lessonHour: number }[];
 }
 
 export interface Grade {
@@ -247,11 +266,22 @@ export interface LessonStatus {
     updatedAt: string;
 }
 
+export interface LogContent {
+    fileName: string;
+    totalLines: number;
+    lines: string[];
+}
+
+export interface LogFile {
+    name: string;
+    size: number;
+    lastModified: string;
+}
+
 export interface Page {
     id: number;
     title: string;
     link: string;
-    position: number;
     targetId: number;
 }
 
@@ -327,6 +357,16 @@ export interface SchoolYear {
     isActive: boolean;
 }
 
+export interface SchoolYearFormData {
+    id?: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+    semester1: { id?: number; endDate: string };
+    semester2: { id?: number; startDate: string };
+}
+
 export interface SemesterDto {
     id: number;
     name: string;
@@ -356,6 +396,18 @@ export interface Subject {
 export interface SubjectList {
     id: number;
     name: string;
+}
+
+export interface SubjectTeacherRow {
+    id: string;
+    subjectId: number;
+    teacherId: number;
+    subjectName: string;
+    teacherName: string;
+    createdAt: string;
+    updatedAt: string;
+    isActive: boolean;
+    modifiedByName?: string;
 }
 
 export interface Target {

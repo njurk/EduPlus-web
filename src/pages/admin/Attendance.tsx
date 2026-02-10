@@ -6,6 +6,7 @@ import { DataTable } from '../../components/ui/DataTable';
 import { formatDateTime, formatDateOnly } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
+import { Select } from '../../components/ui/Select';
 import { FilterToolbar, FilterSelect, FilterDate } from '../../components/ui/FilterToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { Modal } from '../../components/modals/Modal';
@@ -207,7 +208,7 @@ export const Attendance = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={'Brak danych frekwencji'}
+                            emptyMessage={'Brak danych'}
                         />
                     )}
                 </div>
@@ -275,13 +276,7 @@ export const Attendance = () => {
                         </div>
                         <div>
                             <label className="label-text block mb-1">Typ frekwencji <span className="text-danger">*</span></label>
-                            <select
-                                value={editTypeId || ''}
-                                onChange={e => setEditTypeId(Number(e.target.value))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                            >
-                                {attendanceTypes.map(t => <option key={t.id} value={t.id}>{t.name} ({t.shortCode})</option>)}
-                            </select>
+                            <Select options={attendanceTypes.map(t => ({ value: t.id, label: `${t.name} (${t.shortCode})` }))} value={editTypeId} onChange={v => setEditTypeId(Number(v))} className="w-full" />
                         </div>
                         <div className="flex justify-end gap-2 pt-4">
                             <Button variant="secondary" onClick={() => { setEditModalOpen(false); setSelectedItem(null); }}>Anuluj</Button>

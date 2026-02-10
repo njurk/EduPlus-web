@@ -27,9 +27,8 @@ const Clock = () => {
 
 export const AdminLayout = () => {
   const { getText } = useCMSContent('layout');
-  const { getText: getSystemText } = useCMSContent('system');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, unreadAnnouncementIds: [], unreadTicketIds: [] });
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, excuses: 0, unreadAnnouncementIds: [], unreadTicketIds: [] });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,12 +40,8 @@ export const AdminLayout = () => {
     );
 
     eventSource.onmessage = (event) => {
-      try {
-        const counts = JSON.parse(event.data);
-        setUnreadCounts(counts);
-      } catch (e) {
-        console.error('SSE parse error:', e);
-      }
+      const counts = JSON.parse(event.data);
+      setUnreadCounts(counts);
     };
 
     eventSource.onerror = () => {
@@ -85,7 +80,7 @@ export const AdminLayout = () => {
         { label: getText('nav.users'), path: '/admin/users', icon: Users },
         { label: getText('nav.classes'), path: '/admin/class-management', icon: Folder },
         { label: getText('nav.subjects'), path: '/admin/subjects', icon: LibraryBig },
-        { label: getText('nav.announcements'), path: '/admin/announcements', icon: Megaphone, badge: unreadCounts.announcements },
+        { label: getText('nav.announcements'), path: '/admin/announcements', icon: Megaphone },
       ]
     },
     {
@@ -175,9 +170,6 @@ export const AdminLayout = () => {
                 <Badge count={(item as any).badge} />
               </NavLink>
             ))}
-          </div>
-          <div className="px-4 py-2 border-t border-neutral-800">
-            <p className="text-xs text-neutral-500 font-mono">{getSystemText('version')}</p>
           </div>
         </div>
       </aside>

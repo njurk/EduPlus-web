@@ -1,4 +1,5 @@
 import type { ClassEntity } from '../../types';
+import { Select } from './Select';
 
 interface ClassSelectorProps {
     classes: ClassEntity[];
@@ -9,12 +10,11 @@ interface ClassSelectorProps {
 }
 
 export const ClassSelector = ({ classes, selectedClass, onChange, showAll = false, className }: ClassSelectorProps) => (
-    <select
-        className={`px-2 py-1 border border-neutral-300 rounded-xs text-sm bg-white ${className || ''}`}
-        value={selectedClass || ''}
-        onChange={(e) => onChange(e.target.value ? +e.target.value : null)}
-    >
-        {showAll && <option value="">Wszystkie klasy</option>}
-        {classes.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
-    </select>
+    <Select
+        options={classes.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))}
+        value={selectedClass}
+        onChange={v => onChange(v ? +v : null)}
+        placeholder={showAll ? 'Wszystkie klasy' : undefined}
+        className={className}
+    />
 );

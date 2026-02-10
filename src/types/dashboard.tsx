@@ -32,9 +32,3 @@ export interface DashboardSummary {
   status: DashboardStatus;
   recentTickets: DashboardTicket[];
 }
-
-export interface UptimeInfo {
-  startedAt: string;
-  uptime: string;
-  uptimeSeconds: number;
-}

@@ -8,6 +8,7 @@ import { Pagination } from '../../components/ui/Pagination';
 import { formatDateTime } from '../../utils/formatters';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { YearSelector } from '../../components/ui/YearSelector';
+import { Select } from '../../components/ui/Select';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { Modal } from '../../components/modals/Modal';
@@ -257,22 +258,8 @@ export const Grades = () => {
                         selectedYear={filters.yearId}
                         onChange={v => setFilters(f => ({ ...f, yearId: v, semesterId: null, classId: null }))}
                     />
-                    <select
-                        value={filters.semesterId || ''}
-                        onChange={e => setFilters(f => ({ ...f, semesterId: e.target.value ? Number(e.target.value) : null }))}
-                        className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[140px]"
-                    >
-                        <option value="">Wszystkie semestry</option>
-                        {semesters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                    <select
-                        value={filters.classId || ''}
-                        onChange={e => setFilters(f => ({ ...f, classId: e.target.value ? Number(e.target.value) : null }))}
-                        className="border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white min-w-[100px]"
-                    >
-                        <option value="">Wszystkie klasy</option>
-                        {classes.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
-                    </select>
+                    <Select options={semesters.map(s => ({ value: s.id, label: s.name }))} value={filters.semesterId} onChange={v => setFilters(f => ({ ...f, semesterId: v ? Number(v) : null }))} placeholder="Wszystkie semestry" />
+                    <Select options={classes.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))} value={filters.classId} onChange={v => setFilters(f => ({ ...f, classId: v ? Number(v) : null }))} placeholder="Wszystkie klasy" />
                 </div>
             </div>
             <div className="bg-white border border-neutral-200 rounded-xs min-h-[400px] flex flex-col">
@@ -352,7 +339,7 @@ export const Grades = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={'Brak ocen'}
+                            emptyMessage={'Brak danych'}
                         />
                     )}
                 </div>
@@ -406,23 +393,11 @@ export const Grades = () => {
                         </div>
                         <div>
                             <label className="label-text block mb-1">Ocena</label>
-                            <select
-                                value={editForm.gradeTypeId}
-                                onChange={e => setEditForm(f => ({ ...f, gradeTypeId: Number(e.target.value) }))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                            >
-                                {gradeTypes.map(g => <option key={g.id} value={g.id}>{g.numeric} - {g.name}</option>)}
-                            </select>
+                            <Select options={gradeTypes.map(g => ({ value: g.id, label: `${g.numeric} - ${g.name}` }))} value={editForm.gradeTypeId} onChange={v => setEditForm(f => ({ ...f, gradeTypeId: Number(v) }))} className="w-full" />
                         </div>
                         <div>
                             <label className="label-text block mb-1">Kategoria</label>
-                            <select
-                                value={editForm.gradeCategoryId}
-                                onChange={e => setEditForm(f => ({ ...f, gradeCategoryId: Number(e.target.value) }))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                            >
-                                {gradeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
+                            <Select options={gradeCategories.map(c => ({ value: c.id, label: c.name }))} value={editForm.gradeCategoryId} onChange={v => setEditForm(f => ({ ...f, gradeCategoryId: Number(v) }))} className="w-full" />
                         </div>
                         <div>
                             <label className="label-text block mb-1">Komentarz</label>
@@ -454,15 +429,7 @@ export const Grades = () => {
                         </div>
                         <div>
                             <label className="label-text block mb-1">Semestr *</label>
-                            <select
-                                value={exportFilters.semesterId || ''}
-                                onChange={e => setExportFilters(f => ({ ...f, semesterId: e.target.value ? Number(e.target.value) : null }))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                                disabled={!exportFilters.yearId}
-                            >
-                                <option value="">Wybierz semestr</option>
-                                {exportSemesters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                            </select>
+                            <Select options={exportSemesters.map(s => ({ value: s.id, label: s.name }))} value={exportFilters.semesterId} onChange={v => setExportFilters(f => ({ ...f, semesterId: v ? Number(v) : null }))} placeholder="Wybierz semestr" disabled={!exportFilters.yearId} className="w-full" />
                         </div>
                     </div>
                     <div>
@@ -495,41 +462,17 @@ export const Grades = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label-text block mb-1">Klasa *</label>
-                            <select
-                                value={exportFilters.classId || ''}
-                                onChange={e => setExportFilters(f => ({ ...f, classId: e.target.value ? Number(e.target.value) : null }))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                                disabled={!exportFilters.yearId}
-                            >
-                                <option value="">Wybierz klasę</option>
-                                {exportClasses.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
-                            </select>
+                            <Select options={exportClasses.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))} value={exportFilters.classId} onChange={v => setExportFilters(f => ({ ...f, classId: v ? Number(v) : null }))} placeholder="Wybierz klasę" disabled={!exportFilters.yearId} className="w-full" />
                         </div>
                         {exportType === 'class' ? (
                             <div>
                                 <label className="label-text block mb-1">Przedmiot *</label>
-                                <select
-                                    value={exportFilters.subjectId || ''}
-                                    onChange={e => setExportFilters(f => ({ ...f, subjectId: e.target.value ? Number(e.target.value) : null }))}
-                                    className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                                    disabled={!exportFilters.classId}
-                                >
-                                    <option value="">Wybierz przedmiot</option>
-                                    {exportSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                </select>
+                                <Select options={exportSubjects.map(s => ({ value: s.id, label: s.name }))} value={exportFilters.subjectId} onChange={v => setExportFilters(f => ({ ...f, subjectId: v ? Number(v) : null }))} placeholder="Wybierz przedmiot" disabled={!exportFilters.classId} className="w-full" />
                             </div>
                         ) : (
                             <div>
                                 <label className="label-text block mb-1">Uczeń *</label>
-                                <select
-                                    value={exportFilters.studentId || ''}
-                                    onChange={e => setExportFilters(f => ({ ...f, studentId: e.target.value ? Number(e.target.value) : null }))}
-                                    className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                                    disabled={!exportFilters.classId}
-                                >
-                                    <option value="">Wybierz ucznia</option>
-                                    {exportStudents.map((s: any) => <option key={s.studentId} value={s.studentId}>{s.orderNumber}. {s.student?.lastName} {s.student?.firstName}</option>)}
-                                </select>
+                                <Select options={exportStudents.map((s: any) => ({ value: s.studentId, label: `${s.orderNumber}. ${s.student?.lastName} ${s.student?.firstName}` }))} value={exportFilters.studentId} onChange={v => setExportFilters(f => ({ ...f, studentId: v ? Number(v) : null }))} placeholder="Wybierz ucznia" disabled={!exportFilters.classId} className="w-full" />
                             </div>
                         )}
                     </div>
@@ -568,62 +511,25 @@ export const Grades = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label-text block mb-1">Klasa <span className="text-danger">*</span></label>
-                            <select
-                                value={addForm.classId || ''}
-                                onChange={e => setAddForm(f => ({ ...f, classId: e.target.value ? Number(e.target.value) : null, studentId: null, subjectId: null }))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                            >
-                                <option value="">Wybierz klasę</option>
-                                {classes.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
-                            </select>
+                            <Select options={classes.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))} value={addForm.classId} onChange={v => setAddForm(f => ({ ...f, classId: v ? Number(v) : null, studentId: null, subjectId: null }))} placeholder="Wybierz klasę" className="w-full" />
                         </div>
                         <div>
                             <label className="label-text block mb-1">Uczeń <span className="text-danger">*</span></label>
-                            <select
-                                value={addForm.studentId || ''}
-                                onChange={e => setAddForm(f => ({ ...f, studentId: e.target.value ? Number(e.target.value) : null }))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                                disabled={!addForm.classId}
-                            >
-                                <option value="">Wybierz ucznia</option>
-                                {addStudents.map((s: any) => <option key={s.studentId} value={s.studentId}>{s.orderNumber}. {s.student?.lastName} {s.student?.firstName}</option>)}
-                            </select>
+                            <Select options={addStudents.map((s: any) => ({ value: s.studentId, label: `${s.orderNumber}. ${s.student?.lastName} ${s.student?.firstName}` }))} value={addForm.studentId} onChange={v => setAddForm(f => ({ ...f, studentId: v ? Number(v) : null }))} placeholder="Wybierz ucznia" disabled={!addForm.classId} className="w-full" />
                         </div>
                     </div>
                     <div>
                         <label className="label-text block mb-1">Przedmiot <span className="text-danger">*</span></label>
-                        <select
-                            value={addForm.subjectId || ''}
-                            onChange={e => setAddForm(f => ({ ...f, subjectId: e.target.value ? Number(e.target.value) : null }))}
-                            className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                            disabled={!addForm.classId}
-                        >
-                            <option value="">Wybierz przedmiot</option>
-                            {addSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
+                        <Select options={addSubjects.map(s => ({ value: s.id, label: s.name }))} value={addForm.subjectId} onChange={v => setAddForm(f => ({ ...f, subjectId: v ? Number(v) : null }))} placeholder="Wybierz przedmiot" disabled={!addForm.classId} className="w-full" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label-text block mb-1">Ocena <span className="text-danger">*</span></label>
-                            <select
-                                value={addForm.gradeTypeId || ''}
-                                onChange={e => setAddForm(f => ({ ...f, gradeTypeId: e.target.value ? Number(e.target.value) : null }))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                            >
-                                <option value="">Wybierz ocenę</option>
-                                {gradeTypes.map(g => <option key={g.id} value={g.id}>{g.numeric} - {g.name}</option>)}
-                            </select>
+                            <Select options={gradeTypes.map(g => ({ value: g.id, label: `${g.numeric} - ${g.name}` }))} value={addForm.gradeTypeId} onChange={v => setAddForm(f => ({ ...f, gradeTypeId: v ? Number(v) : null }))} placeholder="Wybierz ocenę" className="w-full" />
                         </div>
                         <div>
                             <label className="label-text block mb-1">Kategoria <span className="text-danger">*</span></label>
-                            <select
-                                value={addForm.gradeCategoryId || ''}
-                                onChange={e => setAddForm(f => ({ ...f, gradeCategoryId: e.target.value ? Number(e.target.value) : null }))}
-                                className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white"
-                            >
-                                <option value="">Wybierz kategorię</option>
-                                {gradeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
+                            <Select options={gradeCategories.map(c => ({ value: c.id, label: c.name }))} value={addForm.gradeCategoryId} onChange={v => setAddForm(f => ({ ...f, gradeCategoryId: v ? Number(v) : null }))} placeholder="Wybierz kategorię" className="w-full" />
                         </div>
                     </div>
                     <div>

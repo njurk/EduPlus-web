@@ -46,7 +46,7 @@ export const DataTable = <T extends { id: number | string }>({
                             {columns.map((col, idx) => {
                                 const isSortable = col.sortKey && onSort;
                                 const headerClass = clsx(
-                                    "px-4 py-3",
+                                    "px-4 py-1.5",
                                     col.headerClassName || col.className,
                                     isSortable && "cursor-pointer hover:bg-neutral-100 select-none"
                                 );
@@ -73,7 +73,7 @@ export const DataTable = <T extends { id: number | string }>({
                         ) : data.map((item, idx) => (
                             <tr key={item.id} onClick={() => onRowClick?.(item)} className={clsx("transition-colors", rowHover)}>
                                 {columns.map((col, colIdx) => (
-                                    <td key={colIdx} className={clsx("px-4 py-3", col.muted ? "text-neutral-500" : "text-neutral-900", col.bold && "font-medium", col.className)}>
+                                    <td key={colIdx} className={clsx("px-4 py-1", col.muted ? "text-neutral-500" : "text-neutral-900", col.bold && "font-medium", col.className)}>
                                         {col.render ? col.render(item, idx) : (col.accessor ? String(item[col.accessor]) : '-')}
                                     </td>
                                 ))}

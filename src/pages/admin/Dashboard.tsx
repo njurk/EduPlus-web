@@ -4,13 +4,11 @@ import { Button } from '../../components/ui/Button';
 import { api } from '../../services/apiService';
 import type { DashboardSummary } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { UptimeCounter } from '../../components/ui/UptimeCounter';
 import { useCMSContent } from '../../hooks/useCMSContent';
 import { formatDateTime } from '../../utils/formatters';
 
 export const Dashboard = () => {
   const [data, setData] = useState<DashboardSummary | null>(null);
-  const [uptimeSeconds, setUptimeSeconds] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { getText } = useCMSContent('dashboard');
@@ -18,12 +16,7 @@ export const Dashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [summaryResult, uptimeResult] = await Promise.all([
-          api.dashboard.getSummary(),
-          api.dashboard.getUptime().catch(() => null)
-        ]);
-        setData(summaryResult);
-        if (uptimeResult?.uptimeSeconds) setUptimeSeconds(uptimeResult.uptimeSeconds);
+        setData(await api.dashboard.getSummary());
       } catch (e) {
         console.error(e);
       } finally {
@@ -51,7 +44,7 @@ export const Dashboard = () => {
             <span className="font-semibold text-neutral-700 ml-1">{data?.status.semester ?? '-'}</span>
           </p>
         </div>
-        {uptimeSeconds !== null && <UptimeCounter initialSeconds={uptimeSeconds} />}
+
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">

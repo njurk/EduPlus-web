@@ -2,26 +2,27 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../../services/apiService';
 import type { SchoolYear, SemesterDto, ClassEntity, Grade } from '../../types';
 import { validateGradeForm } from '../../utils/validation';
+import { formatDateOnly } from '../../utils/formatters';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 import { FilterToolbar, FilterSelect, FilterDate } from '../../components/ui/FilterToolbar';
 import { Pagination } from '../../components/ui/Pagination';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
+import { Select } from '../../components/ui/Select';
 import { GradeSquare } from '../../components/ui/GradeSquare';
 import { AttendanceSquare } from '../../components/ui/AttendanceSquare';
 import { Modal } from '../../components/modals/Modal';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { Plus, PlayCircle, Trash2, Pencil } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
+import { useCMSContent } from '../../hooks/useCMSContent';
+import { getTeacherId } from '../../utils/helpers';
 
-const getTeacherId = (): number => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.id || 0;
-};
 
 type Tab = 'grades' | 'lessons' | 'students';
 
 export const Registry = () => {
+    const { getText } = useCMSContent('teacherLayout');
     const teacherId = getTeacherId();
 
     const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
@@ -328,7 +329,7 @@ export const Registry = () => {
 
 
     const lessonColumns: Column<any>[] = [
-        { header: 'Data', sortKey: 'date', bold: true, className: 'w-20', render: (l) => new Date(l.date).toLocaleDateString('pl-PL') },
+        { header: 'Data', sortKey: 'date', bold: true, className: 'w-20', render: (l) => formatDateOnly(l.date) },
         { header: 'Nr lekcji', className: 'w-14 text-center', render: (l) => l.orderNumber },
         { header: 'Temat', muted: true, render: (l) => <span className="truncate block max-w-xs">{l.topic || '-'}</span> },
         { header: 'Status', className: 'w-28', render: (l) => <span className="truncate block max-w-xs">{l.statusName || '-'}</span> },
@@ -362,31 +363,16 @@ export const Registry = () => {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h1 className="text-xl font-bold text-neutral-800">Dziennik</h1>
+                <h1 className="text-xl font-bold text-neutral-800">{getText('title.registry')}</h1>
                 <div className="flex gap-2 items-center">
                     <SemesterSelector semesters={semesters} selectedOrder={selectedSemesterOrder} onChange={o => { setSelectedSemesterOrder(o); setLessonsPage(1); }} />
                 </div>
             </div>
 
             <div className="flex gap-3 items-center">
-                <select
-                    className="px-3 py-2 border border-neutral-300 rounded-xs text-sm bg-white"
-                    value={selectedClassId || ''}
-                    onChange={e => handleClassChange(e.target.value ? Number(e.target.value) : null)}
-                >
-                    <option value="">Wybierz klasę</option>
-                    {teacherClasses.map(c => <option key={c.id} value={c.id}>{c.level}{c.letter}</option>)}
-                </select>
+                <Select options={teacherClasses.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))} value={selectedClassId} onChange={v => handleClassChange(v ? Number(v) : null)} placeholder="Wybierz klasę" />
 
-                <select
-                    className="px-3 py-2 border border-neutral-300 rounded-xs text-sm bg-white"
-                    value={selectedSubjectId || ''}
-                    onChange={e => handleSubjectChange(e.target.value ? Number(e.target.value) : null)}
-                    disabled={!selectedClassId}
-                >
-                    <option value="">Wybierz przedmiot</option>
-                    {availableSubjects.map(a => <option key={a.subjectId} value={a.subjectId}>{a.subjectName}</option>)}
-                </select>
+                <Select options={availableSubjects.map(a => ({ value: a.subjectId, label: a.subjectName }))} value={selectedSubjectId} onChange={v => handleSubjectChange(v ? Number(v) : null)} placeholder="Wybierz przedmiot" disabled={!selectedClassId} />
             </div>
 
             {selectedClassId && selectedSubjectId && (
@@ -428,10 +414,10 @@ export const Registry = () => {
                                     <table className="w-full text-sm border-collapse">
                                         <thead className="bg-neutral-50">
                                             <tr>
-                                                <th className="px-3 py-1.5 text-center font-medium text-neutral-600 border-r border-neutral-200 w-[40px]">Nr</th>
-                                                <th className="px-3 py-1.5 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[160px]">Uczeń</th>
+                                                <th className="px-3 py-1 text-center font-medium text-neutral-600 border-r border-neutral-200 w-[40px]">Nr</th>
+                                                <th className="px-3 py-1 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[160px]">Uczeń</th>
                                                 {gradeColumns.map((col: any) => (
-                                                    <th key={col.id} className="px-2 py-1.5 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[100px]">
+                                                    <th key={col.id} className="px-2 py-1 text-left font-medium text-neutral-600 border-r border-neutral-200 min-w-[100px]">
                                                         <div className="flex flex-col items-start gap-1">
                                                             <div className="flex gap-2">
                                                                 <button onClick={() => setEditColumn({ ...col })} className="text-neutral-400 hover:text-neutral-600">
@@ -449,25 +435,25 @@ export const Registry = () => {
                                                         </div>
                                                     </th>
                                                 ))}
-                                                <th className="px-2 py-1.5 text-center font-medium text-neutral-600 border-r border-neutral-200 min-w-[50px]">
+                                                <th className="px-2 py-1 text-center font-medium text-neutral-600 border-r border-neutral-200 min-w-[50px]">
                                                     <button onClick={() => setAddColumnOpen(true)} className="text-primary hover:text-primary-dark">
                                                         <Plus size={20} />
                                                     </button>
                                                 </th>
-                                                <th className="px-2 py-1.5 text-left font-medium text-neutral-600 min-w-[60px]">średnia</th>
+                                                <th className="px-2 py-1 text-left font-medium text-neutral-600 min-w-[60px]">średnia</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-neutral-100">
                                             {studentRows.map((row: any) => (
                                                 <tr key={row.studentId} className="hover:bg-neutral-50">
-                                                    <td className="px-3 py-1.5 text-center text-sm border-r border-neutral-200">{row.orderNumber || ''}</td>
-                                                    <td className="px-3 py-1.5 font-medium border-r border-neutral-200 whitespace-nowrap text-sm">
+                                                    <td className="px-3 py-1 text-center text-sm border-r border-neutral-200">{row.orderNumber || ''}</td>
+                                                    <td className="px-3 py-1 font-medium border-r border-neutral-200 whitespace-nowrap text-sm">
                                                         {row.lastName} {row.firstName}
                                                     </td>
                                                     {gradeColumns.map((col: any) => {
                                                         const cellGrades = getStudentGradesForColumn(row.grades || [], col.id);
                                                         return (
-                                                            <td key={col.id} className="px-2 py-1.5 text-left border-r border-neutral-200">
+                                                            <td key={col.id} className="px-2 py-1 text-left border-r border-neutral-200">
                                                                 <div className="flex flex-wrap gap-1">
                                                                     {cellGrades.map((g: Grade) => (
                                                                         <GradeSquare key={g.id} grade={g} onClick={() => openEditGrade(g, `${row.lastName} ${row.firstName}`)} />
@@ -476,14 +462,14 @@ export const Registry = () => {
                                                             </td>
                                                         );
                                                     })}
-                                                    <td className="px-2 py-1.5 text-left border-r border-neutral-200">
+                                                    <td className="px-2 py-1 text-left border-r border-neutral-200">
                                                         <div className="flex flex-wrap gap-1">
                                                             {getStudentOrphanGrades(row.grades || []).map((g: Grade) => (
                                                                 <GradeSquare key={g.id} grade={g} onClick={() => openEditGrade(g, `${row.lastName} ${row.firstName}`)} />
                                                             ))}
                                                         </div>
                                                     </td>
-                                                    <td className="px-2 py-1.5 text-left">
+                                                    <td className="px-2 py-1 text-left">
                                                         <span className="font-bold text-neutral-700">
                                                             {row.average > 0 ? row.average.toFixed(2) : '-'}
                                                         </span>
@@ -530,8 +516,7 @@ export const Registry = () => {
                                     else { setLessonsSortBy(field); setLessonsSortDesc(true); }
                                 }}
                                 isLoading={lessonsLoading}
-                                onRowClick={openLessonDetails}
-                                emptyMessage="Brak lekcji"
+                                emptyMessage="Brak danych"
                             />
                             <Pagination currentPage={lessonsPage} totalPages={Math.ceil(lessonsTotal / 20)} totalCount={lessonsTotal} pageSize={20} onPageChange={setLessonsPage} />
                         </div>
@@ -543,11 +528,11 @@ export const Registry = () => {
                                 <table className="w-full text-sm border-collapse">
                                     <thead className="bg-neutral-50">
                                         <tr>
-                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600 w-10">Nr</th>
-                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600">Uczeń</th>
-                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600">Rodzic</th>
-                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600">E-mail</th>
-                                            <th className="px-3 py-1.5 text-left font-medium text-neutral-600">Telefon</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600 w-10">Nr</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Uczeń</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Rodzic</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">E-mail</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Telefon</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-100">
@@ -556,21 +541,21 @@ export const Registry = () => {
                                         ) : studentParents.map((s: any) => (
                                             s.parents.length === 0 ? (
                                                 <tr key={s.studentId}>
-                                                    <td className="px-3 py-1.5 text-neutral-500">{s.orderNumber}</td>
-                                                    <td className="px-3 py-1.5 font-medium">{s.studentName}</td>
-                                                    <td className="px-3 py-1.5 text-neutral-400" colSpan={3}>Brak konta rodzica</td>
+                                                    <td className="px-3 py-1 text-neutral-500">{s.orderNumber}</td>
+                                                    <td className="px-3 py-1 font-medium">{s.studentName}</td>
+                                                    <td className="px-3 py-1 text-neutral-400" colSpan={3}>Brak przypisanego rodzica</td>
                                                 </tr>
                                             ) : s.parents.map((p: any, idx: number) => (
                                                 <tr key={`${s.studentId}-${p.id}`}>
                                                     {idx === 0 && (
                                                         <>
-                                                            <td className="px-3 py-1.5 text-neutral-500" rowSpan={s.parents.length}>{s.orderNumber}</td>
-                                                            <td className="px-3 py-1.5 font-medium" rowSpan={s.parents.length}>{s.studentName}</td>
+                                                            <td className="px-3 py-1 text-neutral-500" rowSpan={s.parents.length}>{s.orderNumber}</td>
+                                                            <td className="px-3 py-1 font-medium" rowSpan={s.parents.length}>{s.studentName}</td>
                                                         </>
                                                     )}
-                                                    <td className="px-3 py-1.5">{p.name}</td>
-                                                    <td className="px-3 py-1.5 text-neutral-600">{p.email || '-'}</td>
-                                                    <td className="px-3 py-1.5 text-neutral-600">{p.phone || '-'}</td>
+                                                    <td className="px-3 py-1">{p.name}</td>
+                                                    <td className="px-3 py-1 text-neutral-600">{p.email || '-'}</td>
+                                                    <td className="px-3 py-1 text-neutral-600">{p.phone || '-'}</td>
                                                 </tr>
                                             ))
                                         ))}
@@ -636,16 +621,16 @@ export const Registry = () => {
                     <table className="w-full text-sm border-collapse">
                         <thead className="bg-neutral-50">
                             <tr>
-                                <th className="px-3 py-2 text-left font-medium text-neutral-600">Uczeń</th>
-                                <th className="px-3 py-2 text-left font-medium text-neutral-600 w-40">Ocena</th>
-                                <th className="px-3 py-2 text-left font-medium text-neutral-600 min-w-[200px]">Komentarz</th>
+                                <th className="px-3 py-1 text-left font-medium text-neutral-600">Uczeń</th>
+                                <th className="px-3 py-1 text-left font-medium text-neutral-600 w-40">Ocena</th>
+                                <th className="px-3 py-1 text-left font-medium text-neutral-600 min-w-[200px]">Komentarz</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100">
                             {studentRows.map((row: any) => (
                                 <tr key={row.studentId}>
-                                    <td className="px-3 py-2 font-medium">{row.lastName} {row.firstName}</td>
-                                    <td className="px-3 py-2">
+                                    <td className="px-3 py-1 font-medium">{row.lastName} {row.firstName}</td>
+                                    <td className="px-3 py-1">
                                         <select
                                             className="border border-neutral-300 rounded-xs px-2 py-1 text-sm bg-white w-full"
                                             value={bulkGrades[row.studentId] || ''}
@@ -655,7 +640,7 @@ export const Registry = () => {
                                             {gradeTypes.map(t => <option key={t.id} value={t.id}>{t.numeric} ({t.name})</option>)}
                                         </select>
                                     </td>
-                                    <td className="px-3 py-2">
+                                    <td className="px-3 py-1">
                                         <input
                                             className="border border-neutral-300 rounded-xs px-2 py-1 text-sm bg-white w-full"
                                             value={bulkComments[row.studentId] || ''}
@@ -680,7 +665,7 @@ export const Registry = () => {
                 {detailLesson && (
                     <div className="p-6 space-y-4">
                         <div className="gap-4 text-sm">
-                            <div><span className="text-neutral-500">Data:</span> <span className="font-medium">{new Date(detailLesson.date).toLocaleDateString('pl-PL')}</span></div>
+                            <div><span className="text-neutral-500">Data:</span> <span className="font-medium">{formatDateOnly(detailLesson.date)}</span></div>
                             <div><span className="text-neutral-500">Godzina lekcyjna:</span> <span className="font-medium">{detailLesson.orderNumber}</span></div>
                             <div><span className="text-neutral-500">Status:</span> {detailLesson.statusName}</div>
                             <div><span className="text-neutral-500">Temat:</span> <span className="font-medium">{detailLesson.topic || '-'}</span></div>
@@ -692,15 +677,15 @@ export const Registry = () => {
                                 <table className="w-full text-sm border-collapse">
                                     <thead className="bg-neutral-50">
                                         <tr>
-                                            <th className="px-3 py-2 text-left font-medium text-neutral-600">Uczeń</th>
-                                            <th className="px-3 py-2 text-left font-medium text-neutral-600">Status</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Uczeń</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-100">
                                         {attendance.map((a: any) => (
                                             <tr key={a.studentId}>
-                                                <td className="px-3 py-2 font-medium">{a.studentName}</td>
-                                                <td className="px-3 py-2">
+                                                <td className="px-3 py-1 font-medium">{a.studentName}</td>
+                                                <td className="px-3 py-1">
                                                     <div className="flex gap-1">
                                                         {attendanceTypes.map(at => (
                                                             <AttendanceSquare
@@ -716,7 +701,7 @@ export const Registry = () => {
                                             </tr>
                                         ))}
                                         {attendance.length === 0 && (
-                                            <tr><td colSpan={2} className="text-center text-neutral-400 py-4">Brak danych o frekwencji</td></tr>
+                                            <tr><td colSpan={2} className="text-center text-neutral-400 py-4">Brak danych</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -730,7 +715,7 @@ export const Registry = () => {
                 {editLesson && (
                     <div className="p-6 space-y-4">
                         <div className="text-sm">
-                            <div><span className="text-neutral-500">Data:</span> <span className="font-medium">{new Date(editLesson.date).toLocaleDateString('pl-PL')}</span></div>
+                            <div><span className="text-neutral-500">Data:</span> <span className="font-medium">{formatDateOnly(editLesson.date)}</span></div>
                             <div><span className="text-neutral-500">Godzina lekcyjna:</span> <span className="font-medium">{editLesson.orderNumber}</span></div>
                         </div>
                         <div>
@@ -759,15 +744,15 @@ export const Registry = () => {
                                 <table className="w-full text-sm border-collapse">
                                     <thead className="bg-neutral-50">
                                         <tr>
-                                            <th className="px-3 py-2 text-left font-medium text-neutral-600">Uczen</th>
-                                            <th className="px-3 py-2 text-left font-medium text-neutral-600">Status</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Uczen</th>
+                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-100">
                                         {attendance.map((a: any) => (
                                             <tr key={a.studentId}>
-                                                <td className="px-3 py-2 font-medium">{a.studentName}</td>
-                                                <td className="px-3 py-2">
+                                                <td className="px-3 py-1 font-medium">{a.studentName}</td>
+                                                <td className="px-3 py-1">
                                                     <div className="flex gap-1">
                                                         {attendanceTypes.map(at => (
                                                             <AttendanceSquare
@@ -783,7 +768,7 @@ export const Registry = () => {
                                             </tr>
                                         ))}
                                         {attendance.length === 0 && (
-                                            <tr><td colSpan={2} className="text-center text-neutral-400 py-4">Brak danych o frekwencji</td></tr>
+                                            <tr><td colSpan={2} className="text-center text-neutral-400 py-4">Brak danych</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -809,7 +794,7 @@ export const Registry = () => {
                         {schedulesLoading ? <LoadingSpinner className="py-4" /> : (
                             <div className="space-y-2">
                                 {availableSchedules.length === 0 ? (
-                                    <p className="text-sm text-neutral-400 text-center py-4">Brak lekcji na ten dzień</p>
+                                    <p className="text-sm text-neutral-400 text-center py-4">Brak lekcji tego dnia</p>
                                 ) : availableSchedules.map(s => (
                                     <div key={s.id} className="flex items-center justify-between p-3 border border-neutral-200 rounded-xs hover:bg-neutral-50 transition-colors">
                                         <div>
@@ -817,7 +802,7 @@ export const Registry = () => {
                                             <div className="text-xs text-neutral-500">Lekcja {s.orderNumber} - {s.classroomName || 'Brak sali'}</div>
                                         </div>
                                         <Button onClick={() => handleCreateFromSchedule(s.id)} className="flex items-center gap-1 text-xs">
-                                            <PlayCircle size={14} /> Dodaj
+                                            Wybierz
                                         </Button>
                                     </div>
                                 ))}

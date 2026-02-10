@@ -1,8 +1,12 @@
+import { useCMSContent } from '../../hooks/useCMSContent';
+
 export const TeacherDashboard = () => {
+    const { getText } = useCMSContent('teacherLayout');
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-neutral-800">Pulpit</h1>
+                <h1 className="text-2xl font-bold text-neutral-800">{getText('title.dashboard')}</h1>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

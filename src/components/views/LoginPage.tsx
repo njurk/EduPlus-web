@@ -1,35 +1,45 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { api, BASE_URL } from '../services/apiService';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { BASE_URL } from '../../services/apiService';
 import { AlertCircle, Lock, Mail } from 'lucide-react';
-import { useCMSContent } from '../hooks/useCMSContent';
+import { useCMSContent } from '../../hooks/useCMSContent';
 
-export const AdminLogin = () => {
-    const { getText } = useCMSContent('adminLogin');
+interface LoginPageProps {
+    cmsKey: string;
+    loginFn: (credentials: { email: string; password: string }) => Promise<any>;
+    redirectTo: string;
+    headerBg: string;
+    buildUserData?: (response: any) => Record<string, any>;
+    switchLink: { to: string; cmsLabel?: string; icon?: React.ReactNode };
+}
+
+export const LoginPage = ({ cmsKey, loginFn, redirectTo, headerBg, buildUserData, switchLink }: LoginPageProps) => {
+    const { getText } = useCMSContent(cmsKey);
     const { getText: getSystemText } = useCMSContent('system');
     const navigate = useNavigate();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         setLoading(true);
 
         try {
-            const response = await api.auth.loginAdmin(formData);
+            const response = await loginFn(formData);
 
             localStorage.setItem('token', response.token);
             localStorage.setItem('user', JSON.stringify({
                 id: response.userId,
                 name: response.userName,
-                roles: response.roles
+                roles: response.roles,
+                ...buildUserData?.(response)
             }));
 
-            navigate('/admin/dashboard');
-
+            navigate(redirectTo);
         } catch (err: any) {
             setError(err.message || 'Wystąpił błąd logowania');
         } finally {
@@ -40,7 +50,7 @@ export const AdminLogin = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-neutral-100 px-4 font-sans">
             <div className="max-w-md w-full bg-white rounded-s shadow-lg border border-neutral-200 overflow-hidden">
-                <div className="bg-neutral-900 p-8 text-center">
+                <div className={`${headerBg} p-8 text-center`}>
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <img
                             src={`${BASE_URL}/${getSystemText('logoUrl')}`}
@@ -110,13 +120,13 @@ export const AdminLogin = () => {
                 </div>
                 <div className="bg-neutral-50 p-4 flex justify-between items-center border-t border-neutral-100">
                     <p className="text-xs text-neutral-500">
-                        &copy; {new Date().getFullYear()} {getSystemText('version')}
+                        &copy; {new Date().getFullYear()} EduPlus
                     </p>
                     <Link
-                        to="/login"
+                        to={switchLink.to}
                         className="text-xs text-neutral-500 hover:text-primary"
                     >
-                        {getText('teacherLink')}
+                        {switchLink.cmsLabel ? getText(switchLink.cmsLabel) : switchLink.icon}
                     </Link>
                 </div>
             </div>

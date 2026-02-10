@@ -188,7 +188,10 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
             <div className="flex items-center gap-4 mb-4">
                 <button onClick={onBack} className="p-1 hover:bg-neutral-100 rounded text-neutral-600"><ArrowLeft size={20} /></button>
-                <h2 className="text-xl font-bold text-neutral-800">klasa {details.classInfo.level}{details.classInfo.letter}</h2>
+                <div>
+                    <h2 className="text-xl font-bold text-neutral-800">klasa {details.classInfo.level}{details.classInfo.letter}</h2>
+                    {details.classInfo.homeroomTeacherName && <p className="text-sm text-neutral-500">Wychowawca: {details.classInfo.homeroomTeacherName}</p>}
+                </div>
             </div>
 
             <div className="flex border-b border-neutral-200 bg-white">
@@ -235,7 +238,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                     />
                                 }
                             ]}
-                            emptyMessage="Brak uczniów"
+                            emptyMessage="Brak danych"
                         />
                     </div>
                 ) : (
@@ -280,7 +283,7 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                     />
                                 }
                             ]}
-                            emptyMessage="Brak przedmiotów"
+                            emptyMessage="Brak danych"
                         />
                     </div>
                 )}
@@ -299,6 +302,7 @@ export const ClassManagement = () => {
     const [form, setForm] = useState<{ open: boolean, data: Partial<ClassEntity>, errors: Record<string, string> }>({ open: false, data: {}, errors: {} });
     const [showInactive, setShowInactive] = useState(false);
     const [filters, setFilters] = useState({ search: '', sortBy: 'class', sortDesc: false, level: '' });
+    const [allTeachers, setAllTeachers] = useState<{ id: number, firstName: string, lastName: string }[]>([]);
 
     useEffect(() => {
         api.classManagement.getYears().then(res => {
@@ -307,6 +311,7 @@ export const ClassManagement = () => {
             const current = res.find(y => y.startDate <= today && y.endDate >= today) || res.find(y => y.isActive) || res[0];
             if (current) setSelected(p => ({ ...p, year: current.id }));
         });
+        api.users.getAll({ pageSize: 200, roleLevel: 2 }).then(res => setAllTeachers(res.data));
     }, []);
 
     const loadClasses = useCallback(() => {
@@ -346,6 +351,7 @@ export const ClassManagement = () => {
 
     const classColumns: Column<ClassEntity>[] = [
         { header: 'Klasa', sortKey: 'class', bold: true, render: (row) => `${row.level}${row.letter}` },
+        { header: 'Wychowawca', render: (row) => row.homeroomTeacherName || '—' },
         { header: 'Uczniów', sortKey: 'studentCount', render: (row) => row.studentCount || 0 },
         { header: 'Utworzono', sortKey: 'created', muted: true, render: (row) => formatDateTime(row.createdAt) },
         { header: 'Edytowano', sortKey: 'updated', muted: true, render: (row) => formatDateTime(row.updatedAt) },
@@ -366,9 +372,18 @@ export const ClassManagement = () => {
         <div className="font-sans max-w-6xl mx-auto space-y-4">
             <Modal isOpen={form.open} onClose={() => setForm({ ...form, open: false })} title={form.data.id ? 'Edycja klasy' : 'Nowa klasa'} maxWidth="sm"
                 footer={<><Button variant="secondary" onClick={() => setForm({ ...form, open: false })}>Anuluj</Button><Button onClick={saveClass}>Zapisz</Button></>}>
-                <div className="grid grid-cols-2 gap-4 p-4">
-                    <div><label className="label-text">Poziom</label><Input type="number" min={1} max={8} value={form.data.level || ''} onChange={e => setForm({ ...form, data: { ...form.data, level: +e.target.value } })} /></div>
-                    <div><label className="label-text">Oddział</label><Input value={form.data.letter || ''} onChange={e => setForm({ ...form, data: { ...form.data, letter: e.target.value.toUpperCase() } })} /></div>
+                <div className="p-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="label-text">Poziom</label><Input type="number" min={1} max={8} value={form.data.level || ''} onChange={e => setForm({ ...form, data: { ...form.data, level: +e.target.value } })} /></div>
+                        <div><label className="label-text">Oddział</label><Input value={form.data.letter || ''} onChange={e => setForm({ ...form, data: { ...form.data, letter: e.target.value.toUpperCase() } })} /></div>
+                    </div>
+                    <div>
+                        <label className="label-text">Wychowawca</label>
+                        <select className="w-full border border-neutral-300 px-3 py-2 rounded-md text-sm focus:outline-none focus:border-primary bg-white" value={form.data.homeroomTeacherId ?? ''} onChange={e => setForm({ ...form, data: { ...form.data, homeroomTeacherId: e.target.value ? +e.target.value : undefined } })}>
+                            <option value="">Brak</option>
+                            {allTeachers.map(t => <option key={t.id} value={t.id}>{t.lastName} {t.firstName}</option>)}
+                        </select>
+                    </div>
                 </div>
             </Modal>
 
@@ -404,7 +419,7 @@ export const ClassManagement = () => {
                         <DataTable
                             data={paginatedData?.data || []}
                             columns={classColumns}
-                            emptyMessage="Brak klas"
+                            emptyMessage="Brak danych"
                             sortBy={filters.sortBy}
                             sortDesc={filters.sortDesc}
                             onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}

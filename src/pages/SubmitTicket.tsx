@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/apiService';
 import type { TicketReason } from '../types';
 import { AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
-import { REGEX } from '../utils/validation';
+import { validateTicketForm } from '../utils/validation';
 import { useCMSContent } from '../hooks/useCMSContent';
 import { Editor } from 'primereact/editor';
 
@@ -26,13 +26,9 @@ export const SubmitTicket = () => {
         e.preventDefault();
         setError(null);
 
-        if (!email.trim() || !reasonId || !content.trim()) {
-            setError('Wszystkie pola są wymagane');
-            return;
-        }
-
-        if (!REGEX.EMAIL.test(email)) {
-            setError('Podaj poprawny adres email');
+        const validationError = validateTicketForm(email, reasonId, content);
+        if (validationError) {
+            setError(validationError);
             return;
         }
 

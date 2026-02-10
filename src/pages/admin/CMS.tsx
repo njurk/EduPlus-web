@@ -60,7 +60,7 @@ export const CMS = () => {
         setContents([]);
         setPageTitles({});
         api.pages.getAll(selectedTargetId).then(async p => {
-            const sortedPages = p.sort((a, b) => a.position - b.position);
+            const sortedPages = p.sort((a, b) => a.title < b.title ? -1 : 1);
             setPages(sortedPages);
 
             let layoutPageContents: any[] = [];
@@ -146,7 +146,7 @@ export const CMS = () => {
                                     key={t.id}
                                     onClick={() => setSelectedTargetId(t.id)}
                                     className={clsx(
-                                        "w-full text-left px-4 py-3 rounded-xs text-sm font-medium flex flex-col",
+                                        "w-full text-left px-4 py-2 rounded-xs text-sm font-medium flex flex-col",
                                         selectedTargetId === t.id ? "bg-white ring-1 ring-neutral-200 shadow-sm text-primary" : "text-neutral-600 hover:bg-neutral-200/50"
                                     )}
                                 >
@@ -163,13 +163,13 @@ export const CMS = () => {
                         </div>
                         <div className="overflow-y-auto flex-1 p-2 space-y-1">
                             {loadingPages && <LoadingSpinner className="h-16" />}
-                            {!loadingPages && pages.length === 0 && <div className="p-4 text-center text-sm text-neutral-400">Brak stron w tej sekcji</div>}
+                            {!loadingPages && pages.length === 0 && <div className="p-4 text-center text-sm text-neutral-400">Brak</div>}
                             {pages.map(p => (
                                 <button
                                     key={p.id}
                                     onClick={() => setSelectedPageId(p.id)}
                                     className={clsx(
-                                        "w-full text-left px-4 py-3 rounded-xs text-sm",
+                                        "w-full text-left px-4 py-1.5 rounded-xs text-sm",
                                         selectedPageId === p.id ? "bg-primary-light text-primary font-medium" : "text-neutral-700 hover:bg-neutral-50"
                                     )}
                                 >
@@ -206,8 +206,8 @@ export const CMS = () => {
 
                             <div className="space-y-3 max-w-3xl">
                                 {contents.map(c => (
-                                    <div key={c.id} className="border border-neutral-200 rounded-xs p-3 shadow-sm bg-white">
-                                        <div className="flex justify-between items-start mb-3">
+                                    <div key={c.id} className="border border-neutral-200 rounded-xs p-2.5 shadow-sm bg-white">
+                                        <div className="flex justify-between items-start mb-1">
                                             <div>
                                                 <span className="text-xs font-mono text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">{c.key}</span>
                                             </div>

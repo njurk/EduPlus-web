@@ -1,18 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { RefreshCw, FileText } from 'lucide-react';
 import { API_URL, getHeaders } from '../../services/apiService';
-
-interface LogFile {
-    name: string;
-    size: number;
-    lastModified: string;
-}
-
-interface LogContent {
-    fileName: string;
-    totalLines: number;
-    lines: string[];
-}
+import type { LogFile, LogContent } from '../../types';
 
 export const Logs = () => {
     const [files, setFiles] = useState<LogFile[]>([]);
@@ -82,7 +71,6 @@ export const Logs = () => {
         if (line.includes('| WARNING')) return 'text-yellow-400';
         return 'text-neutral-300';
     };
-
     const formatFileSize = (bytes: number) => {
         if (bytes < 1024) return `${bytes} B`;
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

@@ -8,21 +8,10 @@ import { Pagination } from '../../components/ui/Pagination';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { Modal } from '../../components/modals/Modal';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { formatDateTime } from '../../utils/formatters';
-import type { Subject, User } from '../../types';
-
-interface SubjectTeacherRow {
-    id: string;
-    subjectId: number;
-    teacherId: number;
-    subjectName: string;
-    teacherName: string;
-    createdAt: string;
-    updatedAt: string;
-    isActive: boolean;
-    modifiedByName?: string;
-}
+import type { Subject, SubjectTeacherRow, User } from '../../types';
 
 export const Subjects = () => {
     const { getText } = useCMSContent('subjects');
@@ -192,7 +181,7 @@ export const Subjects = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={'Brak przypisań'}
+                            emptyMessage={'Brak'}
                         />
                     )}
                 </div>
@@ -210,17 +199,11 @@ export const Subjects = () => {
                 <div className="p-6 space-y-4">
                     <div>
                         <label className="label-text block mb-1">Przedmiot</label>
-                        <select className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
-                            <option value="">Wybierz przedmiot...</option>
-                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
+                        <Select options={subjects.map(s => ({ value: s.id, label: s.name }))} value={selectedSubject} onChange={setSelectedSubject} placeholder="Wybierz przedmiot..." className="w-full" />
                     </div>
                     <div>
                         <label className="label-text block mb-1">Nauczyciel</label>
-                        <select className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white" value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)}>
-                            <option value="">Wybierz nauczyciela...</option>
-                            {teachers.map(t => <option key={t.id} value={t.id}>{t.lastName} {t.firstName}</option>)}
-                        </select>
+                        <Select options={teachers.map(t => ({ value: t.id, label: `${t.lastName} ${t.firstName}` }))} value={selectedTeacher} onChange={setSelectedTeacher} placeholder="Wybierz nauczyciela..." className="w-full" />
                     </div>
                 </div>
             </Modal>
@@ -230,14 +213,11 @@ export const Subjects = () => {
                 <div className="p-6 space-y-4">
                     <div>
                         <label className="label-text block mb-1">Przedmiot</label>
-                        <div className="w-full border border-neutral-200 rounded-xs px-3 h-9 text-sm bg-neutral-50 flex items-center">{editingRow?.subjectName}</div>
+                        <div className="w-full border border-neutral-200 rounded-xs px-2 py-1 text-sm bg-neutral-50 flex items-center">{editingRow?.subjectName}</div>
                     </div>
                     <div>
                         <label className="label-text block mb-1">Nowy nauczyciel</label>
-                        <select className="w-full border border-neutral-300 rounded-xs px-3 h-9 text-sm bg-white" value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)}>
-                            <option value="">Wybierz nauczyciela...</option>
-                            {teachers.map(t => <option key={t.id} value={t.id}>{t.lastName} {t.firstName}</option>)}
-                        </select>
+                        <Select options={teachers.map(t => ({ value: t.id, label: `${t.lastName} ${t.firstName}` }))} value={selectedTeacher} onChange={setSelectedTeacher} placeholder="Wybierz nauczyciela..." className="w-full" />
                     </div>
                 </div>
             </Modal>

@@ -1,4 +1,5 @@
 import type { SchoolYear } from '../../types';
+import { Select } from './Select';
 
 interface YearSelectorProps {
     years: SchoolYear[];
@@ -8,11 +9,10 @@ interface YearSelectorProps {
 }
 
 export const YearSelector = ({ years, selectedYear, onChange, className }: YearSelectorProps) => (
-    <select
-        className={`px-2 py-1 border border-neutral-300 rounded-xs text-sm bg-white ${className || ''}`}
-        value={selectedYear || ''}
-        onChange={(e) => onChange(+e.target.value)}
-    >
-        {years.map(y => <option key={y.id} value={y.id}>{y.name}</option>)}
-    </select>
+    <Select
+        options={years.map(y => ({ value: y.id, label: y.name }))}
+        value={selectedYear}
+        onChange={v => onChange(+v)}
+        className={className}
+    />
 );

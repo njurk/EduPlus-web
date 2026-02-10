@@ -1,34 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/apiService';
-import { Eye, Pencil } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
-import { formatDateTime, formatDateOnly } from '../../utils/formatters';
-import { Modal } from '../../components/modals/Modal';
+import { formatDateTime } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
-import type { PaginatedResponse, SchoolYear, SemesterDto } from '../../types';
+import type { PaginatedResponse, SchoolYear, SemesterDto, Excuse } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
 import { Pagination } from '../../components/ui/Pagination';
-
-interface Excuse {
-    id: number;
-    parentName: string;
-    studentName: string;
-    className: string | null;
-    isAccepted: boolean | null;
-    acceptedAt: string | null;
-    modifiedByName: string | null;
-    reason: string;
-    createdAt: string;
-    attendanceCount: number;
-}
-
-interface ExcuseDetails extends Excuse {
-    attendances: { id: number; date: string; subjectName: string; lessonHour: number }[];
-}
+import { EXCUSE_STATUS_OPTIONS, getExcuseStatusBadge } from '../../utils/helpers';
+import { ActionButtons } from '../../components/ui/ActionButtons';
+import { ExcuseDetailModal } from '../../components/views/ExcuseDetailModal';
 
 export const Excuses = () => {
     const { getText } = useCMSContent('excuses');
@@ -47,10 +30,7 @@ export const Excuses = () => {
         yearId: null as number | null,
         semesterId: null as number | null
     });
-    const [detailsModal, setDetailsModal] = useState<ExcuseDetails | null>(null);
-    const [detailsLoading, setDetailsLoading] = useState(false);
-    const [editMode, setEditMode] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [selectedExcuseId, setSelectedExcuseId] = useState<number | null>(null);
 
     useEffect(() => {
         api.schoolYears.getAll().then(data => {
@@ -99,50 +79,7 @@ export const Excuses = () => {
         setFilters(f => ({ ...f, sortBy: field, sortDesc: f.sortBy === field ? !f.sortDesc : true }));
     };
 
-    const openDetails = async (id: number, edit: boolean = false) => {
-        setDetailsLoading(true);
-        setEditMode(edit);
-        try {
-            const details = await api.excuses.getById(id);
-            setDetailsModal(details);
-            setSelectedStatus(details.isAccepted === true ? 'accepted' : details.isAccepted === false ? 'rejected' : 'pending');
-        } finally { setDetailsLoading(false); }
-    };
 
-    const handleSaveStatus = async () => {
-        if (!detailsModal) return;
-        const isAccepted = selectedStatus === 'accepted' ? true : selectedStatus === 'rejected' ? false : null;
-        await api.excuses.accept(detailsModal.id, isAccepted);
-        setDetailsModal(null);
-        setEditMode(false);
-        await loadData();
-    };
-
-    const handleAccept = async (accept: boolean) => {
-        if (!detailsModal) return;
-        await api.excuses.accept(detailsModal.id, accept);
-        setDetailsModal(null);
-        await loadData();
-    };
-
-
-    const getStatusBadge = (isAccepted: boolean | null) => {
-        if (isAccepted === true) return <span className="text-success font-medium">Zaakceptowane</span>;
-        if (isAccepted === false) return <span className="text-danger font-medium">Odrzucone</span>;
-        return <span className="text-warning font-medium">Oczekujące</span>;
-    };
-
-    const statusOptions = [
-        { value: 'pending', label: 'Oczekujące' },
-        { value: 'accepted', label: 'Zaakceptowane' },
-        { value: 'rejected', label: 'Odrzucone' }
-    ];
-
-    const editStatusOptions = [
-        { value: 'pending', label: 'Oczekujące' },
-        { value: 'accepted', label: 'Zaakceptowane' },
-        { value: 'rejected', label: 'Odrzucone' }
-    ];
 
     return (
         <div className="space-y-4">
@@ -162,7 +99,7 @@ export const Excuses = () => {
                         label="Status:"
                         value={filters.statusFilter || null}
                         onChange={v => setFilters(f => ({ ...f, statusFilter: v ? String(v) : '' }))}
-                        options={statusOptions}
+                        options={EXCUSE_STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
                         placeholder="Wszystkie"
                         minWidth="140px"
                         parseAsNumber={false}
@@ -184,18 +121,15 @@ export const Excuses = () => {
                             { header: 'Uczeń', sortKey: 'student', bold: true, render: (e: Excuse) => e.studentName },
                             { header: 'Klasa', render: (e: Excuse) => e.className || '-' },
                             { header: 'Godziny', render: (e: Excuse) => e.attendanceCount, className: 'text-center w-16' },
-                            { header: 'Status', sortKey: 'isaccepted', render: (e: Excuse) => getStatusBadge(e.isAccepted) },
+                            { header: 'Status', sortKey: 'isaccepted', render: (e: Excuse) => getExcuseStatusBadge(e.isAccepted) },
                             { header: 'Rozpatrzono', sortKey: 'acceptedat', muted: true, render: (e: Excuse) => e.acceptedAt ? formatDateTime(e.acceptedAt) : '-' },
                             { header: 'Rozpatrzył', muted: true, render: (e: Excuse) => e.modifiedByName || '-' },
                             {
-                                header: 'Akcje', className: 'text-right w-24', render: (e: Excuse) => (
-                                    <div className="flex justify-end gap-1">
-                                        <Button variant="soft" onClick={() => openDetails(e.id, false)} className="p-1"><Eye size={14} /></Button>
-                                        <Button variant="soft" onClick={() => openDetails(e.id, true)} className="p-1 text-primary"><Pencil size={14} /></Button>
-                                    </div>
+                                header: '', className: 'w-20', render: (e: Excuse) => (
+                                    <ActionButtons isActive onDetails={() => setSelectedExcuseId(e.id)} />
                                 )
                             }
-                        ]} emptyMessage="Brak usprawiedliwień"
+                        ]} emptyMessage="Brak danych"
                             sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSort={handleSort}
                         />
                     )}
@@ -205,73 +139,13 @@ export const Excuses = () => {
                 )}
             </div>
 
-            <Modal
-                isOpen={!!detailsModal || detailsLoading}
-                onClose={() => { setDetailsModal(null); setEditMode(false); }}
-                title={editMode ? "Edycja usprawiedliwienia" : "Szczegóły usprawiedliwienia"}
-                footer={editMode ? (
-                    <>
-                        <Button variant="secondary" onClick={() => { setDetailsModal(null); setEditMode(false); }}>Anuluj</Button>
-                        <Button onClick={handleSaveStatus}>Zapisz</Button>
-                    </>
-                ) : detailsModal?.isAccepted === null ? (
-                    <>
-                        <Button variant="danger" onClick={() => handleAccept(false)}>Odrzuć</Button>
-                        <Button onClick={() => handleAccept(true)}>Zatwierdź</Button>
-                    </>
-                ) : undefined}
-            >
-                {detailsLoading ? <LoadingSpinner /> : detailsModal && (
-                    <div className="space-y-4 p-4">
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="font-medium">Rodzic:</span> {detailsModal.parentName}</div>
-                            <div><span className="font-medium">Uczeń:</span> {detailsModal.studentName}</div>
-                            <div><span className="font-medium">Wysłano:</span> {formatDateTime(detailsModal.createdAt)}</div>
-                            <div>
-                                <span className="font-medium">Status:</span>{' '}
-                                {editMode ? (
-                                    <select
-                                        value={selectedStatus}
-                                        onChange={e => setSelectedStatus(e.target.value)}
-                                        className="border border-neutral-300 rounded-xs px-2 py-1 text-sm"
-                                    >
-                                        {editStatusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                    </select>
-                                ) : getStatusBadge(detailsModal.isAccepted)}
-                            </div>
-                        </div>
-
-                        <div>
-                            <span className="font-medium text-sm">Powód:</span>
-                            <div className="p-3 bg-neutral-50 rounded text-sm mt-1">{detailsModal.reason}</div>
-                        </div>
-
-                        <div>
-                            <span className="font-medium text-sm">Dotyczy poniższych nieobecności:</span>
-                            <div className="mt-1 border rounded overflow-hidden">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-neutral-50">
-                                        <tr>
-                                            <th className="text-left p-2 font-medium">Data</th>
-                                            <th className="text-left p-2 font-medium">Przedmiot</th>
-                                            <th className="text-left p-2 font-medium">Lekcja</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {detailsModal.attendances.map(a => (
-                                            <tr key={a.id} className="border-t">
-                                                <td className="p-2">{formatDateOnly(a.date)}</td>
-                                                <td className="p-2">{a.subjectName}</td>
-                                                <td className="p-2">{a.lessonHour}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <ExcuseDetailModal
+                excuseId={selectedExcuseId}
+                isOpen={selectedExcuseId !== null}
+                onClose={() => setSelectedExcuseId(null)}
+                onUpdated={loadData}
+                showEditMode
+            />
         </div>
     );
 };

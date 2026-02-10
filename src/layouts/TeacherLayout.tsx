@@ -3,8 +3,11 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, Home, LogOut, Settings, BookOpen, Table, FileText, Megaphone } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useCMSContent } from '../hooks/useCMSContent';
-import { api } from '../services/apiService';
+import { api, API_URL } from '../services/apiService';
 import { formatFullDate } from '../utils/formatters';
+import { Badge } from '../components/ui/Badge';
+import { UnreadContext } from '../hooks/useUnread';
+import type { UnreadCounts } from '../types';
 
 const Clock = () => {
     const [time, setTime] = useState(new Date());
@@ -23,12 +26,33 @@ const Clock = () => {
 };
 
 export const TeacherLayout = () => {
-    const { getText } = useCMSContent('layout');
+    const { getText } = useCMSContent('teacherLayout');
     const { getText: getSystemText } = useCMSContent('system');
     const [isSidebarOpen, setSidebarOpen] = useState(false);
+    const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, excuses: 0, unreadAnnouncementIds: [], unreadTicketIds: [] });
     const navigate = useNavigate();
 
-    const [user] = useState<{ name: string } | null>(() => {
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const eventSource = new EventSource(
+            `${API_URL}/badge/unread-counts/stream?token=${token}`
+        );
+
+        eventSource.onmessage = (event) => {
+            const counts = JSON.parse(event.data);
+            setUnreadCounts(counts);
+        };
+
+        eventSource.onerror = () => {
+            eventSource.close();
+        };
+
+        return () => eventSource.close();
+    }, []);
+
+    const [user] = useState<{ name: string, isHomeroomTeacher?: boolean } | null>(() => {
         const savedUser = localStorage.getItem('user');
         return savedUser ? JSON.parse(savedUser) : null;
     });
@@ -44,6 +68,13 @@ export const TeacherLayout = () => {
         }
     };
 
+    const teachingItems = [
+        { label: getText('nav.schedule'), path: '/teacher/schedule', icon: Table },
+        { label: getText('nav.registry'), path: '/teacher/registry', icon: BookOpen },
+        ...(user?.isHomeroomTeacher ? [{ label: getText('nav.excuses'), path: '/teacher/excuses', icon: FileText, badge: unreadCounts.excuses }] : []),
+        { label: getText('nav.announcements'), path: '/teacher/announcements', icon: Megaphone, badge: unreadCounts.announcements },
+    ];
+
     const navSections = [
         {
             title: null,
@@ -53,12 +84,7 @@ export const TeacherLayout = () => {
         },
         {
             title: getText('nav.section.teaching'),
-            items: [
-                { label: getText('nav.schedule'), path: '/teacher/schedule', icon: Table },
-                { label: 'Dziennik', path: '/teacher/registry', icon: BookOpen },
-                { label: getText('nav.excuses') || 'Usprawiedliwienia', path: '/teacher/excuses', icon: FileText },
-                { label: getText('nav.announcements') || 'Ogłoszenia', path: '/teacher/announcements', icon: Megaphone },
-            ]
+            items: teachingItems
         },
     ];
 
@@ -101,18 +127,13 @@ export const TeacherLayout = () => {
                                     >
                                         <item.icon size={16} className="mr-2 shrink-0" />
                                         {item.label}
+                                        <Badge count={(item as any).badge} />
                                     </NavLink>
                                 ))}
                             </div>
                         </div>
                     ))}
                 </nav>
-
-                <div className="absolute bottom-0 w-full bg-primary-950 border-t border-primary-800">
-                    <div className="px-4 py-2">
-                        <p className="text-xs text-white font-mono">{getSystemText('version')}</p>
-                    </div>
-                </div>
             </aside>
 
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -153,7 +174,9 @@ export const TeacherLayout = () => {
 
                 <main className="flex-1 overflow-auto p-4 lg:p-8 bg-neutral-50">
                     <div className="max-w-7xl mx-auto animate-in fade-in duration-300">
-                        <Outlet />
+                        <UnreadContext.Provider value={unreadCounts}>
+                            <Outlet />
+                        </UnreadContext.Provider>
                     </div>
                 </main>
             </div>

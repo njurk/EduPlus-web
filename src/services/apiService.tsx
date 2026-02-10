@@ -6,7 +6,7 @@ import type {
     LessonHour, LessonStatus, ScheduleLesson,
     Ticket, CreateTicketDto, CloseTicketDto, TicketReason,
     PageContent, Page, Target,
-    DashboardSummary, UptimeInfo
+    DashboardSummary
 } from '../types';
 import type { UnreadCounts } from '../types/layout';
 
@@ -980,10 +980,6 @@ export const dashboardApi = {
     getSummary: async (): Promise<DashboardSummary> => {
         const response = await fetch(`${API_URL}/dashboard/summary`, { headers: getHeaders() });
         return handleResponse<DashboardSummary>(response);
-    },
-    getUptime: async (): Promise<UptimeInfo> => {
-        const response = await fetch(`${API_URL}/dashboard/uptime`);
-        return handleResponse<UptimeInfo>(response);
     }
 };
 

@@ -1,4 +1,4 @@
-import type { GradeDto } from "../types";
+import type { GradeDto, SchoolYearFormData } from "../types";
 
 export const REGEX = {
     EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -190,4 +190,55 @@ export const validateSchoolYearSemesters = (data: SchoolYearSemesterData): Recor
     }
 
     return errors;
+};
+
+export const validateProfileField = (field: string, value: string): string => {
+    const val = value ? value.trim() : '';
+    switch (field) {
+        case 'firstName':
+            return !val ? "Imię jest wymagane." : "";
+        case 'lastName':
+            return !val ? "Nazwisko jest wymagane." : "";
+        case 'postalCode':
+            return (val && !REGEX.POSTAL_CODE.test(val)) ? "Niepoprawny format" : "";
+        case 'phone':
+            return (val && !REGEX.PHONE.test(val)) ? "Nieprawidłowy numer telefonu." : "";
+        default:
+            return "";
+    }
+};
+
+export const validateSchoolYearForm = (data: SchoolYearFormData): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    if (!data.name.trim()) errors.name = 'Nazwa jest wymagana';
+    if (!data.startDate) errors.startDate = 'Data rozpoczęcia jest wymagana';
+    if (!data.endDate) errors.endDate = 'Data zakończenia jest wymagana';
+    if (!data.semester1.endDate) errors.semester1End = 'Data zakończenia semestru 1 jest wymagana';
+    if (!data.semester2.startDate) errors.semester2Start = 'Data rozpoczęcia semestru 2 jest wymagana';
+
+    if (data.startDate && data.endDate && new Date(data.startDate) >= new Date(data.endDate)) {
+        errors.endDate = 'Data zakończenia musi być po dacie rozpoczęcia';
+    }
+    if (data.semester1.endDate && data.startDate && new Date(data.semester1.endDate) <= new Date(data.startDate)) {
+        errors.semester1End = 'Data zakończenia semestru 1 musi być po rozpoczęciu roku';
+    }
+    if (data.semester2.startDate && data.endDate && new Date(data.semester2.startDate) >= new Date(data.endDate)) {
+        errors.semester2Start = 'Data rozpoczęcia semestru 2 musi być przed końcem roku';
+    }
+    if (data.semester1.endDate && data.semester2.startDate && new Date(data.semester1.endDate) >= new Date(data.semester2.startDate)) {
+        errors.semester2Start = 'Semestr 2 musi zaczynać się po zakończeniu semestru 1';
+    }
+
+    return errors;
+};
+
+export const validateTicketForm = (email: string, reasonId: number | '', content: string): string | null => {
+    if (!email.trim() || !reasonId || !content.trim()) {
+        return 'Wszystkie pola są wymagane';
+    }
+    if (!REGEX.EMAIL.test(email)) {
+        return 'Podaj poprawny adres email';
+    }
+    return null;
 };

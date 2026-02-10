@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { api } from '../../services/apiService';
 import type { SchoolYear, SemesterDto, ClassEntity, ScheduleLesson, LessonHour, Subject, Classroom, User } from '../../types';
 import { ExportButton } from '../../components/ui/ExportButton';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
@@ -10,6 +9,7 @@ import { useCMSContent } from '../../hooks/useCMSContent';
 import { Modal } from '../../components/modals/Modal';
 import { Button } from '../../components/ui/Button';
 import { Edit, Trash2 } from 'lucide-react';
+import { ScheduleGrid } from '../../components/ui/ScheduleGrid';
 
 export const Schedule = () => {
     const { getText } = useCMSContent('schedule');
@@ -205,49 +205,28 @@ export const Schedule = () => {
                 </div>
             </div>
 
-            <div className="bg-white border border-neutral-200 rounded-xs overflow-hidden">
-                {loading ? (
-                    <LoadingSpinner className="h-64" />
-                ) : (
-                    <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed' }}>
-                        <thead>
-                            <tr>
-                                <th className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center font-semibold" style={{ width: '64px' }}>Nr</th>
-                                {days.map((d, i) => <th key={i} className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center font-semibold">{d}</th>)}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {lessonHours.map(hour => (
-                                <tr key={hour.id}>
-                                    <td className="border-b border-r border-neutral-200 bg-neutral-50 p-2 text-center align-middle" style={{ width: '64px' }}>
-                                        <div className="font-bold text-neutral-700">{hour.orderNumber}</div>
-                                        <div className="text-xs text-neutral-400">{String(hour.startTime).slice(0, 5)}</div>
-                                        <div className="text-xs text-neutral-400">{String(hour.endTime).slice(0, 5)}</div>
-                                    </td>
-                                    {days.map((_, di) => {
-                                        const lesson = getLesson(di, hour.orderNumber);
-                                        return (
-                                            <td
-                                                key={di}
-                                                className={`border-b border-r border-neutral-200 p-2 align-middle h-14 ${editMode ? 'cursor-pointer hover:bg-neutral-50 transition-colors' : ''}`}
-                                                onClick={() => editMode && openModal(di, hour, lesson)}
-                                            >
-                                                {lesson ? (
-                                                    <div className="pl-1">
-                                                        <div className="font-medium text-neutral-900 truncate">{lesson.subjectName}</div>
-                                                        {lesson.classroomName && <div className="text-xs text-neutral-400 truncate">{lesson.classroomName}</div>}
-                                                        <div className="text-neutral-500 truncate text-xs">{lesson.teacherName}</div>
-                                                    </div>
-                                                ) : <div className="text-center text-neutral-300">{editMode ? '+' : ''}</div>}
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+            <ScheduleGrid
+                lessonHours={lessonHours}
+                days={days}
+                loading={loading}
+                renderCell={(di, hour) => {
+                    const lesson = getLesson(di, hour.orderNumber);
+                    return (
+                        <div
+                            className={`p-2 h-full ${editMode ? 'cursor-pointer hover:bg-neutral-50 transition-colors' : ''}`}
+                            onClick={() => editMode && openModal(di, hour, lesson)}
+                        >
+                            {lesson ? (
+                                <div className="pl-1">
+                                    <div className="font-medium text-neutral-900 truncate">{lesson.subjectName}</div>
+                                    {lesson.classroomName && <div className="text-xs text-neutral-400 truncate">{lesson.classroomName}</div>}
+                                    <div className="text-neutral-500 truncate text-xs">{lesson.teacherName}</div>
+                                </div>
+                            ) : <div className="text-center text-neutral-300">{editMode ? '+' : ''}</div>}
+                        </div>
+                    );
+                }}
+            />
 
             <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setModalData(null); }} title={modalData?.id ? 'Edytuj lekcję' : 'Dodaj lekcję'}>
                 <div className="p-6 space-y-4">

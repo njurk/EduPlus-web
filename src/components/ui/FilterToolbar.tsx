@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { SearchBar } from './SearchBar';
+import { Select } from './Select';
 
 export interface FilterOption {
     label: string;
     value: string | number;
 }
-
-const selectClass = "border border-neutral-300 rounded-xs px-2 h-8 text-sm bg-white";
 
 interface FilterSelectProps {
     options: FilterOption[];
@@ -22,15 +21,13 @@ interface FilterSelectProps {
 export const FilterSelect = ({ options, value, onChange, label, placeholder = 'Wszystkie', minWidth = '120px', parseAsNumber = true }: FilterSelectProps) => (
     <div className="flex items-center gap-2">
         {label && <label className="text-xs text-neutral-500 whitespace-nowrap">{label}</label>}
-        <select
-            value={value ?? ''}
-            onChange={e => onChange(e.target.value ? (parseAsNumber ? Number(e.target.value) : e.target.value) : null)}
-            className={selectClass}
-            style={{ minWidth }}
-        >
-            <option value="">{placeholder}</option>
-            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <Select
+            options={options}
+            value={value}
+            onChange={v => onChange(v ? (parseAsNumber ? Number(v) : v) : null)}
+            placeholder={placeholder}
+            className={minWidth ? `min-w-[${minWidth}]` : ''}
+        />
     </div>
 );
 
@@ -43,7 +40,7 @@ interface FilterDateProps {
 export const FilterDate = ({ value, onChange, label }: FilterDateProps) => (
     <div className="flex items-center gap-2">
         {label && <label className="text-xs text-neutral-500 whitespace-nowrap">{label}</label>}
-        <input type="date" value={value} onChange={e => onChange(e.target.value)} className={selectClass} />
+        <input type="date" value={value} onChange={e => onChange(e.target.value)} className="border border-neutral-300 rounded-xs px-2 py-1 text-sm bg-white" />
     </div>
 );
 
