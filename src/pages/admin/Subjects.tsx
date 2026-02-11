@@ -181,7 +181,6 @@ export const Subjects = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={'Brak'}
                         />
                     )}
                 </div>

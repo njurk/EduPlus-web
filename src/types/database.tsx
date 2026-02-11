@@ -428,7 +428,6 @@ export interface Ticket {
     createdAt: string;
     updatedAt: string;
     modifiedByName?: string;
-    isRead?: boolean;
 }
 
 export interface TicketReason {

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/apiService';
-import type { SchoolYear, SemesterDto, ClassEntity, ScheduleLesson, LessonHour, Subject, Classroom, User } from '../../types';
+import type { ScheduleLesson, LessonHour, Subject, Classroom, User } from '../../types';
 import { ExportButton } from '../../components/ui/ExportButton';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { ClassSelector } from '../../components/ui/ClassSelector';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 import { Modal } from '../../components/modals/Modal';
 import { Button } from '../../components/ui/Button';
 import { Edit, Trash2 } from 'lucide-react';
@@ -13,12 +14,12 @@ import { ScheduleGrid } from '../../components/ui/ScheduleGrid';
 
 export const Schedule = () => {
     const { getText } = useCMSContent('schedule');
-    const [years, setYears] = useState<SchoolYear[]>([]);
-    const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
-    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
-    const [selectedSemesterOrder, setSelectedSemesterOrder] = useState<number | null>(null);
-    const [classes, setClasses] = useState<ClassEntity[]>([]);
-    const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+    const {
+        years, selectedYearId, setSelectedYearId,
+        semesters, selectedSemesterOrder, setSelectedSemesterOrder,
+        classes, selectedClassId, setSelectedClassId
+    } = useSchoolYearSelector({ withClasses: true, withCurrentSemester: true });
+
     const [schedule, setSchedule] = useState<ScheduleLesson[]>([]);
     const [lessonHours, setLessonHours] = useState<LessonHour[]>([]);
     const [loading, setLoading] = useState(false);
@@ -40,39 +41,16 @@ export const Schedule = () => {
     const [teachersLoading, setTeachersLoading] = useState(false);
 
     useEffect(() => {
-        const loadInitial = async () => {
-            const [yearsData, hoursData, subjectsData, classroomsData] = await Promise.all([
-                api.schoolYears.getAll(),
-                api.lessonHours ? api.lessonHours.getAll() : Promise.resolve([]),
-                api.subjects.getAll(),
-                api.classrooms.getAll()
-            ]);
-            setYears(yearsData);
-            const today = new Date().toISOString().split('T')[0];
-            const current = yearsData.find(y => y.startDate <= today && y.endDate >= today) || yearsData.find(y => y.isActive) || yearsData[0];
-            if (current) setSelectedYearId(current.id);
+        Promise.all([
+            api.lessonHours ? api.lessonHours.getAll() : Promise.resolve([]),
+            api.subjects.getAll(),
+            api.classrooms.getAll()
+        ]).then(([hoursData, subjectsData, classroomsData]) => {
             setLessonHours(hoursData);
             setSubjects(subjectsData);
             setClassrooms(classroomsData);
-        };
-        loadInitial();
-    }, []);
-
-    useEffect(() => {
-        if (!selectedYearId) return;
-        Promise.all([
-            api.classManagement.getSemesters(selectedYearId),
-            api.classManagement.getClassesByYear(selectedYearId, { includeInactive: false }),
-            api.grades.getCurrentSemester(selectedYearId).catch(() => 1)
-        ]).then(([sem, cls, currentSem]) => {
-            setSemesters(sem);
-            setClasses(cls.data);
-            const semToSelect = sem.find(s => s.order === currentSem) || sem[0];
-            if (semToSelect) setSelectedSemesterOrder(semToSelect.order);
-            else if (sem.length > 0) setSelectedSemesterOrder(sem[0].order);
-            setSelectedClassId(null);
         });
-    }, [selectedYearId]);
+    }, []);
 
     const loadSchedule = async () => {
         if (!selectedClassId || !selectedSemesterOrder) return;

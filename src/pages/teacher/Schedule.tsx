@@ -1,49 +1,28 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/apiService';
-import type { SchoolYear, SemesterDto, ScheduleLesson, LessonHour } from '../../types';
+import type { ScheduleLesson, LessonHour } from '../../types';
 import { getTeacherId } from '../../utils/helpers';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 import { ScheduleGrid } from '../../components/ui/ScheduleGrid';
 
 
 export const TeacherSchedule = () => {
     const { getText } = useCMSContent('teacherLayout');
-    const [years, setYears] = useState<SchoolYear[]>([]);
-    const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
-    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
-    const [selectedSemesterOrder, setSelectedSemesterOrder] = useState<number | null>(null);
+    const {
+        years, selectedYearId, setSelectedYearId,
+        semesters, selectedSemesterOrder, setSelectedSemesterOrder
+    } = useSchoolYearSelector({ withCurrentSemester: true });
+
     const [schedule, setSchedule] = useState<ScheduleLesson[]>([]);
     const [lessonHours, setLessonHours] = useState<LessonHour[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const loadInitial = async () => {
-            const [yearsData, hoursData] = await Promise.all([
-                api.schoolYears.getAll(),
-                api.lessonHours.getAll()
-            ]);
-            setYears(yearsData);
-            const today = new Date().toISOString().split('T')[0];
-            const current = yearsData.find(y => y.startDate <= today && y.endDate >= today) || yearsData.find(y => y.isActive) || yearsData[0];
-            if (current) setSelectedYearId(current.id);
-            setLessonHours(hoursData);
-        };
-        loadInitial();
+        api.lessonHours.getAll().then(setLessonHours);
     }, []);
-
-    useEffect(() => {
-        if (!selectedYearId) return;
-        Promise.all([
-            api.classManagement.getSemesters(selectedYearId),
-            api.grades.getCurrentSemester(selectedYearId).catch(() => 1)
-        ]).then(([sem, currentSem]) => {
-            setSemesters(sem);
-            const semToSelect = sem.find(s => s.order === currentSem) || sem[0];
-            if (semToSelect) setSelectedSemesterOrder(semToSelect.order);
-        });
-    }, [selectedYearId]);
 
     useEffect(() => {
         const loadSchedule = async () => {

@@ -581,7 +581,6 @@ export const SystemConfig = () => {
                         data={filteredData}
                         columns={columns}
                         isLoading={loading}
-                        emptyMessage="Brak danych"
                         sortBy={filters.sortBy}
                         sortDesc={filters.sortDesc}
                         onSort={handleSort}

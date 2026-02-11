@@ -110,7 +110,6 @@ export const TeacherAnnouncements = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage="Brak danych"
                         />
                     )}
                 </div>

@@ -12,18 +12,21 @@ import { Select } from '../../components/ui/Select';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { Modal } from '../../components/modals/Modal';
-import type { SchoolYear, SemesterDto, ClassEntity, PaginatedResponse, Subject, SubjectList, User } from '../../types';
+import type { SemesterDto, ClassEntity, PaginatedResponse, Subject, SubjectList, User } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 
 export const Grades = () => {
     const { getText } = useCMSContent('grades');
+    const {
+        years, selectedYearId,
+        semesters, classes
+    } = useSchoolYearSelector({ withClasses: true });
+
     const [data, setData] = useState<any[]>([]);
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<any> | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [years, setYears] = useState<SchoolYear[]>([]);
-    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
-    const [classes, setClasses] = useState<ClassEntity[]>([]);
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [gradeTypes, setGradeTypes] = useState<any[]>([]);
     const [gradeCategories, setGradeCategories] = useState<any[]>([]);
@@ -69,29 +72,15 @@ export const Grades = () => {
     });
 
     useEffect(() => {
-        api.schoolYears.getAll().then(data => {
-            setYears(data);
-            const today = new Date().toISOString().split('T')[0];
-            const current = data.find(y => y.startDate <= today && y.endDate >= today) || data.find(y => y.isActive) || data[0];
-            if (current) setFilters(f => ({ ...f, yearId: current.id }));
-        });
+        if (selectedYearId) setFilters(f => ({ ...f, yearId: selectedYearId }));
+    }, [selectedYearId]);
+
+    useEffect(() => {
         api.subjects.getAll().then(setSubjects).catch(console.error);
         api.gradeTypes.getAll().then(setGradeTypes).catch(console.error);
         api.gradeCategories.getAll().then(setGradeCategories).catch(console.error);
         api.users.getAll({ roleLevel: 2, pageSize: 1000 }).then(res => setTeachers(res.data)).catch(console.error);
     }, []);
-
-    useEffect(() => {
-        if (filters.yearId) {
-            Promise.all([
-                api.classManagement.getSemesters(filters.yearId),
-                api.classManagement.getClassesByYear(filters.yearId, { pageSize: 1000 })
-            ]).then(([sem, cls]) => {
-                setSemesters(sem);
-                setClasses(cls.data);
-            });
-        }
-    }, [filters.yearId]);
 
     const loadData = useCallback(async () => {
         if (!filters.yearId) return;
@@ -339,7 +328,6 @@ export const Grades = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={'Brak danych'}
                         />
                     )}
                 </div>

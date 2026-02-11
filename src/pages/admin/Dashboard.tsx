@@ -39,10 +39,6 @@ export const Dashboard = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
-          <p className="text-neutral-500 text-sm mt-1">
-            Rok szkolny: <span className="font-semibold text-neutral-700">{data?.status.schoolYear ?? '-'}</span>,
-            <span className="font-semibold text-neutral-700 ml-1">{data?.status.semester ?? '-'}</span>
-          </p>
         </div>
 
       </div>

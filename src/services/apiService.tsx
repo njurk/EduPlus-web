@@ -871,13 +871,6 @@ export const ticketsApi = {
         });
         return handleResponse<void>(response);
     },
-    markAsRead: async (id: number): Promise<void> => {
-        const response = await fetch(`${API_URL}/Ticket/${id}/read`, {
-            method: 'POST',
-            headers: getHeaders()
-        });
-        return handleResponse<void>(response);
-    },
     getById: async (id: number): Promise<Ticket> => {
         const response = await fetch(`${API_URL}/Ticket/${id}`, { headers: getHeaders() });
         return handleResponse<Ticket>(response);

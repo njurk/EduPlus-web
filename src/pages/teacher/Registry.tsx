@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../../services/apiService';
-import type { SchoolYear, SemesterDto, ClassEntity, Grade } from '../../types';
+import type { Grade, LessonDetailsDto, LessonAttendanceDto } from '../../types';
 import { validateGradeForm } from '../../utils/validation';
 import { formatDateOnly } from '../../utils/formatters';
 import { DataTable, type Column } from '../../components/ui/DataTable';
@@ -10,14 +10,14 @@ import { ActionButtons } from '../../components/ui/ActionButtons';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { Select } from '../../components/ui/Select';
 import { GradeSquare } from '../../components/ui/GradeSquare';
-import { AttendanceSquare } from '../../components/ui/AttendanceSquare';
+import { LessonDetailView } from '../../components/views/LessonDetailView';
 import { Modal } from '../../components/modals/Modal';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 import { getTeacherId } from '../../utils/helpers';
-
 
 type Tab = 'grades' | 'lessons' | 'students';
 
@@ -25,11 +25,12 @@ export const Registry = () => {
     const { getText } = useCMSContent('teacherLayout');
     const teacherId = getTeacherId();
 
-    const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
-    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
-    const [selectedSemesterOrder, setSelectedSemesterOrder] = useState<number | null>(null);
+    const {
+        selectedYearId,
+        semesters, selectedSemesterOrder, setSelectedSemesterOrder,
+        classes: allClasses
+    } = useSchoolYearSelector({ withClasses: true });
 
-    const [allClasses, setAllClasses] = useState<ClassEntity[]>([]);
     const [teacherAssignments, setTeacherAssignments] = useState<{ classId: number; subjectId: number; subjectName: string }[]>([]);
     const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
     const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
@@ -72,12 +73,10 @@ export const Registry = () => {
     const [lessonsStatusFilter, setLessonsStatusFilter] = useState<number | null>(null);
     const [lessonStatuses, setLessonStatuses] = useState<any[]>([]);
 
-    const [detailLesson, setDetailLesson] = useState<any>(null);
-    const [attendance, setAttendance] = useState<any[]>([]);
-    const [attendanceLoading, setAttendanceLoading] = useState(false);
-    const [attendanceTypes, setAttendanceTypes] = useState<any[]>([]);
-    const [isDetailOpen, setIsDetailOpen] = useState(false);
-    const [editLesson, setEditLesson] = useState<any>(null);
+    const [lessonViewMode, setLessonViewMode] = useState<'list' | 'details' | 'edit'>('list');
+    const [detailsLesson, setDetailsLesson] = useState<LessonDetailsDto | null>(null);
+    const [attendanceData, setAttendanceData] = useState<LessonAttendanceDto[]>([]);
+    const [detailsLoading, setDetailsLoading] = useState(false);
 
     const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
     const [availableSchedules, setAvailableSchedules] = useState<any[]>([]);
@@ -85,39 +84,16 @@ export const Registry = () => {
     const [schedulesLoading, setSchedulesLoading] = useState(false);
 
     useEffect(() => {
-        const loadInitial = async () => {
-            const [yearsData, types, categories, statuses, attTypes] = await Promise.all([
-                api.schoolYears.getAll(),
-                api.gradeTypes.getAll(),
-                api.gradeCategories.getAll(),
-                api.lessonStatuses.getAll(),
-                api.attendanceTypes.getAll()
-            ]);
+        Promise.all([
+            api.gradeTypes.getAll(),
+            api.gradeCategories.getAll(),
+            api.lessonStatuses.getAll()
+        ]).then(([types, categories, statuses]) => {
             setGradeTypes(types);
             setGradeCategories(categories);
             setLessonStatuses(statuses);
-            setAttendanceTypes(attTypes);
-
-            const today = new Date().toISOString().split('T')[0];
-            const current = yearsData.find((y: SchoolYear) => y.startDate <= today && y.endDate >= today) || yearsData.find((y: SchoolYear) => y.isActive) || yearsData[0];
-            if (current) setSelectedYearId(current.id);
-        };
-        loadInitial();
-    }, []);
-
-    useEffect(() => {
-        if (!selectedYearId) return;
-        Promise.all([
-            api.classManagement.getSemesters(selectedYearId),
-            api.classManagement.getClassesByYear(selectedYearId, { includeInactive: false, pageSize: 100 })
-        ]).then(([sem, cls]) => {
-            setSemesters(sem);
-            setAllClasses(cls.data);
-            const today = new Date().toISOString().split('T')[0];
-            const semToSelect = sem.find((s: SemesterDto) => s.startDate && s.endDate && s.startDate <= today && s.endDate >= today) || sem[0];
-            if (semToSelect) setSelectedSemesterOrder(semToSelect.order);
         });
-    }, [selectedYearId]);
+    }, []);
 
     useEffect(() => {
         if (!selectedYearId) return;
@@ -126,7 +102,6 @@ export const Registry = () => {
 
     const teacherClasses = allClasses.filter(c => teacherAssignments.some(a => a.classId === c.id));
     const availableSubjects = teacherAssignments.filter(a => a.classId === selectedClassId);
-
     const currentSemester = useMemo(() => semesters.find(s => s.order === selectedSemesterOrder), [semesters, selectedSemesterOrder]);
 
     const loadGradesGrid = useCallback(async () => {
@@ -208,7 +183,6 @@ export const Registry = () => {
     };
 
 
-
     const openEditGrade = (grade: Grade, studentName?: string) => {
         setEditGrade(grade);
         setEditGradeStudentName(studentName || '');
@@ -268,18 +242,29 @@ export const Registry = () => {
         loadGradesGrid();
     };
 
-    const openLessonDetails = async (lesson: any) => {
-        setDetailLesson(lesson);
-        setIsDetailOpen(true);
-        setAttendanceLoading(true);
+    const openLessonView = async (lesson: any, mode: 'details' | 'edit') => {
+        setDetailsLoading(true);
+        setLessonViewMode(mode);
         try {
-            const att = await api.lessons.getAttendance(lesson.id);
-            setAttendance(att);
+            const [details, attendance] = await Promise.all([
+                api.lessons.getDetails(lesson.id),
+                api.lessons.getAttendance(lesson.id)
+            ]);
+            setDetailsLesson(details);
+            setAttendanceData(attendance);
+        } catch (e) {
+            console.error(e);
+            setLessonViewMode('list');
         } finally {
-            setAttendanceLoading(false);
+            setDetailsLoading(false);
         }
     };
 
+    const backToLessonList = () => {
+        setLessonViewMode('list');
+        setDetailsLesson(null);
+        setAttendanceData([]);
+    };
 
     const openCreateLesson = async () => {
         setIsCreateLessonOpen(true);
@@ -297,30 +282,6 @@ export const Registry = () => {
         }
     };
 
-    const handleAttendanceChange = async (studentId: number, attendanceTypeId: number | null) => {
-        if (!editLesson) return;
-        const att = await api.lessons.updateAttendance(editLesson.id, studentId, attendanceTypeId);
-        setAttendance(att);
-    };
-
-    const openEditLesson = async (lesson: any) => {
-        setEditLesson({ ...lesson });
-        setAttendanceLoading(true);
-        try {
-            const att = await api.lessons.getAttendance(lesson.id);
-            setAttendance(att);
-        } finally {
-            setAttendanceLoading(false);
-        }
-    };
-
-    const handleUpdateLesson = async () => {
-        if (!editLesson) return;
-        await api.lessons.update(editLesson.id, { topic: editLesson.topic, statusId: editLesson.statusId });
-        setEditLesson(null);
-        loadLessons();
-    };
-
     const handleCreateFromSchedule = async (scheduleId: number) => {
         await api.lessons.createFromSchedule(scheduleId, createDate, teacherId);
         setIsCreateLessonOpen(false);
@@ -333,7 +294,7 @@ export const Registry = () => {
         { header: 'Nr lekcji', className: 'w-14 text-center', render: (l) => l.orderNumber },
         { header: 'Temat', muted: true, render: (l) => <span className="truncate block max-w-xs">{l.topic || '-'}</span> },
         { header: 'Status', className: 'w-28', render: (l) => <span className="truncate block max-w-xs">{l.statusName || '-'}</span> },
-        { header: 'Akcje', className: 'w-24', render: (l) => <ActionButtons isActive onEdit={() => openEditLesson(l)} onDetails={() => openLessonDetails(l)} /> }
+        { header: 'Akcje', className: 'w-24', render: (l) => <ActionButtons isActive onEdit={() => openLessonView(l, 'edit')} onDetails={() => openLessonView(l, 'details')} /> }
     ];
 
     const handleClassChange = (classId: number | null) => {
@@ -359,6 +320,22 @@ export const Registry = () => {
         const columnIds = new Set(gradeColumns.map((c: any) => c.id));
         return studentGrades.filter((g: any) => !g.gradeColumnId || !columnIds.has(g.gradeColumnId));
     };
+
+    if (lessonViewMode === 'details' || lessonViewMode === 'edit') {
+        if (detailsLoading) return <LoadingSpinner className="h-64" />;
+        if (detailsLesson) {
+            return (
+                <LessonDetailView
+                    lesson={detailsLesson}
+                    attendance={attendanceData}
+                    onBack={backToLessonList}
+                    onAttendanceChange={loadLessons}
+                    onLessonUpdate={loadLessons}
+                    editMode={lessonViewMode === 'edit'}
+                />
+            );
+        }
+    }
 
     return (
         <div className="space-y-4">
@@ -516,7 +493,7 @@ export const Registry = () => {
                                     else { setLessonsSortBy(field); setLessonsSortDesc(true); }
                                 }}
                                 isLoading={lessonsLoading}
-                                emptyMessage="Brak danych"
+
                             />
                             <Pagination currentPage={lessonsPage} totalPages={Math.ceil(lessonsTotal / 20)} totalCount={lessonsTotal} pageSize={20} onPageChange={setLessonsPage} />
                         </div>
@@ -659,128 +636,6 @@ export const Registry = () => {
                         </Button>
                     </div>
                 </div>
-            </Modal>
-
-            <Modal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} title={detailLesson ? `${detailLesson.subjectName} - ${detailLesson.className}` : 'Szczegóły lekcji'} maxWidth="lg">
-                {detailLesson && (
-                    <div className="p-6 space-y-4">
-                        <div className="gap-4 text-sm">
-                            <div><span className="text-neutral-500">Data:</span> <span className="font-medium">{formatDateOnly(detailLesson.date)}</span></div>
-                            <div><span className="text-neutral-500">Godzina lekcyjna:</span> <span className="font-medium">{detailLesson.orderNumber}</span></div>
-                            <div><span className="text-neutral-500">Status:</span> {detailLesson.statusName}</div>
-                            <div><span className="text-neutral-500">Temat:</span> <span className="font-medium">{detailLesson.topic || '-'}</span></div>
-                        </div>
-
-                        <div className="border-t pt-4">
-                            <h3 className="text-sm font-semibold text-neutral-700 mb-3">Frekwencja</h3>
-                            {attendanceLoading ? <LoadingSpinner className="py-4" /> : (
-                                <table className="w-full text-sm border-collapse">
-                                    <thead className="bg-neutral-50">
-                                        <tr>
-                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Uczeń</th>
-                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-neutral-100">
-                                        {attendance.map((a: any) => (
-                                            <tr key={a.studentId}>
-                                                <td className="px-3 py-1 font-medium">{a.studentName}</td>
-                                                <td className="px-3 py-1">
-                                                    <div className="flex gap-1">
-                                                        {attendanceTypes.map(at => (
-                                                            <AttendanceSquare
-                                                                key={at.id}
-                                                                shortCode={at.shortCode || at.name?.charAt(0)}
-                                                                colorHex={at.colorHex || '#e5e7eb'}
-                                                                isSelected={a.attendanceTypeId === at.id}
-                                                                readOnly
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {attendance.length === 0 && (
-                                            <tr><td colSpan={2} className="text-center text-neutral-400 py-4">Brak danych</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </Modal>
-
-            <Modal isOpen={!!editLesson} onClose={() => setEditLesson(null)} title="Edytuj lekcje">
-                {editLesson && (
-                    <div className="p-6 space-y-4">
-                        <div className="text-sm">
-                            <div><span className="text-neutral-500">Data:</span> <span className="font-medium">{formatDateOnly(editLesson.date)}</span></div>
-                            <div><span className="text-neutral-500">Godzina lekcyjna:</span> <span className="font-medium">{editLesson.orderNumber}</span></div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-1">Status</label>
-                            <select
-                                className="w-full px-3 py-2 border border-neutral-300 rounded-xs text-sm bg-white"
-                                value={editLesson.statusId || ''}
-                                onChange={(e) => setEditLesson({ ...editLesson, statusId: +e.target.value })}
-                            >
-                                {lessonStatuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-1">Temat</label>
-                            <textarea
-                                className="w-full px-3 py-2 border border-neutral-300 rounded-xs text-sm resize-none"
-                                rows={3}
-                                value={editLesson.topic || ''}
-                                onChange={(e) => setEditLesson({ ...editLesson, topic: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="border-t pt-4">
-                            <h3 className="text-sm font-semibold text-neutral-700 mb-3">Frekwencja</h3>
-                            {attendanceLoading ? <LoadingSpinner className="py-4" /> : (
-                                <table className="w-full text-sm border-collapse">
-                                    <thead className="bg-neutral-50">
-                                        <tr>
-                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Uczen</th>
-                                            <th className="px-3 py-1 text-left font-medium text-neutral-600">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-neutral-100">
-                                        {attendance.map((a: any) => (
-                                            <tr key={a.studentId}>
-                                                <td className="px-3 py-1 font-medium">{a.studentName}</td>
-                                                <td className="px-3 py-1">
-                                                    <div className="flex gap-1">
-                                                        {attendanceTypes.map(at => (
-                                                            <AttendanceSquare
-                                                                key={at.id}
-                                                                shortCode={at.shortCode || at.name?.charAt(0)}
-                                                                colorHex={at.colorHex || '#e5e7eb'}
-                                                                isSelected={a.attendanceTypeId === at.id}
-                                                                onClick={() => handleAttendanceChange(a.studentId, a.attendanceTypeId === at.id ? null : at.id)}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {attendance.length === 0 && (
-                                            <tr><td colSpan={2} className="text-center text-neutral-400 py-4">Brak danych</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2">
-                            <Button variant="secondary" onClick={() => setEditLesson(null)}>Anuluj</Button>
-                            <Button onClick={handleUpdateLesson}>Zapisz</Button>
-                        </div>
-                    </div>
-                )}
             </Modal>
 
             <Modal isOpen={isCreateLessonOpen} onClose={() => setIsCreateLessonOpen(false)} title="Nowa lekcja">

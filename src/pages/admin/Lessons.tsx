@@ -12,21 +12,24 @@ import { YearSelector } from '../../components/ui/YearSelector';
 import { Select } from '../../components/ui/Select';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { Modal } from '../../components/modals/Modal';
-import type { SchoolYear, SemesterDto, ClassEntity, LessonDetailsDto, LessonAttendanceDto, User as UserType, PaginatedResponse } from '../../types';
+import type { LessonDetailsDto, LessonAttendanceDto, User as UserType, PaginatedResponse } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 import { LessonDetailView } from '../../components/views/LessonDetailView';
 
 type ViewMode = 'list' | 'details' | 'edit';
 
 export const Lessons = () => {
     const { getText } = useCMSContent('lessons');
+    const {
+        years, selectedYearId,
+        semesters, classes
+    } = useSchoolYearSelector({ withClasses: true });
+
     const [data, setData] = useState<any[]>([]);
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<any> | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [years, setYears] = useState<SchoolYear[]>([]);
-    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
-    const [classes, setClasses] = useState<ClassEntity[]>([]);
     const [statuses, setStatuses] = useState<any[]>([]);
     const [subjects, setSubjects] = useState<any[]>([]);
     const [classrooms, setClassrooms] = useState<any[]>([]);
@@ -61,29 +64,15 @@ export const Lessons = () => {
     const [templatesLoading, setTemplatesLoading] = useState(false);
 
     useEffect(() => {
-        api.schoolYears.getAll().then(data => {
-            setYears(data);
-            const today = new Date().toISOString().split('T')[0];
-            const current = data.find(y => y.startDate <= today && y.endDate >= today) || data.find(y => y.isActive) || data[0];
-            if (current) setFilters(f => ({ ...f, yearId: current.id }));
-        });
+        if (selectedYearId) setFilters(f => ({ ...f, yearId: selectedYearId }));
+    }, [selectedYearId]);
+
+    useEffect(() => {
         api.lessonStatuses.getAll().then(setStatuses).catch(console.error);
         api.subjects.getAll().then(setSubjects).catch(console.error);
         api.classrooms.getAll().then(setClassrooms).catch(console.error);
         api.users.getAll({ roleLevel: 2, pageSize: 1000 }).then(res => setTeachers(res.data)).catch(console.error);
     }, []);
-
-    useEffect(() => {
-        if (filters.yearId) {
-            Promise.all([
-                api.classManagement.getSemesters(filters.yearId),
-                api.classManagement.getClassesByYear(filters.yearId, { pageSize: 1000, includeInactive: false })
-            ]).then(([sem, cls]) => {
-                setSemesters(sem);
-                setClasses(cls.data || []);
-            }).catch(console.error);
-        }
-    }, [filters.yearId]);
 
     const loadData = useCallback(async () => {
         if (!filters.yearId) return;
@@ -312,7 +301,6 @@ export const Lessons = () => {
                                         )
                                     }
                                 ]}
-                                emptyMessage={'Brak danych'}
                             />
                         )}
                     </div>

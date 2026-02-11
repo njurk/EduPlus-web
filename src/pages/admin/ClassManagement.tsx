@@ -11,11 +11,12 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { api } from '../../services/apiService';
 import { Users, BookOpen, UserPlus, Search, Check, Plus, ArrowLeft, Eye } from 'lucide-react';
 import { clsx } from 'clsx';
-import type { ClassEntity, ClassDetailsDto, User, Subject, SchoolYear, PaginatedResponse } from '../../types';
+import type { ClassEntity, ClassDetailsDto, User, Subject, PaginatedResponse } from '../../types';
 import { validateClassForm } from '../../utils/validation';
 import { formatDateTime, formatName } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 
 const CandidateRow = memo(({ student, isSelected, onToggle }: { student: User, isSelected: boolean, onToggle: (id: number) => void }) => (
     <div onClick={() => onToggle(student.id)} className={clsx("flex items-center justify-between p-2 border-b cursor-pointer text-sm select-none hover:bg-neutral-100", isSelected && "bg-primary-light text-primary-text")}>
@@ -238,7 +239,6 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                     />
                                 }
                             ]}
-                            emptyMessage="Brak danych"
                         />
                     </div>
                 ) : (
@@ -283,7 +283,6 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
                                     />
                                 }
                             ]}
-                            emptyMessage="Brak danych"
                         />
                     </div>
                 )}
@@ -294,7 +293,10 @@ const ClassDetailsView = ({ classId, onBack }: { classId: number, onBack: () => 
 
 export const ClassManagement = () => {
     const { getText } = useCMSContent('classManagement');
-    const [years, setYears] = useState<SchoolYear[]>([]);
+    const {
+        years, selectedYearId
+    } = useSchoolYearSelector();
+
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<ClassEntity> | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [selected, setSelected] = useState<{ year: number | null, class: number | null }>({ year: null, class: null });
@@ -305,12 +307,10 @@ export const ClassManagement = () => {
     const [allTeachers, setAllTeachers] = useState<{ id: number, firstName: string, lastName: string }[]>([]);
 
     useEffect(() => {
-        api.classManagement.getYears().then(res => {
-            setYears(res);
-            const today = new Date().toISOString().split('T')[0];
-            const current = res.find(y => y.startDate <= today && y.endDate >= today) || res.find(y => y.isActive) || res[0];
-            if (current) setSelected(p => ({ ...p, year: current.id }));
-        });
+        if (selectedYearId) setSelected(p => ({ ...p, year: selectedYearId }));
+    }, [selectedYearId]);
+
+    useEffect(() => {
         api.users.getAll({ pageSize: 200, roleLevel: 2 }).then(res => setAllTeachers(res.data));
     }, []);
 
@@ -419,7 +419,6 @@ export const ClassManagement = () => {
                         <DataTable
                             data={paginatedData?.data || []}
                             columns={classColumns}
-                            emptyMessage="Brak danych"
                             sortBy={filters.sortBy}
                             sortDesc={filters.sortDesc}
                             onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}

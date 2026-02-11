@@ -113,7 +113,6 @@ export const Announcements = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={'Brak danych'}
                         />
                     )}
                 </div>

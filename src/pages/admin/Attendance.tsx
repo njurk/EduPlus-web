@@ -10,18 +10,21 @@ import { Select } from '../../components/ui/Select';
 import { FilterToolbar, FilterSelect, FilterDate } from '../../components/ui/FilterToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { Modal } from '../../components/modals/Modal';
-import type { SchoolYear, SemesterDto, ClassEntity, PaginatedResponse, User, LessonHour, AttendanceType } from '../../types';
+import type { PaginatedResponse, User, LessonHour, AttendanceType } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 import { Pagination } from '../../components/ui/Pagination';
 
 export const Attendance = () => {
     const { getText } = useCMSContent('attendance');
+    const {
+        years, selectedYearId,
+        semesters, classes
+    } = useSchoolYearSelector({ withClasses: true });
+
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<any> | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [years, setYears] = useState<SchoolYear[]>([]);
-    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
-    const [classes, setClasses] = useState<ClassEntity[]>([]);
     const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
     const [teachers, setTeachers] = useState<User[]>([]);
     const [lessonHours, setLessonHours] = useState<LessonHour[]>([]);
@@ -44,34 +47,20 @@ export const Attendance = () => {
     const [editTypeId, setEditTypeId] = useState<number | null>(null);
 
     useEffect(() => {
+        if (selectedYearId) setFilters(f => ({ ...f, yearId: selectedYearId }));
+    }, [selectedYearId]);
+
+    useEffect(() => {
         Promise.all([
-            api.schoolYears.getAll(),
             api.attendanceTypes.getAll(),
             api.users.getAll({ pageSize: 1000, roleLevel: 2 }),
             api.lessonHours.getAll()
-        ]).then(([yearsData, typesData, teachersData, hoursData]) => {
-            setYears(yearsData);
+        ]).then(([typesData, teachersData, hoursData]) => {
             setAttendanceTypes(typesData);
             setTeachers(teachersData.data || []);
-            setLessonHours((hoursData || []).sort((a, b) => a.orderNumber - b.orderNumber));
-            const today = new Date().toISOString().split('T')[0];
-            const current = yearsData.find(y => y.startDate <= today && y.endDate >= today) || yearsData.find(y => y.isActive) || yearsData[0];
-            if (current) setFilters(f => ({ ...f, yearId: current.id }));
+            setLessonHours((hoursData || []).sort((a: LessonHour, b: LessonHour) => a.orderNumber - b.orderNumber));
         });
     }, []);
-
-    useEffect(() => {
-        if (filters.yearId) {
-            Promise.all([
-                api.classManagement.getSemesters(filters.yearId),
-                api.classManagement.getClassesByYear(filters.yearId)
-            ]).then(([sem, cls]) => {
-                setSemesters(sem);
-                setClasses(cls.data);
-                if (sem.length > 0) setFilters(f => ({ ...f, semesterOrder: sem[0].order }));
-            });
-        }
-    }, [filters.yearId]);
 
 
 
@@ -208,7 +197,6 @@ export const Attendance = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={'Brak danych'}
                         />
                     )}
                 </div>

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/apiService';
-import type { SchoolYear, SemesterDto, ClassEntity } from '../../types';
 import { formatDateTime, formatDateOnly } from '../../utils/formatters';
 import { getTeacherId, EXCUSE_STATUS_OPTIONS, getExcuseStatusBadge } from '../../utils/helpers';
 import { DataTable, type Column } from '../../components/ui/DataTable';
@@ -10,6 +9,7 @@ import { ActionButtons } from '../../components/ui/ActionButtons';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 import { ExcuseDetailModal } from '../../components/views/ExcuseDetailModal';
 
 
@@ -17,11 +17,11 @@ export const TeacherExcuses = () => {
     const { getText } = useCMSContent('teacherLayout');
     const teacherId = getTeacherId();
 
-    const [years, setYears] = useState<SchoolYear[]>([]);
-    const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
-    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
-    const [selectedSemesterOrder, setSelectedSemesterOrder] = useState<number | null>(null);
-    const [classes, setClasses] = useState<ClassEntity[]>([]);
+    const {
+        years, selectedYearId, setSelectedYearId,
+        semesters, selectedSemesterOrder, setSelectedSemesterOrder,
+        classes
+    } = useSchoolYearSelector({ withClasses: true, withCurrentSemester: true });
 
     const [excuses, setExcuses] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -35,31 +35,6 @@ export const TeacherExcuses = () => {
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
     const [selectedExcuseId, setSelectedExcuseId] = useState<number | null>(null);
-
-    useEffect(() => {
-        const loadInitial = async () => {
-            const yearsData = await api.schoolYears.getAll();
-            setYears(yearsData);
-            const today = new Date().toISOString().split('T')[0];
-            const current = yearsData.find(y => y.startDate <= today && y.endDate >= today) || yearsData.find(y => y.isActive) || yearsData[0];
-            if (current) setSelectedYearId(current.id);
-        };
-        loadInitial();
-    }, []);
-
-    useEffect(() => {
-        if (!selectedYearId) return;
-        Promise.all([
-            api.classManagement.getSemesters(selectedYearId),
-            api.classManagement.getClassesByYear(selectedYearId, { includeInactive: false, pageSize: 100 }),
-            api.grades.getCurrentSemester(selectedYearId).catch(() => 1)
-        ]).then(([sem, cls, currentSem]) => {
-            setSemesters(sem);
-            setClasses(cls.data);
-            const semToSelect = sem.find(s => s.order === currentSem) || sem[0];
-            if (semToSelect) setSelectedSemesterOrder(semToSelect.order);
-        });
-    }, [selectedYearId]);
 
     const loadExcuses = useCallback(async () => {
         if (!teacherId) return;
@@ -144,7 +119,7 @@ export const TeacherExcuses = () => {
                     />
                 </FilterToolbar>
 
-                <DataTable columns={columns} data={excuses} sortBy={sortBy} sortDesc={sortDesc} onSort={handleSort} isLoading={loading} emptyMessage="Brak danych" />
+                <DataTable columns={columns} data={excuses} sortBy={sortBy} sortDesc={sortDesc} onSort={handleSort} isLoading={loading} />
                 <Pagination currentPage={page} totalPages={Math.ceil(totalCount / 20)} totalCount={totalCount} pageSize={20} onPageChange={setPage} />
             </div>
 

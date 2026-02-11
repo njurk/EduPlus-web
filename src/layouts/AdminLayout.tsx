@@ -6,6 +6,7 @@ import { useCMSContent } from '../hooks/useCMSContent';
 import { formatFullDate } from '../utils/formatters';
 import { api, API_URL } from '../services/apiService';
 import { Badge } from '../components/ui/Badge';
+import { SchoolYearBadge } from '../components/ui/SchoolYearBadge';
 import { UnreadContext } from '../hooks/useUnread';
 import type { UnreadCounts } from '../types';
 
@@ -28,7 +29,7 @@ const Clock = () => {
 export const AdminLayout = () => {
   const { getText } = useCMSContent('layout');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, excuses: 0, unreadAnnouncementIds: [], unreadTicketIds: [] });
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, excuses: 0, unreadAnnouncementIds: [] });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -183,6 +184,7 @@ export const AdminLayout = () => {
             >
               <Menu size={24} />
             </button>
+            <SchoolYearBadge />
           </div>
           <div className="flex items-center gap-6">
             <Clock />

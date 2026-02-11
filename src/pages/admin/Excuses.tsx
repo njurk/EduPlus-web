@@ -6,8 +6,9 @@ import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { formatDateTime } from '../../utils/formatters';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
-import type { PaginatedResponse, SchoolYear, SemesterDto, Excuse } from '../../types';
+import type { PaginatedResponse, Excuse } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 import { Pagination } from '../../components/ui/Pagination';
 import { EXCUSE_STATUS_OPTIONS, getExcuseStatusBadge } from '../../utils/helpers';
 import { ActionButtons } from '../../components/ui/ActionButtons';
@@ -15,12 +16,14 @@ import { ExcuseDetailModal } from '../../components/views/ExcuseDetailModal';
 
 export const Excuses = () => {
     const { getText } = useCMSContent('excuses');
+    const {
+        years, selectedYearId,
+        semesters, classes
+    } = useSchoolYearSelector({ withClasses: true });
+
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Excuse> | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [years, setYears] = useState<SchoolYear[]>([]);
-    const [semesters, setSemesters] = useState<SemesterDto[]>([]);
-    const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
     const [filters, setFilters] = useState({
         search: '',
         sortBy: 'createdAt',
@@ -33,26 +36,8 @@ export const Excuses = () => {
     const [selectedExcuseId, setSelectedExcuseId] = useState<number | null>(null);
 
     useEffect(() => {
-        api.schoolYears.getAll().then(data => {
-            setYears(data);
-            const today = new Date().toISOString().split('T')[0];
-            const current = data.find(y => y.startDate <= today && y.endDate >= today) || data.find(y => y.isActive) || data[0];
-            if (current) setFilters(f => ({ ...f, yearId: current.id }));
-        });
-    }, []);
-
-    useEffect(() => {
-        if (filters.yearId) {
-            Promise.all([
-                api.classManagement.getSemesters(filters.yearId),
-                api.classManagement.getClassesByYear(filters.yearId)
-            ]).then(([sem, cls]) => {
-                setSemesters(sem);
-                setClasses(cls.data.map((c: any) => ({ id: c.id, name: `${c.level}${c.letter}` })));
-                if (sem.length > 0) setFilters(f => ({ ...f, semesterId: sem[0].id }));
-            });
-        }
-    }, [filters.yearId]);
+        if (selectedYearId) setFilters(f => ({ ...f, yearId: selectedYearId }));
+    }, [selectedYearId]);
 
     const loadData = useCallback(async () => {
         if (!filters.yearId) return;
@@ -108,7 +93,7 @@ export const Excuses = () => {
                         label="Klasa:"
                         value={filters.classId}
                         onChange={v => setFilters(f => ({ ...f, classId: v ? Number(v) : null }))}
-                        options={classes.map(c => ({ value: c.id, label: c.name }))}
+                        options={classes.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))}
                         placeholder="Wszystkie"
                         minWidth="100px"
                     />
@@ -129,7 +114,7 @@ export const Excuses = () => {
                                     <ActionButtons isActive onDetails={() => setSelectedExcuseId(e.id)} />
                                 )
                             }
-                        ]} emptyMessage="Brak danych"
+                        ]}
                             sortBy={filters.sortBy} sortDesc={filters.sortDesc} onSort={handleSort}
                         />
                     )}

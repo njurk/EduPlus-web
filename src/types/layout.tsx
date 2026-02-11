@@ -3,5 +3,4 @@ export interface UnreadCounts {
     tickets: number;
     excuses: number;
     unreadAnnouncementIds: number[];
-    unreadTicketIds: number[];
 }

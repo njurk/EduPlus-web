@@ -9,10 +9,8 @@ import { formatDateTime } from '../../utils/formatters';
 import { Pagination } from '../../components/ui/Pagination';
 import { DetailsModal } from '../../components/modals/DetailsModal';
 import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
 import { AlertCircle } from 'lucide-react';
 import { useCMSContent } from '../../hooks/useCMSContent';
-import { useUnread } from '../../hooks/useUnread';
 import { ActionButtons } from '../../components/ui/ActionButtons';
 import { Editor } from 'primereact/editor';
 import 'primereact/resources/themes/lara-light-blue/theme.css';
@@ -25,7 +23,6 @@ type ViewMode = 'list' | 'resolve' | 'viewClosed';
 
 export const Tickets = () => {
     const { getText } = useCMSContent('tickets');
-    const { unreadTicketIds } = useUnread();
     const [searchParams, setSearchParams] = useSearchParams();
     const [data, setData] = useState<PaginatedResponse<Ticket> | null>(null);
     const [loading, setLoading] = useState(false);
@@ -56,9 +53,7 @@ export const Tickets = () => {
                         setSelectedTicket(ticket);
                         setIsDetailsOpen(true);
                     }
-                    if (!ticket.isRead) {
-                        api.tickets.markAsRead(ticket.id).catch(console.error);
-                    }
+
                 }
             }).catch(console.error);
             setSearchParams({}, { replace: true });
@@ -91,13 +86,6 @@ export const Tickets = () => {
     }, [loadData]);
 
     const openDetails = async (ticket: Ticket) => {
-        if (!ticket.isRead) {
-            api.tickets.markAsRead(ticket.id).catch(console.error);
-            setData(prev => prev ? {
-                ...prev,
-                data: prev.data.map(t => t.id === ticket.id ? { ...t, isRead: true } : t)
-            } : null);
-        }
         if (ticket.isClosed) {
             setSelectedTicket(ticket);
             setViewMode('viewClosed');
@@ -108,13 +96,6 @@ export const Tickets = () => {
     };
 
     const openResolve = (ticket: Ticket) => {
-        if (!ticket.isRead) {
-            api.tickets.markAsRead(ticket.id).catch(console.error);
-            setData(prev => prev ? {
-                ...prev,
-                data: prev.data.map(t => t.id === ticket.id ? { ...t, isRead: true } : t)
-            } : null);
-        }
         setSelectedTicket(ticket);
         setAdminResponse('');
         setResolveError(null);
@@ -327,14 +308,7 @@ export const Tickets = () => {
                             columns={[
                                 { header: 'Nr', accessor: 'id', sortKey: 'id', className: 'w-16', bold: true },
                                 { header: 'Data zgłoszenia', sortKey: 'created', className: 'w-36', muted: true, render: (t) => formatDateTime(t.createdAt) },
-                                {
-                                    header: 'Email', sortKey: 'email', bold: true, render: (t) => (
-                                        <div className="flex items-center gap-2">
-                                            {t.email}
-                                            <Badge variant="new" show={unreadTicketIds.includes(t.id)} />
-                                        </div>
-                                    )
-                                },
+                                { header: 'Email', sortKey: 'email', bold: true, render: (t) => t.email },
                                 { header: 'Powód', sortKey: 'reason', render: (t) => t.reasonName },
                                 { header: 'Status', className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },
                                 { header: 'Data zamknięcia', sortKey: 'closedat', muted: true, render: (t) => t.closedAt ? formatDateTime(t.closedAt) : '-' },
@@ -350,7 +324,6 @@ export const Tickets = () => {
                                     )
                                 }
                             ]}
-                            emptyMessage={'Brak danych'}
                         />
                     )}
                 </div>
