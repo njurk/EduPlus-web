@@ -4,10 +4,11 @@ import { clsx } from 'clsx';
 interface TrashButtonProps {
     isTrashActive: boolean;
     onToggle: () => void;
+    label?: string;
     className?: string;
 }
 
-export const TrashButton = ({ isTrashActive, onToggle, className }: TrashButtonProps) => (
+export const TrashButton = ({ isTrashActive, onToggle, label = 'Kosz', className }: TrashButtonProps) => (
     <button
         onClick={onToggle}
         className={clsx(
@@ -18,6 +19,6 @@ export const TrashButton = ({ isTrashActive, onToggle, className }: TrashButtonP
             className
         )}
     >
-        {isTrashActive ? <><ArrowLeft size={14} />Powrót</> : <><Trash2 size={14} />Kosz</>}
+        {isTrashActive ? <><ArrowLeft size={14} />Powrót</> : <><Trash2 size={14} />{label}</>}
     </button>
 );

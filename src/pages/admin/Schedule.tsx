@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/apiService';
-import type { ScheduleLesson, LessonHour, Subject, Classroom, User } from '../../types';
+import type { ScheduleLesson, LessonHour, Classroom, ClassSubject } from '../../types';
 import { ExportButton } from '../../components/ui/ExportButton';
 import { YearSelector } from '../../components/ui/YearSelector';
 import { SemesterSelector } from '../../components/ui/SemesterSelector';
@@ -35,22 +35,19 @@ export const Schedule = () => {
         classroomId: number;
     } | null>(null);
 
-    const [subjects, setSubjects] = useState<Subject[]>([]);
+    const [subjects, setSubjects] = useState<ClassSubject[]>([]);
     const [classrooms, setClassrooms] = useState<Classroom[]>([]);
-    const [teachers, setTeachers] = useState<User[]>([]);
-    const [teachersLoading, setTeachersLoading] = useState(false);
+    const [classroomsLoading, setClassroomsLoading] = useState(false);
 
     useEffect(() => {
-        Promise.all([
-            api.lessonHours ? api.lessonHours.getAll() : Promise.resolve([]),
-            api.subjects.getAll(),
-            api.classrooms.getAll()
-        ]).then(([hoursData, subjectsData, classroomsData]) => {
-            setLessonHours(hoursData);
-            setSubjects(subjectsData);
-            setClassrooms(classroomsData);
-        });
+        api.lessonHours ? api.lessonHours.getAll().then(setLessonHours) : Promise.resolve();
     }, []);
+
+    useEffect(() => {
+        if (!selectedClassId) { setSubjects([]); return; }
+        api.classManagement.getClassDetails(selectedClassId)
+            .then(details => setSubjects(details.subjects.filter(s => s.isActive)));
+    }, [selectedClassId]);
 
     const loadSchedule = async () => {
         if (!selectedClassId || !selectedSemesterOrder) return;
@@ -70,16 +67,7 @@ export const Schedule = () => {
         loadSchedule();
     }, [selectedClassId, selectedSemesterOrder, semesters]);
 
-    useEffect(() => {
-        if (!modalData?.subjectId) {
-            setTeachers([]);
-            return;
-        }
-        setTeachersLoading(true);
-        api.subjects.getTeachers(modalData.subjectId)
-            .then(setTeachers)
-            .finally(() => setTeachersLoading(false));
-    }, [modalData?.subjectId]);
+
 
     const getLesson = (dayIndex: number, order: number) => {
         const dayOfWeek = dayIndex + 1;
@@ -87,6 +75,8 @@ export const Schedule = () => {
     };
 
     const openModal = (dayIndex: number, hour: LessonHour, existing?: ScheduleLesson) => {
+        const semester = semesters.find(s => s.order === selectedSemesterOrder);
+        if (!semester) return;
         setModalData({
             id: existing?.id,
             dayOfWeek: dayIndex + 1,
@@ -95,6 +85,10 @@ export const Schedule = () => {
             teacherId: existing?.teacherId || 0,
             classroomId: existing?.classroomId || 0
         });
+        setClassroomsLoading(true);
+        api.schedule.getAvailableClassrooms(semester.id, dayIndex + 1, hour.id, existing?.id)
+            .then(setClassrooms)
+            .finally(() => setClassroomsLoading(false));
         setIsModalOpen(true);
     };
 
@@ -213,22 +207,14 @@ export const Schedule = () => {
                         <select
                             className="px-2 py-1 border border-neutral-300 rounded-xs text-sm bg-white w-full"
                             value={modalData?.subjectId || ''}
-                            onChange={e => setModalData(prev => prev ? { ...prev, subjectId: +e.target.value, teacherId: 0 } : null)}
+                            onChange={e => {
+                                const subjectId = +e.target.value;
+                                const cs = subjects.find(s => s.subjectId === subjectId);
+                                setModalData(prev => prev ? { ...prev, subjectId, teacherId: cs?.teacherId || 0 } : null);
+                            }}
                         >
                             <option value="">Wybierz przedmiot</option>
-                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="label-text">Nauczyciel <span className="text-danger">*</span></label>
-                        <select
-                            className="px-2 py-1 border border-neutral-300 rounded-xs text-sm bg-white w-full"
-                            value={modalData?.teacherId || ''}
-                            onChange={e => setModalData(prev => prev ? { ...prev, teacherId: +e.target.value } : null)}
-                            disabled={!modalData?.subjectId || teachersLoading}
-                        >
-                            <option value="">{teachersLoading ? 'Ładowanie...' : 'Wybierz nauczyciela'}</option>
-                            {teachers.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
+                            {subjects.map(s => <option key={s.subjectId} value={s.subjectId}>{s.subjectName}{s.teacherName ? ` (${s.teacherName})` : ''}</option>)}
                         </select>
                     </div>
                     <div>
@@ -237,8 +223,9 @@ export const Schedule = () => {
                             className="px-2 py-1 border border-neutral-300 rounded-xs text-sm bg-white w-full"
                             value={modalData?.classroomId || ''}
                             onChange={e => setModalData(prev => prev ? { ...prev, classroomId: +e.target.value } : null)}
+                            disabled={classroomsLoading}
                         >
-                            <option value="">Wybierz salę</option>
+                            <option value="">{classroomsLoading ? 'Ładowanie...' : 'Wybierz salę'}</option>
                             {classrooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>

@@ -1,14 +1,13 @@
 import type {
-    User, UserRole, ParentStudents, Role, ChangePasswordDto, PaginatedResponse,
-    Announcement, SchoolYear, SchoolClass, Classroom, Subject, ClassEntity, ClassDetailsDto, SemesterDto,
+    User, ParentStudents, Role, ChangePasswordDto, PaginatedResponse,
+    Announcement, SchoolYear, Classroom, Subject, ClassEntity, ClassDetailsDto, SemesterDto,
     GradeType, GradeCategory, Grade, GradeDto, StudentGradesRowDto,
     AttendanceType, AttendanceAdminDto,
     LessonHour, LessonStatus, ScheduleLesson,
     Ticket, CreateTicketDto, CloseTicketDto, TicketReason,
-    PageContent, Page, Target,
+    PageContent, Page, Target, UnreadCounts,
     DashboardSummary
 } from '../types';
-import type { UnreadCounts } from '../types/layout';
 
 export const BASE_URL = 'http://192.168.88.89:5107';
 export const API_URL = `${BASE_URL}/api`;
@@ -31,7 +30,13 @@ const handleResponse = async <T = any>(response: Response): Promise<T> => {
 
     if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(errorBody || `HTTP error! status: ${response.status}`);
+        try {
+            const errorJson = JSON.parse(errorBody);
+            throw new Error(errorJson.message || errorJson.title || errorBody);
+        } catch (e) {
+            if (e instanceof Error && e.message !== errorBody) throw e;
+            throw new Error(errorBody || `HTTP error! status: ${response.status}`);
+        }
     }
 
     if (response.status === 204) return null as T;
@@ -94,19 +99,6 @@ function createCrudResource<T>(endpoint: string) {
 
 type LoginCredentials = { email: string; password: string };
 
-const handleLoginResponse = async (response: Response) => {
-    if (!response.ok) {
-        const errorBody = await response.text();
-        try {
-            const errorJson = JSON.parse(errorBody);
-            throw new Error(errorJson.message || errorJson.title || errorBody);
-        } catch {
-            throw new Error(errorBody || "Wystąpił błąd serwera");
-        }
-    }
-    return await response.json();
-};
-
 export const authApi = {
     loginAdmin: async (credentials: LoginCredentials) => {
         const response = await fetch(`${API_URL}/auth/login/admin`, {
@@ -114,7 +106,7 @@ export const authApi = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials)
         });
-        return handleLoginResponse(response);
+        return handleResponse(response);
     },
     loginTeacher: async (credentials: LoginCredentials) => {
         const response = await fetch(`${API_URL}/auth/login/teacher`, {
@@ -122,15 +114,7 @@ export const authApi = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials)
         });
-        return handleLoginResponse(response);
-    },
-    loginMobile: async (credentials: LoginCredentials) => {
-        const response = await fetch(`${API_URL}/auth/login/mobile`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(credentials)
-        });
-        return handleLoginResponse(response);
+        return handleResponse(response);
     },
     logout: async () => {
         const token = localStorage.getItem('token');
@@ -175,18 +159,7 @@ export const usersApi = {
             headers: getHeaders(),
             body: JSON.stringify(data)
         });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            let errorMessage = errorBody;
-            try {
-                const json = JSON.parse(errorBody);
-                errorMessage = json.message || json.title || errorMessage;
-            } catch { }
-            throw new Error(errorMessage || "Błąd zmiany hasła");
-        }
-
-        return await response.json();
+        return handleResponse(response);
     }
 };
 
@@ -210,8 +183,6 @@ export const rolesApi = {
     }
 };
 
-export const userRolesApi = createCrudResource<UserRole>('userrole');
-
 export const parentStudentsApi = {
     getAll: async (search: string = '', sortBy?: string, sortDesc?: boolean): Promise<ParentStudents[]> => {
         const query = new URLSearchParams();
@@ -228,53 +199,11 @@ export const parentStudentsApi = {
             headers: getHeaders()
         });
         return handleResponse<void>(response);
-    },
-    create: async (data: Partial<ParentStudents>): Promise<ParentStudents> => {
-        const response = await fetch(`${API_URL}/ParentStudent`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(data)
-        });
-        return handleResponse<ParentStudents>(response);
-    }
-};
-
-export const announcementsApi = {
-    ...createCrudResource<Announcement>('announcement'),
-    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, authorName?: string, targetRoleId?: number }): Promise<PaginatedResponse<Announcement>> => {
-        const url = new URL(`${API_URL}/announcement`);
-        if (params) {
-            Object.keys(params).forEach(key => {
-                const value = (params as any)[key];
-                if (value !== undefined && value !== null && value !== '') {
-                    url.searchParams.append(key, value.toString());
-                }
-            });
-        }
-        const response = await fetch(url.toString(), { headers: getHeaders() });
-        return handleResponse<PaginatedResponse<Announcement>>(response);
-    },
-    restore: async (id: number): Promise<void> => {
-        const response = await fetch(`${API_URL}/announcement/${id}/restore`, {
-            method: 'PATCH',
-            headers: getHeaders()
-        });
-        return handleResponse<void>(response);
-    },
-    getAuthors: async (): Promise<string[]> => {
-        const response = await fetch(`${API_URL}/announcement/authors`, { headers: getHeaders() });
-        return handleResponse<string[]>(response);
-    },
-    markAsRead: async (id: number): Promise<void> => {
-        const response = await fetch(`${API_URL}/announcement/${id}/read`, {
-            method: 'POST',
-            headers: getHeaders()
-        });
-        return handleResponse<void>(response);
     }
 };
 
 export const schoolYearsApi = {
+    ...createCrudResource<SchoolYear>('SchoolYear'),
     getAll: async (params?: Record<string, any>): Promise<SchoolYear[]> => {
         const url = new URL(`${API_URL}/SchoolYear`);
         if (params) {
@@ -288,43 +217,9 @@ export const schoolYearsApi = {
         const response = await fetch(url.toString(), { headers: getHeaders() });
         return handleResponse<SchoolYear[]>(response);
     },
-    get: async (id: number): Promise<SchoolYear> => {
-        const response = await fetch(`${API_URL}/SchoolYear/${id}`, { headers: getHeaders() });
-        return handleResponse<SchoolYear>(response);
-    },
     getSemesters: async (id: number): Promise<SemesterDto[]> => {
         const response = await fetch(`${API_URL}/SchoolYear/${id}/semesters`, { headers: getHeaders() });
         return handleResponse<SemesterDto[]>(response);
-    },
-    create: async (data: Partial<SchoolYear>): Promise<SchoolYear> => {
-        const response = await fetch(`${API_URL}/SchoolYear`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(data)
-        });
-        return handleResponse<SchoolYear>(response);
-    },
-    update: async (id: number, data: Partial<SchoolYear>): Promise<SchoolYear> => {
-        const response = await fetch(`${API_URL}/SchoolYear/${id}`, {
-            method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify(data)
-        });
-        return handleResponse<SchoolYear>(response);
-    },
-    delete: async (id: number): Promise<void> => {
-        const response = await fetch(`${API_URL}/SchoolYear/${id}`, {
-            method: 'DELETE',
-            headers: getHeaders()
-        });
-        return handleResponse<void>(response);
-    },
-    restore: async (id: number): Promise<void> => {
-        const response = await fetch(`${API_URL}/SchoolYear/${id}/restore`, {
-            method: 'PATCH',
-            headers: getHeaders()
-        });
-        return handleResponse<void>(response);
     }
 };
 
@@ -347,81 +242,9 @@ export const semestersApi = {
     }
 };
 
-export const classesApi = createCrudResource<SchoolClass>('class');
 export const classroomsApi = createCrudResource<Classroom>('classroom');
 
-export const subjectsApi = {
-    ...createCrudResource<Subject>('subject'),
-    getAll: async (params?: Record<string, any>): Promise<Subject[]> => {
-        const url = new URL(`${API_URL}/subject`);
-        if (params) {
-            Object.keys(params).forEach(key => {
-                const value = params[key];
-                if (value !== undefined && value !== null && value !== '') {
-                    url.searchParams.append(key, value.toString());
-                }
-            });
-        }
-        const response = await fetch(url.toString(), { headers: getHeaders() });
-        return handleResponse(response);
-    },
-    getTeachers: async (subjectId: number): Promise<User[]> => {
-        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers`, { headers: getHeaders() });
-        return handleResponse(response);
-    },
-    getAllSubjectTeachers: async (params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDesc?: boolean; search?: string; subjectId?: number; teacherId?: number; showInactive?: boolean }): Promise<PaginatedResponse<any>> => {
-        const query = new URLSearchParams();
-        if (params?.pageNumber !== undefined) query.append('pageNumber', String(params.pageNumber));
-        if (params?.pageSize !== undefined) query.append('pageSize', String(params.pageSize));
-        if (params?.sortBy) query.append('sortBy', params.sortBy);
-        if (params?.sortDesc !== undefined) query.append('sortDesc', String(params.sortDesc));
-        if (params?.search) query.append('search', params.search);
-        if (params?.subjectId !== undefined) query.append('subjectId', String(params.subjectId));
-        if (params?.teacherId !== undefined) query.append('teacherId', String(params.teacherId));
-        if (params?.showInactive !== undefined) query.append('showInactive', String(params.showInactive));
-        const response = await fetch(`${API_URL}/subject/teachers?${query.toString()}`, { headers: getHeaders() });
-        return handleResponse(response);
-    },
-    addTeacher: async (subjectId: number, teacherId: number) => {
-        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${teacherId}`, {
-            method: 'POST',
-            headers: getHeaders()
-        });
-        return handleResponse(response);
-    },
-    removeTeacher: async (subjectId: number, teacherId: number) => {
-        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${teacherId}`, {
-            method: 'DELETE',
-            headers: getHeaders()
-        });
-        return handleResponse(response);
-    },
-    restoreTeacher: async (subjectId: number, teacherId: number) => {
-        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${teacherId}/restore`, {
-            method: 'POST',
-            headers: getHeaders()
-        });
-        return handleResponse(response);
-    },
-    updateTeacher: async (subjectId: number, oldTeacherId: number, newTeacherId: number) => {
-        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${oldTeacherId}`, {
-            method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify({ newTeacherId })
-        });
-        return handleResponse(response);
-    },
-};
-
 export const classManagementApi = {
-    getYears: async (): Promise<SchoolYear[]> => {
-        const response = await fetch(`${API_URL}/schoolyear`, { headers: getHeaders() });
-        return handleResponse(response);
-    },
-    getSemesters: async (yearId: number): Promise<SemesterDto[]> => {
-        const response = await fetch(`${API_URL}/schoolyear/${yearId}/semesters`, { headers: getHeaders() });
-        return handleResponse(response);
-    },
     getClassesByYear: async (yearId: number, params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDesc?: boolean; level?: number; search?: string; includeInactive?: boolean }): Promise<PaginatedResponse<ClassEntity>> => {
         const query = new URLSearchParams({ schoolYearId: String(yearId) });
         if (params?.pageNumber !== undefined) query.append('pageNumber', String(params.pageNumber));
@@ -478,14 +301,6 @@ export const classManagementApi = {
         });
         return handleResponse(response);
     },
-    addStudentToClass: async (classId: number, studentId: number) => {
-        const response = await fetch(`${API_URL}/classStudent`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ classId, studentId })
-        });
-        return handleResponse(response);
-    },
     removeStudentFromClass: async (relationId: number) => {
         const response = await fetch(`${API_URL}/class/students/${relationId}`, {
             method: 'DELETE',
@@ -524,10 +339,6 @@ export const classManagementApi = {
         });
         return handleResponse(response);
     },
-    getClassStudents: async (classId: number): Promise<any[]> => {
-        const details = await classManagementApi.getClassDetails(classId);
-        return details.students || [];
-    },
     getStudentsWithParents: async (classId: number): Promise<any[]> => {
         const response = await fetch(`${API_URL}/class/${classId}/student-parents`, { headers: getHeaders() });
         return handleResponse(response);
@@ -548,8 +359,70 @@ export const classManagementApi = {
     }
 };
 
+export const subjectsApi = {
+    getAll: async (params?: Record<string, any>): Promise<Subject[]> => {
+        const url = new URL(`${API_URL}/subject`);
+        if (params) {
+            Object.keys(params).forEach(key => {
+                const value = params[key];
+                if (value !== undefined && value !== null && value !== '') {
+                    url.searchParams.append(key, value.toString());
+                }
+            });
+        }
+        const response = await fetch(url.toString(), { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    getTeachers: async (subjectId: number): Promise<User[]> => {
+        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers`, { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    getAllSubjectTeachers: async (params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDesc?: boolean; search?: string; subjectId?: number; teacherId?: number; showInactive?: boolean }): Promise<PaginatedResponse<any>> => {
+        const query = new URLSearchParams();
+        if (params?.pageNumber !== undefined) query.append('pageNumber', String(params.pageNumber));
+        if (params?.pageSize !== undefined) query.append('pageSize', String(params.pageSize));
+        if (params?.sortBy) query.append('sortBy', params.sortBy);
+        if (params?.sortDesc !== undefined) query.append('sortDesc', String(params.sortDesc));
+        if (params?.search) query.append('search', params.search);
+        if (params?.subjectId !== undefined) query.append('subjectId', String(params.subjectId));
+        if (params?.teacherId !== undefined) query.append('teacherId', String(params.teacherId));
+        if (params?.showInactive !== undefined) query.append('showInactive', String(params.showInactive));
+        const response = await fetch(`${API_URL}/subject/teachers?${query.toString()}`, { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    addTeacher: async (subjectId: number, teacherId: number) => {
+        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${teacherId}`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+    removeTeacher: async (subjectId: number, teacherId: number) => {
+        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${teacherId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+    updateTeacher: async (subjectId: number, oldTeacherId: number, newTeacherId: number) => {
+        const response = await fetch(`${API_URL}/subject/${subjectId}/teachers/${oldTeacherId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ newTeacherId })
+        });
+        return handleResponse(response);
+    },
+};
+
 export const gradeTypesApi = createCrudResource<GradeType>('GradeType');
-export const gradeCategoriesApi = createCrudResource<GradeCategory>('GradeCategory');
+
+export const gradeCategoriesApi = {
+    ...createCrudResource<GradeCategory>('GradeCategory'),
+    getBySemester: async (order: number): Promise<any> => {
+        const response = await fetch(`${API_URL}/GradeCategory/semester/${order}`, { headers: getHeaders() });
+        return handleResponse(response);
+    }
+};
 
 export const gradeColumnsApi = {
     getAll: async (classId: number, subjectId: number, semesterId: number): Promise<any[]> => {
@@ -573,17 +446,14 @@ export const gradeColumnsApi = {
     }
 };
 
-export const classGradesApi = {
-    getClassGrades: async (classId: number, subjectId: number, semester: number, yearId?: number): Promise<StudentGradesRowDto[]> => {
-        const url = `${API_URL}/grade/class-grades/${classId}/${subjectId}?semester=${semester}${yearId ? `&schoolYearId=${yearId}` : ''}`;
-        const response = await fetch(url, { headers: getHeaders() });
-        return handleResponse(response);
-    }
-};
-
 export const gradesApi = {
     getCurrentSemester: async (yearId: number): Promise<number> => {
         const response = await fetch(`${API_URL}/grade/current-semester/${yearId}`, { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    getClassGrades: async (classId: number, subjectId: number, semester: number, yearId?: number): Promise<StudentGradesRowDto[]> => {
+        const url = `${API_URL}/grade/class-grades/${classId}/${subjectId}?semester=${semester}${yearId ? `&schoolYearId=${yearId}` : ''}`;
+        const response = await fetch(url, { headers: getHeaders() });
         return handleResponse(response);
     },
     getAll: async (params?: Record<string, any>): Promise<PaginatedResponse<any>> => {
@@ -601,11 +471,6 @@ export const gradesApi = {
     },
     getById: async (id: number): Promise<any> => {
         const response = await fetch(`${API_URL}/grade/${id}`, { headers: getHeaders() });
-        return handleResponse(response);
-    },
-    getClassGrades: async (classId: number, subjectId: number, semester: number, yearId?: number): Promise<StudentGradesRowDto[]> => {
-        const url = `${API_URL}/grade/class-grades/${classId}/${subjectId}?semester=${semester}${yearId ? `&schoolYearId=${yearId}` : ''}`;
-        const response = await fetch(url, { headers: getHeaders() });
         return handleResponse(response);
     },
     create: async (data: GradeDto): Promise<Grade> => {
@@ -649,11 +514,38 @@ export const gradesApi = {
             body: JSON.stringify(data)
         });
         return handleResponse(response);
+    },
+    upsertSemester: async (data: { subjectId: number; gradeCategoryId: number; grades: { studentId: number; gradeTypeId: number }[] }): Promise<any> => {
+        const response = await fetch(`${API_URL}/grade/bulk-semester`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+    }
+};
+
+const gradingScaleApi = {
+    getAll: async (params?: Record<string, any>): Promise<any[]> => {
+        const url = new URL(`${API_URL}/gradingscale`);
+        if (params) {
+            Object.keys(params).forEach(key => {
+                const value = params[key];
+                if (value !== undefined && value !== null && value !== '') {
+                    url.searchParams.append(key, value.toString());
+                }
+            });
+        }
+        const response = await fetch(url.toString(), { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    update: async (id: number, data: any): Promise<any> => {
+        const response = await fetch(`${API_URL}/gradingscale/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) });
+        return handleResponse(response);
     }
 };
 
 export const attendanceTypesApi = {
-    ...createCrudResource<AttendanceType>('AttendanceType'),
     getAll: async (params?: Record<string, any>): Promise<AttendanceType[]> => {
         const url = new URL(`${API_URL}/attendancetype`);
         if (params) {
@@ -699,7 +591,6 @@ export const attendanceApi = {
 };
 
 export const excusesApi = {
-    ...createCrudResource<any>('excuse'),
     getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, statusFilter?: string, classId?: number, semesterId?: number, teacherId?: number }): Promise<PaginatedResponse<any>> => {
         const url = new URL(`${API_URL}/excuse`);
         if (params) {
@@ -783,11 +674,19 @@ export const scheduleApi = {
         if (semesterId) url.searchParams.append('semesterId', semesterId.toString());
         const response = await fetch(url.toString(), { headers: getHeaders() });
         return handleResponse(response);
+    },
+    getAvailableClassrooms: async (semesterId: number, dayOfWeek: number, lessonHourId: number, excludeId?: number): Promise<Classroom[]> => {
+        const url = new URL(`${API_URL}/WeeklySchedule/available-classrooms`);
+        url.searchParams.append('semesterId', semesterId.toString());
+        url.searchParams.append('dayOfWeek', dayOfWeek.toString());
+        url.searchParams.append('lessonHourId', lessonHourId.toString());
+        if (excludeId) url.searchParams.append('excludeId', excludeId.toString());
+        const response = await fetch(url.toString(), { headers: getHeaders() });
+        return handleResponse(response);
     }
 };
 
 export const lessonsApi = {
-    ...createCrudResource<any>('lesson'),
     getAll: async (params?: Record<string, any>): Promise<PaginatedResponse<any>> => {
         const url = new URL(`${API_URL}/lesson`);
         if (params) {
@@ -825,6 +724,14 @@ export const lessonsApi = {
         });
         return handleResponse(response);
     },
+    update: async (id: number, data: any): Promise<any> => {
+        const response = await fetch(`${API_URL}/lesson/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+    },
     delete: async (id: number): Promise<void> => {
         const response = await fetch(`${API_URL}/lesson/${id}`, {
             method: 'DELETE',
@@ -838,6 +745,41 @@ export const lessonsApi = {
             headers: getHeaders()
         });
         return handleResponse(response);
+    }
+};
+
+export const announcementsApi = {
+    ...createCrudResource<Announcement>('announcement'),
+    getAll: async (params?: { pageNumber?: number, pageSize?: number, search?: string, sortBy?: string, sortDesc?: boolean, showInactive?: boolean, authorName?: string, targetRoleId?: number }): Promise<PaginatedResponse<Announcement>> => {
+        const url = new URL(`${API_URL}/announcement`);
+        if (params) {
+            Object.keys(params).forEach(key => {
+                const value = (params as any)[key];
+                if (value !== undefined && value !== null && value !== '') {
+                    url.searchParams.append(key, value.toString());
+                }
+            });
+        }
+        const response = await fetch(url.toString(), { headers: getHeaders() });
+        return handleResponse<PaginatedResponse<Announcement>>(response);
+    },
+    restore: async (id: number): Promise<void> => {
+        const response = await fetch(`${API_URL}/announcement/${id}/restore`, {
+            method: 'PATCH',
+            headers: getHeaders()
+        });
+        return handleResponse<void>(response);
+    },
+    getAuthors: async (): Promise<string[]> => {
+        const response = await fetch(`${API_URL}/announcement/authors`, { headers: getHeaders() });
+        return handleResponse<string[]>(response);
+    },
+    markAsRead: async (id: number): Promise<void> => {
+        const response = await fetch(`${API_URL}/announcement/${id}/read`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        return handleResponse<void>(response);
     }
 };
 
@@ -976,29 +918,24 @@ export const dashboardApi = {
     }
 };
 
-const generateTimestamp = () => new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-
-const downloadBlob = async (url: URL, filename: string) => {
-    const response = await fetch(url.toString(), { headers: getHeaders() });
-    if (!response.ok) throw new Error('Błąd eksportu');
-
-    const blob = await response.blob();
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    window.URL.revokeObjectURL(link.href);
-    document.body.removeChild(link);
-};
-
 export const exportApi = {
     downloadSchedule: async (params: { classId: number; yearId?: number; semesterId?: number; format: 'pdf' | 'xlsx' | 'docx' }): Promise<void> => {
         const url = new URL(`${API_URL}/export/schedule/${params.format}`);
         url.searchParams.set('classId', params.classId.toString());
         if (params.yearId) url.searchParams.set('yearId', params.yearId.toString());
         if (params.semesterId) url.searchParams.set('semesterId', params.semesterId.toString());
-        await downloadBlob(url, `plan-lekcji-${generateTimestamp()}.${params.format}`);
+
+        const response = await fetch(url.toString(), { headers: getHeaders() });
+        if (!response.ok) throw new Error('Błąd eksportu');
+        const blob = await response.blob();
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `plan-lekcji-${timestamp}.${params.format}`;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+        document.body.removeChild(link);
     },
     downloadGrades: async (params: { classId: number; semesterId: number; schoolYearId: number; subjectId?: number; studentId?: number; format: 'pdf' | 'xlsx' }): Promise<void> => {
         const url = new URL(`${API_URL}/export/grades/${params.format}`);
@@ -1007,7 +944,18 @@ export const exportApi = {
         url.searchParams.set('schoolYearId', params.schoolYearId.toString());
         if (params.subjectId) url.searchParams.set('subjectId', params.subjectId.toString());
         if (params.studentId) url.searchParams.set('studentId', params.studentId.toString());
-        await downloadBlob(url, `wykaz-ocen-${generateTimestamp()}.${params.format}`);
+
+        const response = await fetch(url.toString(), { headers: getHeaders() });
+        if (!response.ok) throw new Error('Błąd eksportu');
+        const blob = await response.blob();
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `wykaz-ocen-${timestamp}.${params.format}`;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+        document.body.removeChild(link);
     }
 };
 
@@ -1022,20 +970,17 @@ export const api = {
     auth: authApi,
     users: usersApi,
     roles: rolesApi,
-    userRoles: userRolesApi,
     parentStudents: parentStudentsApi,
-    announcements: announcementsApi,
     schoolYears: schoolYearsApi,
     semesters: semestersApi,
-    classes: classesApi,
     classrooms: classroomsApi,
-    subjects: subjectsApi,
     classManagement: classManagementApi,
+    subjects: subjectsApi,
     gradeTypes: gradeTypesApi,
     gradeCategories: gradeCategoriesApi,
     gradeColumns: gradeColumnsApi,
-    classGrades: classGradesApi,
     grades: gradesApi,
+    gradingScale: gradingScaleApi,
     attendanceTypes: attendanceTypesApi,
     attendance: attendanceApi,
     excuses: excusesApi,
@@ -1043,6 +988,7 @@ export const api = {
     lessonStatuses: lessonStatusesApi,
     schedule: scheduleApi,
     lessons: lessonsApi,
+    announcements: announcementsApi,
     tickets: ticketsApi,
     ticketReasons: ticketReasonsApi,
     pageContent: pageContentApi,

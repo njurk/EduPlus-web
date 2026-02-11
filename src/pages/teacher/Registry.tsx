@@ -55,6 +55,11 @@ export const Registry = () => {
     const [bulkGrades, setBulkGrades] = useState<Record<number, number>>({});
     const [bulkComments, setBulkComments] = useState<Record<number, string>>({});
 
+    const [semGradeOpen, setSemGradeOpen] = useState(false);
+    const [semGrades, setSemGrades] = useState<Record<number, number>>({});
+    const [semCategoryId, setSemCategoryId] = useState<number | null>(null);
+    const [semSaving, setSemSaving] = useState(false);
+
 
     const [editGradeOpen, setEditGradeOpen] = useState(false);
     const [editGrade, setEditGrade] = useState<Grade | null>(null);
@@ -109,7 +114,7 @@ export const Registry = () => {
         setGradesLoading(true);
         try {
             const [rows, cols] = await Promise.all([
-                api.classGrades.getClassGrades(selectedClassId, selectedSubjectId, currentSemester.order, selectedYearId || undefined),
+                api.grades.getClassGrades(selectedClassId, selectedSubjectId, currentSemester.order, selectedYearId || undefined),
                 api.gradeColumns.getAll(selectedClassId, selectedSubjectId, currentSemester.id)
             ]);
             setStudentRows(rows);
@@ -242,6 +247,49 @@ export const Registry = () => {
         loadGradesGrid();
     };
 
+    const openSemGradeModal = async () => {
+        if (!selectedSemesterOrder) return;
+        try {
+            const [scale, category] = await Promise.all([
+                api.gradingScale.getAll(),
+                api.gradeCategories.getBySemester(selectedSemesterOrder)
+            ]);
+            setSemCategoryId(category.id);
+            const semSlugLocal = selectedSemesterOrder === 1 ? 'midyear' : 'final';
+            const initial: Record<number, number> = {};
+            studentRows.forEach((row: any) => {
+                const existing = (row.grades || []).find((g: any) => g.gradeCategory?.slug === semSlugLocal);
+                if (existing) {
+                    initial[row.studentId] = existing.gradeTypeId;
+                } else if (row.average > 0) {
+                    const match = scale.find((s: any) => row.average >= s.minAverage && row.average <= s.maxAverage);
+                    if (match) initial[row.studentId] = match.gradeTypeId;
+                }
+            });
+            setSemGrades(initial);
+            setSemGradeOpen(true);
+        } catch { }
+    };
+
+    const handleSemGradeSave = async () => {
+        if (!selectedSubjectId || !semCategoryId) return;
+        const entries = Object.entries(semGrades);
+        if (entries.length === 0) return;
+        setSemSaving(true);
+        try {
+            await api.grades.upsertSemester({
+                subjectId: selectedSubjectId,
+                gradeCategoryId: semCategoryId,
+                grades: entries.map(([studentId, gradeTypeId]) => ({ studentId: Number(studentId), gradeTypeId }))
+            });
+            setSemGradeOpen(false);
+            loadGradesGrid();
+        } catch (e) { console.error(e); } finally { setSemSaving(false); }
+    };
+
+    const semSlug = selectedSemesterOrder === 1 ? 'midyear' : 'final';
+    const semColumnLabel = 'Ocena końcowa';
+
     const openLessonView = async (lesson: any, mode: 'details' | 'edit') => {
         setDetailsLoading(true);
         setLessonViewMode(mode);
@@ -318,7 +366,7 @@ export const Registry = () => {
 
     const getStudentOrphanGrades = (studentGrades: any[]) => {
         const columnIds = new Set(gradeColumns.map((c: any) => c.id));
-        return studentGrades.filter((g: any) => !g.gradeColumnId || !columnIds.has(g.gradeColumnId));
+        return studentGrades.filter((g: any) => (!g.gradeColumnId || !columnIds.has(g.gradeColumnId)) && !g.gradeCategory?.slug);
     };
 
     if (lessonViewMode === 'details' || lessonViewMode === 'edit') {
@@ -417,7 +465,15 @@ export const Registry = () => {
                                                         <Plus size={20} />
                                                     </button>
                                                 </th>
-                                                <th className="px-2 py-1 text-left font-medium text-neutral-600 min-w-[60px]">średnia</th>
+                                                <th className="px-2 py-1 text-center font-medium text-neutral-600 border-r border-neutral-200 bg-neutral-50 min-w-[60px]">Średnia</th>
+                                                <th className="px-2 py-1 text-center font-medium text-neutral-600 min-w-[70px]">
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <span className="text-sm leading-tight text-center">Ocena<br />końcowa</span>
+                                                        <button onClick={openSemGradeModal} className="text-primary hover:text-primary-dark">
+                                                            <Plus size={18} />
+                                                        </button>
+                                                    </div>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-neutral-100">
@@ -446,15 +502,21 @@ export const Registry = () => {
                                                             ))}
                                                         </div>
                                                     </td>
-                                                    <td className="px-2 py-1 text-left">
-                                                        <span className="font-bold text-neutral-700">
+                                                    <td className="px-2 py-1 text-center border-r border-neutral-200 bg-neutral-50">
+                                                        <span className="font-semibold text-neutral-600">
                                                             {row.average > 0 ? row.average.toFixed(2) : '-'}
                                                         </span>
+                                                    </td>
+                                                    <td className="px-2 py-1 text-center">
+                                                        {(() => {
+                                                            const sg = (row.grades || []).find((g: any) => g.gradeCategory?.slug === semSlug);
+                                                            return sg ? <GradeSquare grade={sg} onClick={() => openEditGrade(sg, `${row.lastName} ${row.firstName}`)} /> : <span className="text-neutral-300">-</span>;
+                                                        })()}
                                                     </td>
                                                 </tr>
                                             ))}
                                             {studentRows.length === 0 && (
-                                                <tr><td colSpan={gradeColumns.length + 4} className="text-center text-neutral-400 py-8">Brak danych</td></tr>
+                                                <tr><td colSpan={gradeColumns.length + 5} className="text-center text-neutral-400 py-8">Brak danych</td></tr>
                                             )}
                                         </tbody>
                                     </table>
@@ -638,6 +700,44 @@ export const Registry = () => {
                 </div>
             </Modal>
 
+            <Modal isOpen={semGradeOpen} onClose={() => setSemGradeOpen(false)} title={`Wystaw oceny - ${semColumnLabel}`} maxWidth="xl">
+                <div className="p-6">
+                    <table className="w-full text-sm border-collapse">
+                        <thead className="bg-neutral-50">
+                            <tr>
+                                <th className="px-3 py-1 text-left font-medium text-neutral-600">Uczeń</th>
+                                <th className="px-3 py-1 text-left font-medium text-neutral-600 w-24">Średnia</th>
+                                <th className="px-3 py-1 text-left font-medium text-neutral-600 w-40">Ocena</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                            {studentRows.map((row: any) => (
+                                <tr key={row.studentId}>
+                                    <td className="px-3 py-1 font-medium">{row.lastName} {row.firstName}</td>
+                                    <td className="px-3 py-1 text-neutral-500">{row.average > 0 ? row.average.toFixed(2) : '-'}</td>
+                                    <td className="px-3 py-1">
+                                        <select
+                                            className="border border-neutral-300 rounded-xs px-2 py-1 text-sm bg-white w-full"
+                                            value={semGrades[row.studentId] || ''}
+                                            onChange={e => setSemGrades(prev => ({ ...prev, [row.studentId]: +e.target.value }))}
+                                        >
+                                            <option value="">-</option>
+                                            {gradeTypes.map((t: any) => <option key={t.id} value={t.id}>{t.numeric} ({t.name})</option>)}
+                                        </select>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button variant="soft" onClick={() => setSemGradeOpen(false)}>Anuluj</Button>
+                        <Button onClick={handleSemGradeSave} disabled={semSaving || Object.values(semGrades).filter(v => v > 0).length === 0}>
+                            {semSaving ? 'Zapisywanie...' : `Zapisz (${Object.values(semGrades).filter(v => v > 0).length})`}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
             <Modal isOpen={isCreateLessonOpen} onClose={() => setIsCreateLessonOpen(false)} title="Nowa lekcja">
                 <div className="p-6 space-y-4">
                     <div>
@@ -676,25 +776,27 @@ export const Registry = () => {
                                 {gradeTypes.map(t => <option key={t.id} value={t.id}>{t.numeric} ({t.name})</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="label-text">Kategoria <span className="text-danger">*</span></label>
-                            <select className={`border rounded-xs px-3 py-2 text-sm bg-white w-full ${editGradeErrors.gradeCategoryId ? 'border-danger' : 'border-neutral-300'}`} value={editGradeForm.gradeCategoryId} onChange={e => { setEditGradeForm(prev => ({ ...prev, gradeCategoryId: +e.target.value })); setEditGradeErrors(prev => ({ ...prev, gradeCategoryId: '' })); }}>
-                                <option value={0}>Wybierz</option>
-                                {gradeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            {editGradeErrors.gradeCategoryId && <span className="text-xs text-danger">{editGradeErrors.gradeCategoryId}</span>}
-                        </div>
-                        <div>
-                            <label className="label-text">Kolumna</label>
-                            <select className="border border-neutral-300 rounded-xs px-3 py-2 text-sm bg-white w-full" value={editGradeForm.gradeColumnId || ''} onChange={e => setEditGradeForm(prev => ({ ...prev, gradeColumnId: e.target.value ? +e.target.value : null }))}>
-                                <option value="">Bez kolumny</option>
-                                {gradeColumns.map((c: any) => <option key={c.id} value={c.id}>{c.name || c.categoryName}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="label-text">Komentarz</label>
-                            <input className="border border-neutral-300 rounded-xs px-3 py-2 text-sm bg-white w-full" value={editGradeForm.comment} onChange={e => setEditGradeForm(prev => ({ ...prev, comment: e.target.value }))} />
-                        </div>
+                        {!(editGrade as any)?.gradeCategory?.slug && (<>
+                            <div>
+                                <label className="label-text">Kategoria <span className="text-danger">*</span></label>
+                                <select className={`border rounded-xs px-3 py-2 text-sm bg-white w-full ${editGradeErrors.gradeCategoryId ? 'border-danger' : 'border-neutral-300'}`} value={editGradeForm.gradeCategoryId} onChange={e => { setEditGradeForm(prev => ({ ...prev, gradeCategoryId: +e.target.value })); setEditGradeErrors(prev => ({ ...prev, gradeCategoryId: '' })); }}>
+                                    <option value={0}>Wybierz</option>
+                                    {gradeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                                {editGradeErrors.gradeCategoryId && <span className="text-xs text-danger">{editGradeErrors.gradeCategoryId}</span>}
+                            </div>
+                            <div>
+                                <label className="label-text">Kolumna</label>
+                                <select className="border border-neutral-300 rounded-xs px-3 py-2 text-sm bg-white w-full" value={editGradeForm.gradeColumnId || ''} onChange={e => setEditGradeForm(prev => ({ ...prev, gradeColumnId: e.target.value ? +e.target.value : null }))}>
+                                    <option value="">Bez kolumny</option>
+                                    {gradeColumns.map((c: any) => <option key={c.id} value={c.id}>{c.name || c.categoryName}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="label-text">Komentarz</label>
+                                <input className="border border-neutral-300 rounded-xs px-3 py-2 text-sm bg-white w-full" value={editGradeForm.comment} onChange={e => setEditGradeForm(prev => ({ ...prev, comment: e.target.value }))} />
+                            </div>
+                        </>)}
                         <div className="flex justify-between pt-2">
                             <Button variant="soft" onClick={handleDeleteGrade} className="text-danger">Usuń</Button>
                             <div className="flex gap-3">

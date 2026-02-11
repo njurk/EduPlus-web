@@ -29,7 +29,7 @@ export const useSchoolYearSelector = (options?: UseSchoolYearSelectorOptions) =>
         if (!selectedYearId) return;
 
         const promises: Promise<any>[] = [
-            api.classManagement.getSemesters(selectedYearId)
+            api.schoolYears.getSemesters(selectedYearId)
         ];
 
         if (options?.withClasses) {
@@ -63,15 +63,15 @@ export const useSchoolYearSelector = (options?: UseSchoolYearSelectorOptions) =>
     const selectedSemester = semesters.find(s => s.order === selectedSemesterOrder);
 
     return {
-        years, 
-        selectedYearId, 
+        years,
+        selectedYearId,
         setSelectedYearId,
-        semesters, 
-        selectedSemesterOrder, 
-        setSelectedSemesterOrder, 
+        semesters,
+        selectedSemesterOrder,
+        setSelectedSemesterOrder,
         selectedSemester,
-        classes, 
-        selectedClassId, 
+        classes,
+        selectedClassId,
         setSelectedClassId
     };
 };

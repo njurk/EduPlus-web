@@ -5,8 +5,7 @@ import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Check, X, Undo2 } from 'lucide-react';
 import { formatDateTime, formatDateOnly } from '../../utils/formatters';
-import { EXCUSE_STATUS_OPTIONS, getExcuseStatusBadge } from '../../utils/helpers';
-import { Select } from '../ui/Select';
+import { getExcuseStatusBadge } from '../../utils/helpers';
 import type { ExcuseDetails } from '../../types';
 
 interface ExcuseDetailModalProps {
@@ -14,23 +13,18 @@ interface ExcuseDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     onUpdated: () => void;
-    showEditMode?: boolean;
 }
 
-export const ExcuseDetailModal = ({ excuseId, isOpen, onClose, onUpdated, showEditMode = false }: ExcuseDetailModalProps) => {
+export const ExcuseDetailModal = ({ excuseId, isOpen, onClose, onUpdated }: ExcuseDetailModalProps) => {
     const [excuse, setExcuse] = useState<ExcuseDetails | null>(null);
     const [loading, setLoading] = useState(false);
-    const [editMode, setEditMode] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState('');
 
     useEffect(() => {
         if (!isOpen || !excuseId) { setExcuse(null); return; }
         setLoading(true);
-        setEditMode(false);
         api.excuses.getById(excuseId)
             .then(data => {
                 setExcuse(data);
-                setSelectedStatus(data.isAccepted === true ? 'accepted' : data.isAccepted === false ? 'rejected' : 'pending');
             })
             .finally(() => setLoading(false));
     }, [isOpen, excuseId]);
@@ -41,28 +35,15 @@ export const ExcuseDetailModal = ({ excuseId, isOpen, onClose, onUpdated, showEd
         onUpdated();
         const updated = await api.excuses.getById(excuse.id);
         setExcuse(updated);
-        setSelectedStatus(updated.isAccepted === true ? 'accepted' : updated.isAccepted === false ? 'rejected' : 'pending');
     };
 
-    const handleSaveStatus = async () => {
-        if (!excuse) return;
-        const isAccepted = selectedStatus === 'accepted' ? true : selectedStatus === 'rejected' ? false : null;
-        await api.excuses.accept(excuse.id, isAccepted);
-        onUpdated();
-        onClose();
-    };
+
 
     const handleClose = () => {
-        setEditMode(false);
         onClose();
     };
 
-    const footer = editMode ? (
-        <>
-            <Button variant="secondary" onClick={() => setEditMode(false)}>Anuluj</Button>
-            <Button onClick={handleSaveStatus}>Zapisz</Button>
-        </>
-    ) : excuse?.isAccepted === null ? (
+    const footer = excuse?.isAccepted === null ? (
         <>
             <Button variant="danger" onClick={() => handleAccept(false)}><X size={14} /> Odrzuć</Button>
             <Button onClick={() => handleAccept(true)}><Check size={14} /> Zaakceptuj</Button>
@@ -72,7 +53,7 @@ export const ExcuseDetailModal = ({ excuseId, isOpen, onClose, onUpdated, showEd
     );
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title={editMode ? 'Edycja usprawiedliwienia' : 'Szczegóły usprawiedliwienia'} maxWidth="lg" footer={excuse ? footer : undefined}>
+        <Modal isOpen={isOpen} onClose={handleClose} title={'Szczegóły usprawiedliwienia'} maxWidth="lg" footer={excuse ? footer : undefined}>
             {loading ? <LoadingSpinner className="py-8" /> : excuse && (
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -80,9 +61,7 @@ export const ExcuseDetailModal = ({ excuseId, isOpen, onClose, onUpdated, showEd
                         <div><span className="text-neutral-500">Rodzic:</span> <span className="font-medium">{excuse.parentName}</span></div>
                         <div>
                             <span className="text-neutral-500">Status:</span>{' '}
-                            {editMode ? (
-                                <Select options={EXCUSE_STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label }))} value={selectedStatus} onChange={setSelectedStatus} />
-                            ) : getExcuseStatusBadge(excuse.isAccepted)}
+                            {getExcuseStatusBadge(excuse.isAccepted)}
                         </div>
                         <div><span className="text-neutral-500">Data zgłoszenia:</span> <span className="font-medium">{formatDateTime(excuse.createdAt)}</span></div>
                         {excuse.acceptedAt && (
@@ -117,11 +96,6 @@ export const ExcuseDetailModal = ({ excuseId, isOpen, onClose, onUpdated, showEd
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
-                    )}
-                    {showEditMode && !editMode && (
-                        <div className="flex justify-end pt-2">
-                            <Button variant="soft" onClick={() => setEditMode(true)}>Zmień status</Button>
                         </div>
                     )}
                 </div>

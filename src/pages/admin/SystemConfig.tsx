@@ -5,7 +5,7 @@ import { TrashButton } from "../../components/ui/TrashButton";
 import { Modal } from "../../components/modals/Modal";
 import { DetailsModal } from "../../components/modals/DetailsModal";
 import { api } from "../../services/apiService";
-import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus, HelpCircle, Calendar } from "lucide-react";
+import { School, Clock, GraduationCap, CalendarCheck, BookOpen, List, ListOrdered, Plus, HelpCircle, Calendar, Scale } from "lucide-react";
 import { clsx } from "clsx";
 import { FilterToolbar, FilterSelect } from "../../components/ui/FilterToolbar";
 import { validateSystemConfig, validateSchoolYearForm } from "../../utils/validation";
@@ -24,6 +24,7 @@ const TABS = [
     { id: "lessonStatuses", icon: List },
     { id: "gradeTypes", icon: GraduationCap },
     { id: "gradeCategories", icon: ListOrdered },
+    { id: "gradingScale", icon: Scale },
     { id: "attendance", icon: CalendarCheck },
     { id: "ticketReasons", icon: HelpCircle },
 ] as const;
@@ -38,9 +39,12 @@ const TAB_SORT_DEFAULTS: Partial<Record<TabId, { sortBy: string; sortDesc: boole
 };
 const DEFAULT_SORT = { sortBy: "created", sortDesc: true };
 
-const EDIT_ONLY_TABS: TabId[] = ["attendance", "lessonStatuses"];
-const NO_ADD_TABS: TabId[] = ["attendance", "lessonStatuses"];
-const NO_TRASH_TABS: TabId[] = ["lessonStatuses"];
+const TAB_DEFAULTS = { canAdd: true, canTrash: true, canSearch: true };
+const TAB_OVERRIDES: Partial<Record<TabId, Partial<typeof TAB_DEFAULTS>>> = {
+    lessonStatuses: { canAdd: false, canTrash: false, canSearch: false },
+    gradingScale: { canAdd: false, canTrash: false, canSearch: false },
+    attendance: { canAdd: false, canSearch: false },
+};
 
 const getInitialSchoolYearForm = (): SchoolYearFormData => ({
     name: '', startDate: '', endDate: '', isActive: true,
@@ -57,6 +61,7 @@ const DETAILS_LABELS: Record<string, Record<string, string>> = {
     gradeCategories: { name: "Nazwa", weight: "Waga", colorHex: "Kolor" },
     attendance: { name: "Nazwa", shortCode: "Skrót", colorHex: "Kolor", isNegative: "Ujemne" },
     ticketReasons: { name: "Nazwa" },
+    gradingScale: { gradeTypeName: "Ocena", minAverage: "Średnia od", maxAverage: "Średnia do" },
 };
 
 const DETAILS_EXCLUDE = ["id", "password", "isActive", "slug", "modifiedByUserId"];
@@ -92,7 +97,7 @@ const ConfigFormContent = ({ activeTab, formData, errors, handleInput, onColorCh
     setFormData: React.Dispatch<React.SetStateAction<any>>;
 }) => (
     <div className="p-6 space-y-4">
-        {activeTab !== "lessonHours" && (
+        {activeTab !== "lessonHours" && activeTab !== "gradingScale" && (
             <div>
                 <label className="label-text">
                     {activeTab === "gradeTypes" ? "Nazwa opisowa" : "Nazwa"} <span className="text-danger">*</span>
@@ -209,6 +214,21 @@ const ConfigFormContent = ({ activeTab, formData, errors, handleInput, onColorCh
                 </div>
             </div>
         )}
+
+        {activeTab === "gradingScale" && (
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="label-text">Średnia od <span className="text-danger">*</span></label>
+                    <Input type="number" step="0.01" min="0" max="6" name="minAverage" value={formData.minAverage || ""} onChange={handleInput} className={errors.minAverage ? "!border-danger" : ""} />
+                    {errors.minAverage && <span className="text-xs text-danger">{errors.minAverage}</span>}
+                </div>
+                <div>
+                    <label className="label-text">Średnia do <span className="text-danger">*</span></label>
+                    <Input type="number" step="0.01" min="0" max="6" name="maxAverage" value={formData.maxAverage || ""} onChange={handleInput} className={errors.maxAverage ? "!border-danger" : ""} />
+                    {errors.maxAverage && <span className="text-xs text-danger">{errors.maxAverage}</span>}
+                </div>
+            </div>
+        )}
     </div>
 );
 
@@ -233,6 +253,7 @@ export const SystemConfig = () => {
     const [detailsSemesters, setDetailsSemesters] = useState<any[]>([]);
 
     const isSchoolYears = activeTab === "schoolYears";
+    const cfg = useMemo(() => ({ ...TAB_DEFAULTS, ...TAB_OVERRIDES[activeTab] }), [activeTab]);
 
     useEffect(() => {
         setLoading(true);
@@ -244,7 +265,7 @@ export const SystemConfig = () => {
     }, [activeTab]);
 
     const getCurrentApi = useCallback(() => {
-        const apis: Record<TabId, any> = {
+        const apis: Partial<Record<TabId, any>> = {
             schoolYears: api.schoolYears,
             classrooms: api.classrooms,
             subjects: api.subjects,
@@ -254,6 +275,7 @@ export const SystemConfig = () => {
             gradeCategories: api.gradeCategories,
             attendance: api.attendanceTypes,
             ticketReasons: api.ticketReasons,
+            gradingScale: api.gradingScale,
         };
         return apis[activeTab];
     }, [activeTab]);
@@ -261,7 +283,9 @@ export const SystemConfig = () => {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await getCurrentApi().getAll(filters);
+            const currentApi = getCurrentApi();
+            if (!currentApi) return;
+            const result = await currentApi.getAll(filters);
             setData(result || []);
         } catch (err) {
             console.error(err);
@@ -271,6 +295,8 @@ export const SystemConfig = () => {
     }, [getCurrentApi, filters]);
 
     useEffect(() => { loadData(); }, [loadData]);
+
+
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -368,7 +394,7 @@ export const SystemConfig = () => {
     };
 
     const handleDelete = async (item: any, isActive: boolean) => {
-        const msg = isActive ? 'Przenieś do kosza?' : 'Czy na pewno chcesz trwale usunąć ten element?';
+        const msg = isSchoolYears && isActive ? 'Archiwizować rok szkolny?' : isActive ? 'Przenieś do kosza?' : 'Czy na pewno chcesz trwale usunąć ten element?';
         if (!window.confirm(msg)) return;
         try {
             if (isActive) await getCurrentApi().update(item.id, { ...item, isActive: false });
@@ -449,6 +475,11 @@ export const SystemConfig = () => {
                 { header: 'Waga', accessor: "weight", sortKey: "weight" },
                 { header: "Kolor", render: row => <div className="w-6 h-6 rounded border" style={{ backgroundColor: row.colorHex || '#6b7280' }} /> }
             ],
+            gradingScale: [
+                { header: 'Ocena', render: (row: any) => row.gradeTypeName?.split(' (')[0] || row.gradeTypeName, sortKey: "gradeTypeName" },
+                { header: 'Średnia od', render: (row: any) => Number(row.minAverage).toFixed(2) },
+                { header: 'Średnia do', render: (row: any) => Number(row.maxAverage).toFixed(2) },
+            ],
             attendance: [
                 { header: 'Nazwa', accessor: "name", sortKey: "name" },
                 { header: 'Skrót', accessor: "shortCode", className: "font-mono" },
@@ -469,7 +500,7 @@ export const SystemConfig = () => {
             {
                 header: 'Akcje', className: "text-right",
                 render: (row: any) => {
-                    if (EDIT_ONLY_TABS.includes(activeTab)) {
+                    if (!cfg.canAdd) {
                         return <ActionButtons isActive onEdit={() => openForm(row)} onDetails={() => openDetails(row)} />;
                     }
                     const canDelete = !row.slug;
@@ -492,99 +523,104 @@ export const SystemConfig = () => {
         : data;
 
     return (
-        <div className="bg-white border border-neutral-200 shadow-sm font-sans min-h-[600px] flex">
-            <Modal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title={formData.id ? 'Edycja elementu' : 'Nowy element'}
-                maxWidth={isSchoolYears ? "lg" : "md"}
-                footer={<><Button variant="secondary" onClick={() => setIsModalOpen(false)}>Anuluj</Button><Button onClick={handleSave}>Zapisz</Button></>}
-            >
-                <ConfigFormContent
-                    activeTab={activeTab}
-                    formData={formData}
-                    errors={errors}
-                    handleInput={handleInput}
-                    onColorChange={color => setFormData((prev: any) => ({ ...prev, colorHex: color }))}
-                    setFormData={setFormData}
-                />
-            </Modal>
-
-            <DetailsModal
-                isOpen={detailsItem !== null}
-                onClose={() => setDetailsItem(null)}
-                title={detailsTitle}
-                data={detailsItem ? buildDetailsData(activeTab, detailsItem) : {}}
-                labels={buildDetailsLabels(activeTab)}
-                excludeKeys={DETAILS_EXCLUDE}
-                maxWidth={isSchoolYears ? "lg" : "md"}
-                customFooter={detailsCustomFooter}
-            />
-
-            <div className="w-56 border-r bg-neutral-50/50 flex-shrink-0">
-                <div className="p-4 border-b">
-                    <h1 className="text-lg font-bold text-neutral-800">Konfiguracja</h1>
-                </div>
-                <nav className="py-2">
-                    {TABS.map(tab => {
-                        const Icon = tab.icon;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={clsx(
-                                    "w-full px-4 py-3 text-sm font-medium flex items-center gap-3 transition-colors text-left",
-                                    activeTab === tab.id
-                                        ? "bg-primary/10 text-primary border-r-2 border-primary"
-                                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800"
-                                )}
-                            >
-                                <Icon size={18} />
-                                {getText(`tabs.${tab.id}`) || tab.id}
-                            </button>
-                        );
-                    })}
-                </nav>
+        <div className="bg-white border border-neutral-200 shadow-sm font-sans min-h-[600px] flex flex-col">
+            <div className="p-4 border-b">
+                <h1 className="text-lg font-bold text-neutral-800">{getText('title')}</h1>
             </div>
+            <div className="flex flex-1">
+                <Modal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    title={formData.id ? 'Edycja elementu' : 'Nowy element'}
+                    maxWidth={isSchoolYears ? "lg" : "md"}
+                    footer={<><Button variant="secondary" onClick={() => setIsModalOpen(false)}>Anuluj</Button><Button onClick={handleSave}>Zapisz</Button></>}
+                >
+                    <ConfigFormContent
+                        activeTab={activeTab}
+                        formData={formData}
+                        errors={errors}
+                        handleInput={handleInput}
+                        onColorChange={color => setFormData((prev: any) => ({ ...prev, colorHex: color }))}
+                        setFormData={setFormData}
+                    />
+                </Modal>
 
-            <div className="flex-1 flex flex-col">
-                <FilterToolbar
-                    search={{ value: filters.search, onChange: v => setFilters(p => ({ ...p, search: v })) }}
-                    onReset={() => setFilters(p => ({ ...p, search: '', isNegativeFilter: '' as const }))}
-                    rightContent={
-                        <>
-                            {!NO_TRASH_TABS.includes(activeTab) && (
-                                <TrashButton
-                                    isTrashActive={filters.showInactive}
-                                    onToggle={() => { setLoading(true); setData([]); setFilters(p => ({ ...p, showInactive: !p.showInactive })); }}
+                <DetailsModal
+                    isOpen={detailsItem !== null}
+                    onClose={() => setDetailsItem(null)}
+                    title={detailsTitle}
+                    data={detailsItem ? buildDetailsData(activeTab, detailsItem) : {}}
+                    labels={buildDetailsLabels(activeTab)}
+                    excludeKeys={DETAILS_EXCLUDE}
+                    maxWidth={isSchoolYears ? "lg" : "md"}
+                    customFooter={detailsCustomFooter}
+                />
+
+                <div className="w-56 border-r bg-neutral-50/50 flex-shrink-0">
+                    <nav className="py-2">
+                        {TABS.map(tab => {
+                            const Icon = tab.icon;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={clsx(
+                                        "w-full px-4 py-3 text-sm font-medium flex items-center gap-3 transition-colors text-left",
+                                        activeTab === tab.id
+                                            ? "bg-primary/10 text-primary border-r-2 border-primary"
+                                            : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800"
+                                    )}
+                                >
+                                    <Icon size={18} />
+                                    {getText(`tabs.${tab.id}`) || tab.id}
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </div>
+
+                <div className="flex-1 flex flex-col">
+                    {(cfg.canAdd || cfg.canTrash || activeTab === "attendance") && (
+                        <FilterToolbar
+                            search={cfg.canSearch ? { value: filters.search, onChange: v => setFilters(p => ({ ...p, search: v })) } : undefined}
+                            onReset={() => setFilters(p => ({ ...p, search: '', isNegativeFilter: '' as const }))}
+                            rightContent={
+                                <>
+                                    {cfg.canTrash && (
+                                        <TrashButton
+                                            isTrashActive={filters.showInactive}
+                                            onToggle={() => { setLoading(true); setData([]); setFilters(p => ({ ...p, showInactive: !p.showInactive })); }}
+                                            label={isSchoolYears ? 'Archiwum' : undefined}
+                                        />
+                                    )}
+                                    {cfg.canAdd && (
+                                        <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> Dodaj</Button>
+                                    )}
+                                </>
+                            }
+                        >
+                            {activeTab === "attendance" && (
+                                <FilterSelect
+                                    label="Typ"
+                                    value={filters.isNegativeFilter || null}
+                                    onChange={v => setFilters(p => ({ ...p, isNegativeFilter: (v?.toString() || '') as "" | "true" | "false" }))}
+                                    options={[{ value: "true", label: "Ujemne" }, { value: "false", label: "Nieujemne" }]}
+                                    parseAsNumber={false}
                                 />
                             )}
-                            {!NO_ADD_TABS.includes(activeTab) && (
-                                <Button onClick={() => openForm()}><Plus size={16} className="mr-2" /> Dodaj</Button>
-                            )}
-                        </>
-                    }
-                >
-                    {activeTab === "attendance" && (
-                        <FilterSelect
-                            label="Typ"
-                            value={filters.isNegativeFilter || null}
-                            onChange={v => setFilters(p => ({ ...p, isNegativeFilter: (v?.toString() || '') as "" | "true" | "false" }))}
-                            options={[{ value: "true", label: "Ujemne" }, { value: "false", label: "Nieujemne" }]}
-                            parseAsNumber={false}
-                        />
+                        </FilterToolbar>
                     )}
-                </FilterToolbar>
 
-                <div className="flex-1">
-                    <DataTable
-                        data={filteredData}
-                        columns={columns}
-                        isLoading={loading}
-                        sortBy={filters.sortBy}
-                        sortDesc={filters.sortDesc}
-                        onSort={handleSort}
-                    />
+                    <div className="flex-1">
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            isLoading={loading}
+                            sortBy={filters.sortBy}
+                            sortDesc={filters.sortDesc}
+                            onSort={handleSort}
+                        />
+                    </div>
                 </div>
             </div>
         </div>

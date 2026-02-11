@@ -78,7 +78,7 @@ export const Grades = () => {
     useEffect(() => {
         api.subjects.getAll().then(setSubjects).catch(console.error);
         api.gradeTypes.getAll().then(setGradeTypes).catch(console.error);
-        api.gradeCategories.getAll().then(setGradeCategories).catch(console.error);
+        api.gradeCategories.getAll({ includeSystem: true }).then(setGradeCategories).catch(console.error);
         api.users.getAll({ roleLevel: 2, pageSize: 1000 }).then(res => setTeachers(res.data)).catch(console.error);
     }, []);
 
@@ -190,7 +190,7 @@ export const Grades = () => {
     useEffect(() => {
         if (exportFilters.yearId && exportOpen) {
             Promise.all([
-                api.classManagement.getSemesters(exportFilters.yearId),
+                api.schoolYears.getSemesters(exportFilters.yearId),
                 api.classManagement.getClassesByYear(exportFilters.yearId, { pageSize: 1000 })
             ]).then(([sem, cls]) => {
                 setExportSemesters(sem || []);

@@ -129,7 +129,6 @@ export const Excuses = () => {
                 isOpen={selectedExcuseId !== null}
                 onClose={() => setSelectedExcuseId(null)}
                 onUpdated={loadData}
-                showEditMode
             />
         </div>
     );

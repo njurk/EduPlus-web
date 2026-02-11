@@ -59,8 +59,14 @@ export const validateSystemConfig = (activeTab: string, data: any) => {
     const errors: Record<string, string> = {};
     const isHour = activeTab === 'lessonHours';
 
-    if (!isHour && !data.name) {
+    if (!isHour && activeTab !== 'gradingScale' && !data.name) {
         errors.name = "Nazwa jest wymagana";
+    }
+
+    if (activeTab === 'gradingScale') {
+        if (!data.minAverage && data.minAverage !== 0) errors.minAverage = "Średnia od jest wymagana";
+        if (!data.maxAverage && data.maxAverage !== 0) errors.maxAverage = "Średnia do jest wymagana";
+        if (Number(data.minAverage) >= Number(data.maxAverage)) errors.maxAverage = "Średnia do musi być większa od średniej od";
     }
 
     if (activeTab === 'gradeTypes') {
@@ -240,5 +246,25 @@ export const validateTicketForm = (email: string, reasonId: number | '', content
     if (!REGEX.EMAIL.test(email)) {
         return 'Podaj poprawny adres email';
     }
+    return null;
+};
+
+export const validateGradingScale = (entries: { gradeTypeId: number; minAverage: number; maxAverage: number }[]): string | null => {
+    for (const e of entries) {
+        if (isNaN(e.minAverage) || isNaN(e.maxAverage)) {
+            return 'Wszystkie pola muszą być wypełnione';
+        }
+        if (e.minAverage >= e.maxAverage) {
+            return `Minimum (${e.minAverage.toFixed(2)}) musi być mniejsze od maximum (${e.maxAverage.toFixed(2)})`;
+        }
+    }
+
+    const sorted = [...entries].sort((a, b) => a.minAverage - b.minAverage);
+    for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i].minAverage <= sorted[i - 1].maxAverage) {
+            return `Zakresy się pokrywają: ${sorted[i - 1].minAverage.toFixed(2)}-${sorted[i - 1].maxAverage.toFixed(2)} i ${sorted[i].minAverage.toFixed(2)}-${sorted[i].maxAverage.toFixed(2)}`;
+        }
+    }
+
     return null;
 };

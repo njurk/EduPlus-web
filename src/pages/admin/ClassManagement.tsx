@@ -351,7 +351,7 @@ export const ClassManagement = () => {
 
     const classColumns: Column<ClassEntity>[] = [
         { header: 'Klasa', sortKey: 'class', bold: true, render: (row) => `${row.level}${row.letter}` },
-        { header: 'Wychowawca', render: (row) => row.homeroomTeacherName || '—' },
+        { header: 'Wychowawca', render: (row) => row.homeroomTeacherName || '-' },
         { header: 'Uczniów', sortKey: 'studentCount', render: (row) => row.studentCount || 0 },
         { header: 'Utworzono', sortKey: 'created', muted: true, render: (row) => formatDateTime(row.createdAt) },
         { header: 'Edytowano', sortKey: 'updated', muted: true, render: (row) => formatDateTime(row.updatedAt) },
@@ -379,7 +379,7 @@ export const ClassManagement = () => {
                     </div>
                     <div>
                         <label className="label-text">Wychowawca</label>
-                        <select className="w-full border border-neutral-300 px-3 py-2 rounded-md text-sm focus:outline-none focus:border-primary bg-white" value={form.data.homeroomTeacherId ?? ''} onChange={e => setForm({ ...form, data: { ...form.data, homeroomTeacherId: e.target.value ? +e.target.value : undefined } })}>
+                        <select className="w-full border border-neutral-300 px-3 py-2 rounded-xs text-sm focus:outline-none focus:border-primary bg-white" value={form.data.homeroomTeacherId ?? ''} onChange={e => setForm({ ...form, data: { ...form.data, homeroomTeacherId: e.target.value ? +e.target.value : undefined } })}>
                             <option value="">Brak</option>
                             {allTeachers.map(t => <option key={t.id} value={t.id}>{t.lastName} {t.firstName}</option>)}
                         </select>
