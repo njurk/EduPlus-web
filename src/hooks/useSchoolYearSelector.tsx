@@ -33,7 +33,7 @@ export const useSchoolYearSelector = (options?: UseSchoolYearSelectorOptions) =>
         ];
 
         if (options?.withClasses) {
-            promises.push(api.classManagement.getClassesByYear(selectedYearId, { includeInactive: false, pageSize: 1000 }));
+            promises.push(api.classManagement.getClassesByYear(selectedYearId, { pageSize: 1000 }));
         }
 
         if (options?.withCurrentSemester) {

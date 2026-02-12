@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/apiService';
 import type { TicketReason } from '../types';
 import { AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
@@ -45,31 +45,31 @@ export const SubmitTicket = () => {
 
     if (success) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
-                <div className="bg-white rounded-sm shadow-lg p-8 max-w-md w-full text-center">
+            <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
+                <div className="bg-white rounded-sm shadow-sm p-8 max-w-md w-full text-center">
                     <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                     <h1 className="text-2xl font-bold text-neutral-800 mb-2">Zgłoszenie wysłane</h1>
                     <p className="text-neutral-600 mb-6">{getText('success.message')}</p>
-                    <Link to="/login" className="inline-flex items-center gap-2 text-primary hover:underline">
-                        <ArrowLeft size={20} />
-                    </Link>
+                    <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+                        <ArrowLeft size={16} /> Powrót
+                    </button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
-            <div className="bg-white rounded-sm shadow-lg p-8 max-w-lg w-full relative">
+        <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
+            <div className="bg-white rounded-sm shadow-sm p-8 max-w-lg w-full">
                 <button
                     type="button"
-                    onClick={() => navigate('/login')}
-                    className="absolute top-4 left-4 p-2 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 rounded-full transition-colors"
+                    onClick={() => navigate(-1)}
+                    className="inline-flex items-center gap-2 text-sm text-primary hover:underline mb-4"
                 >
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={16} /> Powrót
                 </button>
 
-                <h1 className="text-2xl font-bold text-neutral-800 mb-2 mt-6">{getText('title')}</h1>
+                <h1 className="text-2xl font-bold text-neutral-800 mb-2">{getText('title')}</h1>
                 <p className="text-neutral-600 mb-6 text-sm">{getText('subtitle')}</p>
 
                 {error && (

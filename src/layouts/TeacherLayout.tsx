@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, LogOut, Settings, BookOpen, Table, FileText, Megaphone } from 'lucide-react';
-import { clsx } from 'clsx';
+import { Menu, X, Home, LogOut, Settings, BookOpen, Table, FileText, Megaphone, MessageSquareWarning } from 'lucide-react';
 import { useCMSContent } from '../hooks/useCMSContent';
 import { api, API_URL } from '../services/apiService';
 import { formatFullDate } from '../utils/formatters';
@@ -30,7 +29,7 @@ export const TeacherLayout = () => {
     const { getText } = useCMSContent('teacherLayout');
     const { getText: getSystemText } = useCMSContent('system');
     const [isSidebarOpen, setSidebarOpen] = useState(false);
-    const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, excuses: 0, unreadAnnouncementIds: [] });
+    const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, excuses: 0, isHomeroomTeacher: false, unreadAnnouncementIds: [] });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -53,7 +52,7 @@ export const TeacherLayout = () => {
         return () => eventSource.close();
     }, []);
 
-    const [user] = useState<{ name: string, isHomeroomTeacher?: boolean } | null>(() => {
+    const [user] = useState<{ name: string } | null>(() => {
         const savedUser = localStorage.getItem('user');
         return savedUser ? JSON.parse(savedUser) : null;
     });
@@ -72,7 +71,7 @@ export const TeacherLayout = () => {
     const teachingItems = [
         { label: getText('nav.schedule'), path: '/teacher/schedule', icon: Table },
         { label: getText('nav.registry'), path: '/teacher/registry', icon: BookOpen },
-        ...(user?.isHomeroomTeacher ? [{ label: getText('nav.excuses'), path: '/teacher/excuses', icon: FileText, badge: unreadCounts.excuses }] : []),
+        ...(unreadCounts.isHomeroomTeacher ? [{ label: getText('nav.excuses'), path: '/teacher/excuses', icon: FileText, badge: unreadCounts.excuses }] : []),
         { label: getText('nav.announcements'), path: '/teacher/announcements', icon: Megaphone, badge: unreadCounts.announcements },
     ];
 
@@ -92,17 +91,11 @@ export const TeacherLayout = () => {
     return (
         <div className="flex h-screen bg-neutral-50 font-sans overflow-hidden">
             <div
-                className={clsx(
-                    "fixed inset-0 bg-neutral-900/50 z-40 lg:hidden transition-opacity duration-300",
-                    isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-                )}
+                className={`fixed inset-0 bg-neutral-900/50 z-40 lg:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={() => setSidebarOpen(false)}
             />
 
-            <aside className={clsx(
-                "fixed inset-y-0 left-0 z-50 w-56 bg-primary-900 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 border-r border-primary-800",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-            )}>
+            <aside className={`fixed inset-y-0 left-0 z-50 w-56 bg-primary-900 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 border-r border-primary-800 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="flex items-center justify-between h-14 px-4 bg-primary border-b border-primary-hover">
                     <span className="font-bold text-lg tracking-tight text-white">{getSystemText('systemName')}</span>
                     <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white hover:text-neutral-200">
@@ -110,7 +103,7 @@ export const TeacherLayout = () => {
                     </button>
                 </div>
 
-                <nav className="p-2 space-y-4 overflow-y-auto h-[calc(100vh-110px)]">
+                <nav className="p-2 space-y-4 overflow-y-auto h-[calc(100vh-110px)] flex flex-col">
                     {navSections.map((section, idx) => (
                         <div key={idx}>
                             {section.title && <div className="px-3 py-1 text-xs font-semibold text-primary-400 uppercase tracking-wider">{section.title}</div>}
@@ -121,10 +114,9 @@ export const TeacherLayout = () => {
                                         to={item.path}
                                         end={item.path === '/teacher'}
                                         onClick={handleNavClick}
-                                        className={({ isActive }) => clsx(
-                                            "flex items-center px-3 py-2 text-sm rounded-xs font-medium",
-                                            isActive ? "bg-primary text-white" : "text-primary-200 hover:bg-primary-800 hover:text-white"
-                                        )}
+                                        className={({ isActive }) =>
+                                            `flex items-center px-3 py-2 text-sm rounded-xs font-medium text-white ${isActive ? 'bg-primary' : 'hover:bg-primary-800'}`
+                                        }
                                     >
                                         <item.icon size={16} className="mr-2 shrink-0" />
                                         {item.label}
@@ -134,6 +126,17 @@ export const TeacherLayout = () => {
                             </div>
                         </div>
                     ))}
+
+                    <div className="mt-auto pt-4 border-t border-primary-800">
+                        <NavLink
+                            to="/submit-ticket"
+                            onClick={handleNavClick}
+                            className="flex items-center px-3 py-2 text-sm rounded-xs font-medium text-white hover:bg-primary-800"
+                        >
+                            <MessageSquareWarning size={16} className="mr-2 shrink-0" />
+                            Zgłoś problem
+                        </NavLink>
+                    </div>
                 </nav>
             </aside>
 

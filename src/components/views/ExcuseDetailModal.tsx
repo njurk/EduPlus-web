@@ -56,14 +56,14 @@ export const ExcuseDetailModal = ({ excuseId, isOpen, onClose, onUpdated }: Excu
         <Modal isOpen={isOpen} onClose={handleClose} title={'Szczegóły usprawiedliwienia'} maxWidth="lg" footer={excuse ? footer : undefined}>
             {loading ? <LoadingSpinner className="py-8" /> : excuse && (
                 <div className="p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div><span className="text-neutral-500">Uczeń:</span> <span className="font-medium">{excuse.studentName}</span></div>
+                    <div className="flex flex-col gap-1.5 text-sm">
                         <div><span className="text-neutral-500">Rodzic:</span> <span className="font-medium">{excuse.parentName}</span></div>
+                        <div><span className="text-neutral-500">Uczeń:</span> <span className="font-medium">{excuse.studentName}</span></div>
                         <div>
                             <span className="text-neutral-500">Status:</span>{' '}
                             {getExcuseStatusBadge(excuse.isAccepted)}
                         </div>
-                        <div><span className="text-neutral-500">Data zgłoszenia:</span> <span className="font-medium">{formatDateTime(excuse.createdAt)}</span></div>
+                        <div><span className="text-neutral-500">Wysłano:</span> <span className="font-medium">{formatDateTime(excuse.createdAt)}</span></div>
                         {excuse.acceptedAt && (
                             <div><span className="text-neutral-500">Rozpatrzono:</span> <span className="font-medium">{formatDateTime(excuse.acceptedAt)}</span></div>
                         )}
@@ -77,7 +77,6 @@ export const ExcuseDetailModal = ({ excuseId, isOpen, onClose, onUpdated }: Excu
                     </div>
                     {excuse.attendances?.length > 0 && (
                         <div className="border-t pt-4">
-                            <h3 className="text-sm font-semibold text-neutral-700 mb-3">Powiązane nieobecności</h3>
                             <table className="w-full text-sm border-collapse">
                                 <thead className="bg-neutral-50">
                                     <tr>

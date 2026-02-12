@@ -307,7 +307,7 @@ export const Tickets = () => {
                             onSort={f => setFilters(p => p.sortBy === f ? { ...p, sortDesc: !p.sortDesc } : { ...p, sortBy: f, sortDesc: true })}
                             columns={[
                                 { header: 'Nr', accessor: 'id', sortKey: 'id', className: 'w-16', bold: true },
-                                { header: 'Data zgłoszenia', sortKey: 'created', className: 'w-36', muted: true, render: (t) => formatDateTime(t.createdAt) },
+                                { header: 'Wysłano', sortKey: 'created', className: 'w-36', muted: true, render: (t) => formatDateTime(t.createdAt) },
                                 { header: 'Email', sortKey: 'email', bold: true, render: (t) => t.email },
                                 { header: 'Powód', sortKey: 'reason', render: (t) => t.reasonName },
                                 { header: 'Status', className: 'w-32 text-center', render: (t) => t.isClosed ? <span className="text-success flex items-center gap-1 justify-center"><CheckCircle size={14} /> Zamknięte</span> : <span className="text-warning flex items-center gap-1 justify-center"><Clock size={14} /> Otwarte</span> },

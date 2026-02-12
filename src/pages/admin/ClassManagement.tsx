@@ -323,7 +323,7 @@ export const ClassManagement = () => {
             sortDesc: filters.sortDesc,
             level: filters.level ? parseInt(filters.level) : undefined,
             search: filters.search || undefined,
-            includeInactive: showInactive
+            showInactive
         }).then(res => {
             setPaginatedData(res);
         }).catch(console.error).finally(() => setLoading(false));

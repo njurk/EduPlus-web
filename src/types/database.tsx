@@ -200,6 +200,18 @@ export interface GradeType {
     updatedAt: string;
 }
 
+export interface GradingScale {
+    id: number;
+    gradeTypeId: number;
+    gradeTypeName: string;
+    minAverage: number;
+    maxAverage: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    modifiedByName?: string;
+}
+
 export interface Lesson {
     id: number;
     subjectId: number;

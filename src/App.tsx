@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { API_URL } from './services/apiService';
 import { Dashboard } from './pages/admin/Dashboard';
 import { AdminLayout } from './layouts/AdminLayout';
 import { TeacherLayout } from './layouts/TeacherLayout';
@@ -51,7 +52,8 @@ export default function App() {
     if (pageTitle) document.title = pageTitle;
     if (faviconUrl) {
       const link = document.getElementById('favicon') as HTMLLinkElement;
-      if (link) link.href = '/' + faviconUrl + '?v=' + Date.now();
+      const baseUrl = API_URL.replace('/api', '');
+      if (link) link.href = baseUrl + '/' + faviconUrl + '?v=' + Date.now();
     }
   }, [getText]);
 

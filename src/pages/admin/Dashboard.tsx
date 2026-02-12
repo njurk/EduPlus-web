@@ -1,17 +1,26 @@
 ﻿import { useState, useEffect } from 'react';
 import { Plus, FileText, UserPlus } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { ExportModal } from '../../components/ExportModal';
 import { api } from '../../services/apiService';
 import type { DashboardSummary } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { useCMSContent } from '../../hooks/useCMSContent';
 import { formatDateTime } from '../../utils/formatters';
+import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 
 export const Dashboard = () => {
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exportOpen, setExportOpen] = useState(false);
   const navigate = useNavigate();
   const { getText } = useCMSContent('dashboard');
+
+  const {
+    selectedYearId,
+    semesters, selectedSemesterOrder, setSelectedSemesterOrder,
+    classes
+  } = useSchoolYearSelector({ withClasses: true });
 
   useEffect(() => {
     const load = async () => {
@@ -40,7 +49,6 @@ export const Dashboard = () => {
         <div>
           <h1 className="text-xl font-bold text-neutral-800">{getText('title')}</h1>
         </div>
-
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -83,13 +91,22 @@ export const Dashboard = () => {
             <Button variant="secondary" className="justify-start text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:border-primary hover:text-primary transition-all" onClick={() => navigate('/admin/announcements?new=true')}>
               <Plus size={16} className="mr-2" /> Nowe ogłoszenie
             </Button>
-            <Button variant="secondary" className="justify-start text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:border-primary hover:text-primary transition-all" onClick={() => alert('Funkcja w przygotowaniu')}>
+            <Button variant="secondary" className="justify-start text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:border-primary hover:text-primary transition-all" onClick={() => setExportOpen(true)}>
               <FileText size={16} className="mr-2" /> Generuj raport...
             </Button>
           </div>
         </div>
       </div>
+
+      <ExportModal
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        classes={classes}
+        semesters={semesters}
+        selectedSemesterOrder={selectedSemesterOrder}
+        setSelectedSemesterOrder={setSelectedSemesterOrder}
+        selectedYearId={selectedYearId}
+      />
     </div>
   );
 };
-

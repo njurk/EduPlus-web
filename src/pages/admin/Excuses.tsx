@@ -101,11 +101,11 @@ export const Excuses = () => {
                 <div className="flex-1">
                     {loading ? <LoadingSpinner /> : (
                         <DataTable data={paginatedData?.data || []} columns={[
-                            { header: 'Przesłano', sortKey: 'createdAt', muted: true, render: (e: Excuse) => formatDateTime(e.createdAt) },
+                            { header: 'Wysłano', sortKey: 'createdAt', muted: true, render: (e: Excuse) => formatDateTime(e.createdAt) },
                             { header: 'Rodzic', sortKey: 'parent', bold: true, render: (e: Excuse) => e.parentName },
                             { header: 'Uczeń', sortKey: 'student', bold: true, render: (e: Excuse) => e.studentName },
                             { header: 'Klasa', render: (e: Excuse) => e.className || '-' },
-                            { header: 'Godziny', render: (e: Excuse) => e.attendanceCount, className: 'text-center w-16' },
+                            { header: 'Lekcje', render: (e: Excuse) => e.attendanceCount, className: 'text-center w-16' },
                             { header: 'Status', sortKey: 'isaccepted', render: (e: Excuse) => getExcuseStatusBadge(e.isAccepted) },
                             { header: 'Rozpatrzono', sortKey: 'acceptedat', muted: true, render: (e: Excuse) => e.acceptedAt ? formatDateTime(e.acceptedAt) : '-' },
                             { header: 'Rozpatrzył', muted: true, render: (e: Excuse) => e.modifiedByName || '-' },

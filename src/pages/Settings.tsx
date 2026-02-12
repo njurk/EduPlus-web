@@ -97,7 +97,7 @@ export const Settings = () => {
             const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
             localStorage.setItem('user', JSON.stringify({
                 ...savedUser,
-                name: `${profileData.lastName} ${profileData.firstName}`
+                name: `${profileData.firstName} ${profileData.lastName}`
             }));
 
             setMessage({ type: 'success', text: 'Dane profilowe zostały zaktualizowane.' });

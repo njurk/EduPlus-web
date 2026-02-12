@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Announcement } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -22,12 +23,38 @@ export const TeacherAnnouncements = () => {
     const [onlyMine, setOnlyMine] = useState(false);
     const [authorName, setAuthorName] = useState('');
 
+    const [searchParams, setSearchParams] = useSearchParams();
+
     const hook = useAnnouncementsList({
         extraParams: () => ({
             authorName: onlyMine ? userName.split(' ').reverse().join(' ') : (authorName || undefined)
         }),
         onFiltersReset: () => { setAuthorName(''); setOnlyMine(false); }
     });
+
+    const [pendingDetailId, setPendingDetailId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            hook.handleStartEdit();
+            setSearchParams({}, { replace: true });
+        }
+        const id = searchParams.get('id');
+        if (id) {
+            setPendingDetailId(Number(id));
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
+
+    useEffect(() => {
+        if (pendingDetailId && hook.paginatedData?.data?.length) {
+            const found = hook.paginatedData.data.find(a => a.id === pendingDetailId);
+            if (found) {
+                hook.handleOpenDetails(found);
+                setPendingDetailId(null);
+            }
+        }
+    }, [pendingDetailId, hook.paginatedData]);
 
     useEffect(() => { hook.triggerReload(); }, [authorName, onlyMine]);
 

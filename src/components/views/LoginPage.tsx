@@ -49,7 +49,7 @@ export const LoginPage = ({ cmsKey, loginFn, redirectTo, headerBg, buildUserData
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-neutral-100 px-4 font-sans">
-            <div className="max-w-md w-full bg-white rounded-s shadow-lg border border-neutral-200 overflow-hidden">
+            <div className="max-w-md w-full bg-white rounded-s shadow-sm border border-neutral-200 overflow-hidden">
                 <div className={`${headerBg} p-8 text-center`}>
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <img
@@ -120,7 +120,7 @@ export const LoginPage = ({ cmsKey, loginFn, redirectTo, headerBg, buildUserData
                 </div>
                 <div className="bg-neutral-50 p-4 flex justify-between items-center border-t border-neutral-100">
                     <p className="text-xs text-neutral-500">
-                        &copy; {new Date().getFullYear()} EduPlus
+                        &copy; {new Date().getFullYear()} {getSystemText('systemName')}
                     </p>
                     <Link
                         to={switchLink.to}

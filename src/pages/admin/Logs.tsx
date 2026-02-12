@@ -8,7 +8,6 @@ export const Logs = () => {
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [logContent, setLogContent] = useState<LogContent | null>(null);
     const [loading, setLoading] = useState(false);
-    const [autoRefresh, setAutoRefresh] = useState(false);
     const [linesCount, setLinesCount] = useState(100);
     const logContainerRef = useRef<HTMLDivElement>(null);
 
@@ -58,12 +57,6 @@ export const Logs = () => {
         }
     }, [selectedFile, linesCount]);
 
-    useEffect(() => {
-        if (autoRefresh && selectedFile) {
-            const interval = setInterval(fetchLogContent, 2000);
-            return () => clearInterval(interval);
-        }
-    }, [autoRefresh, selectedFile]);
 
     const getLineClass = (line: string) => {
         if (line.includes('| ERROR') || line.includes('LOGIN_FAIL')) return 'text-red-400';
@@ -134,15 +127,6 @@ export const Logs = () => {
                                 <option value={200}>200</option>
                                 <option value={500}>500</option>
                             </select>
-                            <label className="flex items-center gap-2 text-xs text-neutral-400">
-                                <input
-                                    type="checkbox"
-                                    checked={autoRefresh}
-                                    onChange={(e) => setAutoRefresh(e.target.checked)}
-                                    className="rounded"
-                                />
-                                auto-odświeżanie
-                            </label>
                             <button
                                 onClick={fetchLogContent}
                                 disabled={loading}

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, Home, LogOut, Settings, Users, BookOpen, ClipboardCheck, Star, Table, Megaphone, FilePenIcon, Folder, Layout, LibraryBig, FileCheck, HelpCircle, Terminal } from 'lucide-react';
-import { clsx } from 'clsx';
 import { useCMSContent } from '../hooks/useCMSContent';
 import { formatFullDate } from '../utils/formatters';
 import { api, API_URL } from '../services/apiService';
@@ -29,7 +28,7 @@ const Clock = () => {
 export const AdminLayout = () => {
   const { getText } = useCMSContent('layout');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, excuses: 0, unreadAnnouncementIds: [] });
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({ announcements: 0, tickets: 0, excuses: 0, isHomeroomTeacher: false, unreadAnnouncementIds: [] });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -111,17 +110,11 @@ export const AdminLayout = () => {
   return (
     <div className="flex h-screen bg-neutral-50 font-sans overflow-hidden">
       <div
-        className={clsx(
-          "fixed inset-0 bg-neutral-900/50 z-40 lg:hidden transition-opacity duration-300",
-          isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
+        className={`fixed inset-0 bg-neutral-900/50 z-40 lg:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setSidebarOpen(false)}
       />
 
-      <aside className={clsx(
-        "fixed inset-y-0 left-0 z-50 w-56 bg-neutral-900 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 border-r border-neutral-800",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-56 bg-neutral-900 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 border-r border-neutral-800 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between h-14 px-4 bg-primary border-b border-primary-hover">
           <span className="font-bold text-lg tracking-tight text-white">{getText('systemName')}</span>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white hover:text-neutral-200">
@@ -139,10 +132,9 @@ export const AdminLayout = () => {
                     key={item.path}
                     to={item.path}
                     onClick={handleNavClick}
-                    className={({ isActive }) => clsx(
-                      "flex items-center px-3 py-2 text-sm rounded-xs font-medium",
-                      isActive ? "bg-primary text-white" : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
-                    )}
+                    className={({ isActive }) =>
+                      `flex items-center px-3 py-2 text-sm rounded-xs font-medium text-white ${isActive ? 'bg-primary' : 'hover:bg-neutral-800'}`
+                    }
                   >
                     <item.icon size={16} className="mr-2 shrink-0" />
                     {item.label}
@@ -161,10 +153,9 @@ export const AdminLayout = () => {
                 key={item.path}
                 to={item.path}
                 onClick={handleNavClick}
-                className={({ isActive }) => clsx(
-                  "flex items-center px-3 py-2 text-sm rounded-xs font-medium",
-                  isActive ? "bg-primary text-white" : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
-                )}
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-2 text-sm rounded-xs font-medium text-white ${isActive ? 'bg-primary' : 'hover:bg-neutral-800'}`
+                }
               >
                 <item.icon size={16} className="mr-2 shrink-0" />
                 {item.label}

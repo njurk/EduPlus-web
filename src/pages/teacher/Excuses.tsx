@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../services/apiService';
-import { formatDateTime, formatDateOnly } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 import { getTeacherId, EXCUSE_STATUS_OPTIONS, getExcuseStatusBadge } from '../../utils/helpers';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
@@ -19,9 +20,8 @@ export const TeacherExcuses = () => {
 
     const {
         years, selectedYearId, setSelectedYearId,
-        semesters, selectedSemesterOrder, setSelectedSemesterOrder,
-        classes
-    } = useSchoolYearSelector({ withClasses: true, withCurrentSemester: true });
+        semesters, selectedSemesterOrder, setSelectedSemesterOrder
+    } = useSchoolYearSelector({ withCurrentSemester: true });
 
     const [excuses, setExcuses] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -31,10 +31,18 @@ export const TeacherExcuses = () => {
     const [sortBy, setSortBy] = useState('createdAt');
     const [sortDesc, setSortDesc] = useState(true);
     const [page, setPage] = useState(1);
-    const [classFilter, setClassFilter] = useState<number | null>(null);
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
     const [selectedExcuseId, setSelectedExcuseId] = useState<number | null>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        const id = searchParams.get('id');
+        if (id) {
+            setSelectedExcuseId(Number(id));
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const loadExcuses = useCallback(async () => {
         if (!teacherId) return;
@@ -48,7 +56,7 @@ export const TeacherExcuses = () => {
                 search,
                 sortBy,
                 sortDesc,
-                classId: classFilter || undefined,
+                classId: undefined,
                 semesterId: semester?.id,
                 statusFilter: statusFilter || undefined
             });
@@ -57,7 +65,7 @@ export const TeacherExcuses = () => {
         } finally {
             setLoading(false);
         }
-    }, [teacherId, page, search, sortBy, sortDesc, classFilter, selectedSemesterOrder, semesters, statusFilter]);
+    }, [teacherId, page, search, sortBy, sortDesc, selectedSemesterOrder, semesters, statusFilter]);
 
     useEffect(() => { loadExcuses(); }, [loadExcuses]);
 
@@ -68,21 +76,20 @@ export const TeacherExcuses = () => {
 
     const handleReset = () => {
         setSearch('');
-        setClassFilter(null);
         setStatusFilter(null);
         setPage(1);
     };
 
 
     const columns: Column<any>[] = [
-        { header: 'Uczeń', sortKey: 'student', bold: true, accessor: 'studentName' },
+        { header: 'Wysłano', sortKey: 'createdAt', muted: true, render: (e) => formatDateTime(e.createdAt) },
+        { header: 'Rodzic', sortKey: 'parent', bold: true, accessor: 'parentName' },
         { header: 'Klasa', accessor: 'className' },
-        { header: 'Rodzic', sortKey: 'parent', muted: true, accessor: 'parentName' },
+        { header: 'Uczeń', sortKey: 'student', muted: true, accessor: 'studentName' },
         { header: 'Powód', muted: true, render: (e) => <span className="truncate block max-w-xs">{e.reason}</span> },
         { header: 'Lekcje', className: 'w-16 text-center', render: (e) => e.attendanceCount },
         { header: 'Status', render: (e) => getExcuseStatusBadge(e.isAccepted) },
         { header: 'Rozpatrzono', sortKey: 'acceptedat', muted: true, render: (e) => e.acceptedAt ? formatDateTime(e.acceptedAt) : '-' },
-        { header: 'Data', sortKey: 'createdAt', muted: true, render: (e) => formatDateOnly(e.createdAt) },
         {
             header: '', className: 'w-12',
             render: (e) => <ActionButtons isActive onDetails={() => setSelectedExcuseId(e.id)} />
@@ -104,12 +111,7 @@ export const TeacherExcuses = () => {
                     search={{ value: search, onChange: v => { setSearch(v); setPage(1); }, placeholder: 'Szukaj...' }}
                     onReset={handleReset}
                 >
-                    <FilterSelect
-                        label="Klasa"
-                        options={classes.map(c => ({ label: `${c.level}${c.letter}`, value: c.id }))}
-                        value={classFilter}
-                        onChange={v => { setClassFilter(v as number | null); setPage(1); }}
-                    />
+
                     <FilterSelect
                         label="Status"
                         options={EXCUSE_STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label }))}

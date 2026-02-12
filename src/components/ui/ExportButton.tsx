@@ -7,9 +7,10 @@ interface ExportButtonProps {
     onExport: (format: 'pdf' | 'xlsx' | 'docx') => void;
     disabled?: boolean;
     className?: string;
+    formats?: ('pdf' | 'xlsx' | 'docx')[];
 }
 
-export const ExportButton = ({ onExport, disabled, className }: ExportButtonProps) => {
+export const ExportButton = ({ onExport, disabled, className, formats }: ExportButtonProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -23,11 +24,12 @@ export const ExportButton = ({ onExport, disabled, className }: ExportButtonProp
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const options = [
+    const allOptions = [
         { format: 'pdf' as const, label: 'PDF' },
         { format: 'xlsx' as const, label: 'Excel (xlsx)' },
         { format: 'docx' as const, label: 'Word (docx)' }
     ];
+    const options = formats ? allOptions.filter(o => formats.includes(o.format)) : allOptions;
 
     return (
         <div className={clsx("relative", className)} ref={ref}>
@@ -43,7 +45,7 @@ export const ExportButton = ({ onExport, disabled, className }: ExportButtonProp
             </Button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-1 bg-white border border-neutral-200 rounded-xs shadow-lg z-50 min-w-[150px]">
+                <div className="absolute right-0 mt-1 bg-white border border-neutral-200 rounded-xs shadow-sm z-50 min-w-[150px]">
                     {options.map(({ format, label }) => (
                         <button
                             key={format}

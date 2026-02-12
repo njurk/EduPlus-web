@@ -60,7 +60,6 @@ export const Registry = () => {
     const [semCategoryId, setSemCategoryId] = useState<number | null>(null);
     const [semSaving, setSemSaving] = useState(false);
 
-
     const [editGradeOpen, setEditGradeOpen] = useState(false);
     const [editGrade, setEditGrade] = useState<Grade | null>(null);
     const [editGradeStudentName, setEditGradeStudentName] = useState('');
@@ -807,6 +806,6 @@ export const Registry = () => {
                     </div>
                 )}
             </Modal>
-        </div>
+        </div >
     );
 };

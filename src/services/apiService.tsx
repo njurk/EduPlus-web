@@ -1,7 +1,7 @@
 import type {
     User, ParentStudents, Role, ChangePasswordDto, PaginatedResponse,
     Announcement, SchoolYear, Classroom, Subject, ClassEntity, ClassDetailsDto, SemesterDto,
-    GradeType, GradeCategory, Grade, GradeDto, StudentGradesRowDto,
+    GradeType, GradeCategory, GradingScale, Grade, GradeDto, StudentGradesRowDto,
     AttendanceType, AttendanceAdminDto,
     LessonHour, LessonStatus, ScheduleLesson,
     Ticket, CreateTicketDto, CloseTicketDto, TicketReason,
@@ -127,6 +127,35 @@ export const authApi = {
                 }
             });
         }
+    },
+    requestPasswordReset: async (email: string): Promise<void> => {
+        await fetch(`${API_URL}/PasswordReset/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+    },
+    validateResetCode: async (token: string): Promise<void> => {
+        const response = await fetch(`${API_URL}/PasswordReset/validate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+        });
+        if (!response.ok) {
+            const text = (await response.text()).replace(/^"|"$/g, '');
+            throw new Error(text || 'Kod jest nieprawidłowy lub wygasł');
+        }
+    },
+    resetPassword: async (token: string, newPassword: string): Promise<void> => {
+        const response = await fetch(`${API_URL}/PasswordReset/reset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, newPassword })
+        });
+        if (!response.ok) {
+            const text = (await response.text()).replace(/^"|"$/g, '');
+            throw new Error(text || 'Błąd resetowania hasła');
+        }
     }
 };
 
@@ -245,7 +274,7 @@ export const semestersApi = {
 export const classroomsApi = createCrudResource<Classroom>('classroom');
 
 export const classManagementApi = {
-    getClassesByYear: async (yearId: number, params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDesc?: boolean; level?: number; search?: string; includeInactive?: boolean }): Promise<PaginatedResponse<ClassEntity>> => {
+    getClassesByYear: async (yearId: number, params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDesc?: boolean; level?: number; search?: string; showInactive?: boolean }): Promise<PaginatedResponse<ClassEntity>> => {
         const query = new URLSearchParams({ schoolYearId: String(yearId) });
         if (params?.pageNumber !== undefined) query.append('pageNumber', String(params.pageNumber));
         if (params?.pageSize !== undefined) query.append('pageSize', String(params.pageSize));
@@ -253,7 +282,7 @@ export const classManagementApi = {
         if (params?.sortDesc !== undefined) query.append('sortDesc', String(params.sortDesc));
         if (params?.level !== undefined) query.append('level', String(params.level));
         if (params?.search) query.append('search', params.search);
-        if (params?.includeInactive !== undefined) query.append('includeInactive', String(params.includeInactive));
+        if (params?.showInactive !== undefined) query.append('showInactive', String(params.showInactive));
         const response = await fetch(`${API_URL}/class?${query.toString()}`, { headers: getHeaders() });
         return handleResponse(response);
     },
@@ -526,7 +555,7 @@ export const gradesApi = {
 };
 
 const gradingScaleApi = {
-    getAll: async (params?: Record<string, any>): Promise<any[]> => {
+    getAll: async (params?: Record<string, any>): Promise<GradingScale[]> => {
         const url = new URL(`${API_URL}/gradingscale`);
         if (params) {
             Object.keys(params).forEach(key => {
@@ -539,7 +568,7 @@ const gradingScaleApi = {
         const response = await fetch(url.toString(), { headers: getHeaders() });
         return handleResponse(response);
     },
-    update: async (id: number, data: any): Promise<any> => {
+    update: async (id: number, data: Partial<GradingScale>): Promise<GradingScale> => {
         const response = await fetch(`${API_URL}/gradingscale/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) });
         return handleResponse(response);
     }
@@ -562,11 +591,11 @@ export const attendanceTypesApi = {
 };
 
 export const attendanceApi = {
-    getAllAdmin: async (params?: { pageNumber?: number, pageSize?: number, includeInactive?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, classId?: number, date?: string, subjectName?: string, teacherName?: string, attendanceTypeShortCode?: string, orderNumber?: number, semesterId?: number }): Promise<PaginatedResponse<AttendanceAdminDto>> => {
+    getAllAdmin: async (params?: { pageNumber?: number, pageSize?: number, showInactive?: boolean, search?: string, sortBy?: string, sortDesc?: boolean, classId?: number, date?: string, subjectName?: string, teacherName?: string, attendanceTypeShortCode?: string, orderNumber?: number, semesterId?: number }): Promise<PaginatedResponse<AttendanceAdminDto>> => {
         const url = new URL(`${API_URL}/attendance/admin`);
         if (params?.pageNumber) url.searchParams.append('pageNumber', params.pageNumber.toString());
         if (params?.pageSize) url.searchParams.append('pageSize', params.pageSize.toString());
-        if (params?.includeInactive) url.searchParams.append('includeInactive', 'true');
+        if (params?.showInactive) url.searchParams.append('showInactive', 'true');
         if (params?.search) url.searchParams.append('search', params.search);
         if (params?.sortBy) url.searchParams.append('sortBy', params.sortBy);
         if (params?.sortDesc !== undefined) url.searchParams.append('sortDesc', params.sortDesc.toString());
@@ -937,6 +966,23 @@ export const exportApi = {
         window.URL.revokeObjectURL(link.href);
         document.body.removeChild(link);
     },
+    downloadTeacherSchedule: async (params: { teacherId: number; semesterId: number; format: 'pdf' | 'xlsx' | 'docx' }): Promise<void> => {
+        const url = new URL(`${API_URL}/export/teacher-schedule/${params.format}`);
+        url.searchParams.set('teacherId', params.teacherId.toString());
+        url.searchParams.set('semesterId', params.semesterId.toString());
+
+        const response = await fetch(url.toString(), { headers: getHeaders() });
+        if (!response.ok) throw new Error('Błąd eksportu');
+        const blob = await response.blob();
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `plan-lekcji-${timestamp}.${params.format}`;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+        document.body.removeChild(link);
+    },
     downloadGrades: async (params: { classId: number; semesterId: number; schoolYearId: number; subjectId?: number; studentId?: number; format: 'pdf' | 'xlsx' }): Promise<void> => {
         const url = new URL(`${API_URL}/export/grades/${params.format}`);
         url.searchParams.set('classId', params.classId.toString());
@@ -952,6 +998,25 @@ export const exportApi = {
         const link = document.createElement('a');
         link.href = window.URL.createObjectURL(blob);
         link.download = `wykaz-ocen-${timestamp}.${params.format}`;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+        document.body.removeChild(link);
+    },
+    downloadAttendance: async (params: { classId: number; semesterId: number; schoolYearId: number; studentId?: number; format: 'pdf' | 'xlsx' }): Promise<void> => {
+        const url = new URL(`${API_URL}/export/attendance/${params.format}`);
+        url.searchParams.set('classId', params.classId.toString());
+        url.searchParams.set('semesterId', params.semesterId.toString());
+        url.searchParams.set('schoolYearId', params.schoolYearId.toString());
+        if (params.studentId) url.searchParams.set('studentId', params.studentId.toString());
+
+        const response = await fetch(url.toString(), { headers: getHeaders() });
+        if (!response.ok) throw new Error('Błąd eksportu');
+        const blob = await response.blob();
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = `wykaz-frekwencji-${timestamp}.${params.format}`;
         document.body.appendChild(link);
         link.click();
         window.URL.revokeObjectURL(link.href);

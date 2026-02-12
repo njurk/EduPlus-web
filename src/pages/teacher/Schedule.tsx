@@ -2,23 +2,23 @@ import { useState, useEffect } from 'react';
 import { api } from '../../services/apiService';
 import type { ScheduleLesson, LessonHour } from '../../types';
 import { getTeacherId } from '../../utils/helpers';
-import { YearSelector } from '../../components/ui/YearSelector';
-import { SemesterSelector } from '../../components/ui/SemesterSelector';
 import { useCMSContent } from '../../hooks/useCMSContent';
 import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 import { ScheduleGrid } from '../../components/ui/ScheduleGrid';
+import { ExportButton } from '../../components/ui/ExportButton';
 
 
 export const TeacherSchedule = () => {
-    const { getText } = useCMSContent('teacherLayout');
-    const {
-        years, selectedYearId, setSelectedYearId,
-        semesters, selectedSemesterOrder, setSelectedSemesterOrder
-    } = useSchoolYearSelector({ withCurrentSemester: true });
+    const { getText } = useCMSContent('schedule');
+    const { getText: getTeacherText } = useCMSContent('teacherLayout');
+    const { semesters, selectedSemesterOrder } = useSchoolYearSelector({ withCurrentSemester: true });
 
     const [schedule, setSchedule] = useState<ScheduleLesson[]>([]);
     const [lessonHours, setLessonHours] = useState<LessonHour[]>([]);
     const [loading, setLoading] = useState(false);
+
+    const teacherId = getTeacherId();
+    const semester = semesters.find(s => s.order === selectedSemesterOrder);
 
     useEffect(() => {
         api.lessonHours.getAll().then(setLessonHours);
@@ -26,10 +26,7 @@ export const TeacherSchedule = () => {
 
     useEffect(() => {
         const loadSchedule = async () => {
-            const teacherId = getTeacherId();
-            if (!teacherId || !selectedSemesterOrder) return;
-            const semester = semesters.find(s => s.order === selectedSemesterOrder);
-            if (!semester) return;
+            if (!teacherId || !semester) return;
             setLoading(true);
             try {
                 const data = await api.schedule.getTeacherSchedule(teacherId, semester.id);
@@ -47,16 +44,16 @@ export const TeacherSchedule = () => {
         return schedule.find(l => l.orderNumber === order && l.dayOfWeek === dayOfWeek);
     };
 
-    const days = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek'];
+    const days = [getText('days.monday'), getText('days.tuesday'), getText('days.wednesday'), getText('days.thursday'), getText('days.friday')];
 
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h1 className="text-xl font-bold text-neutral-800">{getText('title.schedule')}</h1>
-                <div className="flex gap-2">
-                    <YearSelector years={years} selectedYear={selectedYearId} onChange={id => { setSelectedYearId(id); setSelectedSemesterOrder(null); }} />
-                    <SemesterSelector semesters={semesters} selectedOrder={selectedSemesterOrder} onChange={setSelectedSemesterOrder} />
-                </div>
+                <h1 className="text-xl font-bold text-neutral-800">{getTeacherText('title.schedule')}</h1>
+                <ExportButton disabled={!semester} onExport={(format) => {
+                    if (!teacherId || !semester) return;
+                    api.export.downloadTeacherSchedule({ teacherId, semesterId: semester.id, format });
+                }} />
             </div>
 
             <ScheduleGrid
