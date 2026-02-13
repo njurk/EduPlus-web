@@ -9,7 +9,7 @@ import type {
     DashboardSummary
 } from '../types';
 
-export const BASE_URL = 'https://localhost:7252';
+export const BASE_URL = 'http://localhost:5107';
 export const API_URL = `${BASE_URL}/api`;
 
 export const getHeaders = () => {
