@@ -18,7 +18,7 @@ export const TicketDetailView = ({ ticket, title, onBack, extraDetailsItems, chi
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1">
-                <div className="bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
+                <div className="bg-white border border-neutral-200 rounded-xs p-6 space-y-4">
                     <h2 className="font-semibold text-neutral-800 border-b pb-2">Szczegóły</h2>
                     <div className="flex items-start gap-3">
                         <Mail size={16} className="text-neutral-400 mt-0.5" />
@@ -36,7 +36,7 @@ export const TicketDetailView = ({ ticket, title, onBack, extraDetailsItems, chi
                 </div>
             </div>
             <div className="lg:col-span-2 space-y-4">
-                <div className="bg-white border border-neutral-200 rounded-lg p-6">
+                <div className="bg-white border border-neutral-200 rounded-xs p-6">
                     <h2 className="font-semibold text-neutral-800 border-b pb-2 mb-4">Treść zgłoszenia</h2>
                     <p className="text-sm text-neutral-700 whitespace-pre-wrap">{ticket.content}</p>
                 </div>

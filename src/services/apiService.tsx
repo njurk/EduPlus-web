@@ -1024,6 +1024,26 @@ export const exportApi = {
     }
 };
 
+export const templatesApi = {
+    getAll: async (): Promise<{ id: string; name: string; placeholders: string[] }[]> => {
+        const response = await fetch(`${API_URL}/template`, { headers: getHeaders() });
+        return handleResponse(response);
+    },
+    getContent: async (id: string): Promise<string> => {
+        const response = await fetch(`${API_URL}/template/${id}/content`, { headers: getHeaders() });
+        const data = await handleResponse<{ html: string }>(response);
+        return data.html;
+    },
+    export: async (id: string, html: string, placeholders: Record<string, string>): Promise<Blob> => {
+        const response = await fetch(`${API_URL}/template/${id}/export`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ html, placeholders })
+        });
+        return response.blob();
+    }
+};
+
 export const layoutApi = {
     getUnreadCounts: async (): Promise<UnreadCounts> => {
         const response = await fetch(`${API_URL}/layout/unread-counts`, { headers: getHeaders() });
@@ -1062,5 +1082,6 @@ export const api = {
     cms: cmsApi,
     dashboard: dashboardApi,
     export: exportApi,
-    layout: layoutApi
+    layout: layoutApi,
+    templates: templatesApi
 };

@@ -79,14 +79,14 @@ export const Logs = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-1 bg-white rounded-lg border border-neutral-200 p-4">
+                <div className="lg:col-span-1 bg-white rounded-xs border border-neutral-200 p-4">
                     <h2 className="text-sm font-semibold text-neutral-600 mb-3 uppercase tracking-wide">Pliki logów</h2>
                     <div className="space-y-2">
                         {files.map(file => (
                             <button
                                 key={file.name}
                                 onClick={() => setSelectedFile(file.name)}
-                                className={`w-full text-left p-3 rounded-lg border transition-all ${selectedFile === file.name
+                                className={`w-full text-left p-3 rounded-xs border transition-all ${selectedFile === file.name
                                     ? 'bg-primary text-white border-primary'
                                     : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
                                     }`}
@@ -106,7 +106,7 @@ export const Logs = () => {
                     </div>
                 </div>
 
-                <div className="lg:col-span-3 bg-neutral-900 rounded-lg border border-neutral-700 overflow-hidden">
+                <div className="lg:col-span-3 bg-neutral-900 rounded-xs border border-neutral-700 overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 bg-neutral-800 border-b border-neutral-700">
                         <div className="flex items-center gap-3">
                             <span className="text-sm font-mono text-neutral-400">{selectedFile || 'Wybierz plik'}</span>

@@ -90,7 +90,7 @@ export const AnnouncementDetailView = ({ announcement, isEditMode, onBack, onSav
             {isEditMode && error && <div className="p-3 bg-danger-light text-danger-text text-sm rounded flex items-center gap-2"><AlertCircle size={16} /> {error}</div>}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1">
-                    <div className="bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
+                    <div className="bg-white border border-neutral-200 rounded-xs p-6 space-y-4">
                         <h2 className="font-semibold text-neutral-800 border-b pb-2">Szczegóły</h2>
                         {isEditMode ? (
                             <>
@@ -159,7 +159,7 @@ export const AnnouncementDetailView = ({ announcement, isEditMode, onBack, onSav
                     </div>
                 </div>
                 <div className="lg:col-span-2">
-                    <div className="bg-white border border-neutral-200 rounded-lg p-6">
+                    <div className="bg-white border border-neutral-200 rounded-xs p-6">
                         {isEditMode ? (
                             <>
                                 <div className="flex items-center justify-between border-b pb-2 mb-4">

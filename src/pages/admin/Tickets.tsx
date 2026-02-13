@@ -158,7 +158,7 @@ export const Tickets = () => {
                     </>
                 }
             >
-                <div className="bg-white border border-neutral-200 rounded-lg p-6">
+                <div className="bg-white border border-neutral-200 rounded-xs p-6">
                     <h2 className="font-semibold text-neutral-800 border-b pb-2 mb-4">Odpowiedź</h2>
                     <div className="text-sm text-neutral-700" dangerouslySetInnerHTML={{ __html: selectedTicket.adminResponse || '' }} />
                 </div>
@@ -180,7 +180,7 @@ export const Tickets = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-1">
-                        <div className="bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
+                        <div className="bg-white border border-neutral-200 rounded-xs p-6 space-y-4">
                             <h2 className="font-semibold text-neutral-800 border-b pb-2">Szczegóły</h2>
 
                             <div className="flex items-start gap-3">
@@ -210,17 +210,17 @@ export const Tickets = () => {
                     </div>
 
                     <div className="lg:col-span-2 space-y-4">
-                        <div className="bg-white border border-neutral-200 rounded-lg p-6">
+                        <div className="bg-white border border-neutral-200 rounded-xs p-6">
                             <h2 className="font-semibold text-neutral-800 border-b pb-2 mb-4">Treść zgłoszenia</h2>
                             <div>
                                 <p className="text-sm text-neutral-700 whitespace-pre-wrap">{selectedTicket.content}</p>
                             </div>
                         </div>
 
-                        <div className="bg-white border border-neutral-200 rounded-lg p-6">
+                        <div className="bg-white border border-neutral-200 rounded-xs p-6">
                             <h2 className="font-semibold text-neutral-800 border-b pb-2 mb-4">Odpowiedź <span className="text-red-500">*</span></h2>
                             {resolveError && (
-                                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 text-sm">
+                                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xs flex items-center gap-2 text-sm">
                                     <AlertCircle size={16} /> {resolveError}
                                 </div>
                             )}
@@ -267,7 +267,7 @@ export const Tickets = () => {
             </div>
 
             {successMessage && (
-                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-3">
+                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xs flex items-center gap-3">
                     <CheckCircle size={20} />
                     <span>{successMessage}</span>
                 </div>

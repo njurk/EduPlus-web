@@ -29,6 +29,7 @@ import { TeacherSchedule } from './pages/teacher/Schedule';
 import { Registry } from './pages/teacher/Registry';
 import { TeacherExcuses } from './pages/teacher/Excuses';
 import { TeacherAnnouncements } from './pages/teacher/Announcements';
+import { Templates } from './pages/teacher/Templates';
 
 const DefaultRedirect = () => {
   const token = localStorage.getItem('token');
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="registry" element={<Registry />} />
           <Route path="excuses" element={<TeacherExcuses />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />
+          <Route path="templates" element={<Templates />} />
         </Route>
       </Route>
 

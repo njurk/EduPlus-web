@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/apiService';
-import { Plus, Download, ChevronDown } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { DataTable } from '../../components/ui/DataTable';
@@ -12,7 +12,7 @@ import { Select } from '../../components/ui/Select';
 import { TrashButton } from '../../components/ui/TrashButton';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { Modal } from '../../components/modals/Modal';
-import type { SemesterDto, ClassEntity, PaginatedResponse, Subject, SubjectList, User } from '../../types';
+import type { PaginatedResponse, Subject, User } from '../../types';
 import { useCMSContent } from '../../hooks/useCMSContent';
 import { useSchoolYearSelector } from '../../hooks/useSchoolYearSelector';
 
@@ -41,21 +41,6 @@ export const Grades = () => {
     const [addForm, setAddForm] = useState({ classId: null as number | null, studentId: null as number | null, subjectId: null as number | null, gradeTypeId: null as number | null, gradeCategoryId: null as number | null, comment: '' });
     const [addStudents, setAddStudents] = useState<any[]>([]);
     const [addSubjects, setAddSubjects] = useState<any[]>([]);
-
-    const [exportOpen, setExportOpen] = useState(false);
-    const [exportFormat, setExportFormat] = useState<'pdf' | 'xlsx'>('pdf');
-    const [exportType, setExportType] = useState<'class' | 'student'>('class');
-    const [exportFilters, setExportFilters] = useState({
-        yearId: null as number | null,
-        semesterId: null as number | null,
-        classId: null as number | null,
-        subjectId: null as number | null,
-        studentId: null as number | null
-    });
-    const [exportSemesters, setExportSemesters] = useState<SemesterDto[]>([]);
-    const [exportClasses, setExportClasses] = useState<ClassEntity[]>([]);
-    const [exportSubjects, setExportSubjects] = useState<SubjectList[]>([]);
-    const [exportStudents, setExportStudents] = useState<any[]>([]);
 
     const [filters, setFilters] = useState({
         search: '',
@@ -187,56 +172,6 @@ export const Grades = () => {
         }
     }, [addForm.classId]);
 
-    useEffect(() => {
-        if (exportFilters.yearId && exportOpen) {
-            Promise.all([
-                api.schoolYears.getSemesters(exportFilters.yearId),
-                api.classManagement.getClassesByYear(exportFilters.yearId, { pageSize: 1000 })
-            ]).then(([sem, cls]) => {
-                setExportSemesters(sem || []);
-                const classesArr = Array.isArray(cls) ? cls : (cls?.data || []);
-                setExportClasses(classesArr);
-                if (!exportFilters.semesterId) {
-                    const today = new Date().toISOString().split('T')[0];
-                    const currentSem = (sem || []).find((s: SemesterDto) => s.startDate && s.endDate && s.startDate <= today && s.endDate >= today) || sem?.[0];
-                    if (currentSem) setExportFilters(f => ({ ...f, semesterId: currentSem.id }));
-                }
-            }).catch(console.error);
-        }
-    }, [exportFilters.yearId, exportOpen]);
-
-    useEffect(() => {
-        if (exportFilters.classId) {
-            api.classManagement.getClassDetails(exportFilters.classId).then(details => {
-                setExportStudents((details.students || []).sort((a: any, b: any) => a.orderNumber - b.orderNumber));
-                setExportSubjects((details.subjects || []).map((cs: any) => ({ id: cs.subjectId, name: cs.subjectName })).filter((s: any) => s.id));
-            }).catch(console.error);
-        } else {
-            setExportStudents([]);
-            setExportSubjects([]);
-        }
-    }, [exportFilters.classId]);
-
-    const handleExport = async () => {
-        if (!exportFilters.yearId || !exportFilters.semesterId || !exportFilters.classId) return;
-        if (exportType === 'class' && !exportFilters.subjectId) return;
-        if (exportType === 'student' && !exportFilters.studentId) return;
-        try {
-            await api.export.downloadGrades({
-                classId: exportFilters.classId,
-                semesterId: exportFilters.semesterId,
-                schoolYearId: exportFilters.yearId,
-                subjectId: exportType === 'class' ? exportFilters.subjectId ?? undefined : undefined,
-                studentId: exportType === 'student' ? exportFilters.studentId ?? undefined : undefined,
-                format: exportFormat
-            });
-            setExportOpen(false);
-        } catch (e) {
-            console.error(e);
-            alert('Błąd podczas eksportu');
-        }
-    };
-
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -257,10 +192,6 @@ export const Grades = () => {
                     onReset={() => setFilters(f => ({ ...f, search: '', subjectId: null, gradeTypeId: null, gradeCategoryId: null, teacherId: null }))}
                     rightContent={
                         <>
-                            <Button variant="secondary" onClick={() => { setExportOpen(true); setExportFilters({ yearId: filters.yearId, semesterId: null, classId: filters.classId, subjectId: filters.subjectId, studentId: null }); }}>
-                                <Download size={14} className="mr-1" /> Eksport
-                                <ChevronDown size={14} className="ml-1" />
-                            </Button>
                             <TrashButton isTrashActive={filters.showInactive} onToggle={() => setFilters(f => ({ ...f, showInactive: !f.showInactive }))} />
                             <Button onClick={() => { setAddOpen(true); setAddForm(f => ({ ...f, classId: filters.classId })); }}><Plus size={14} className="mr-1" /> Dodaj</Button>
                         </>
@@ -402,96 +333,6 @@ export const Grades = () => {
                         </div>
                     </div>
                 )}
-            </Modal>
-
-            <Modal isOpen={exportOpen} onClose={() => setExportOpen(false)} title="Eksport wykazu ocen">
-                <div className="space-y-4 p-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="label-text block mb-1">Rok szkolny *</label>
-                            <YearSelector
-                                years={years}
-                                selectedYear={exportFilters.yearId}
-                                onChange={v => setExportFilters(f => ({ ...f, yearId: v, semesterId: null, classId: null }))}
-                            />
-                        </div>
-                        <div>
-                            <label className="label-text block mb-1">Semestr *</label>
-                            <Select options={exportSemesters.map(s => ({ value: s.id, label: s.name }))} value={exportFilters.semesterId} onChange={v => setExportFilters(f => ({ ...f, semesterId: v ? Number(v) : null }))} placeholder="Wybierz semestr" disabled={!exportFilters.yearId} className="w-full" />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="label-text block mb-1">Typ wykazu</label>
-                        <div className="flex gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="exportType"
-                                    value="class"
-                                    checked={exportType === 'class'}
-                                    onChange={() => { setExportType('class'); setExportFilters(f => ({ ...f, studentId: null })); }}
-                                    className="w-4 h-4"
-                                />
-                                <span className="text-sm font-medium">Cała klasa</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="exportType"
-                                    value="student"
-                                    checked={exportType === 'student'}
-                                    onChange={() => setExportType('student')}
-                                    className="w-4 h-4"
-                                />
-                                <span className="text-sm font-medium">Pojedynczy uczeń</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="label-text block mb-1">Klasa *</label>
-                            <Select options={exportClasses.map(c => ({ value: c.id, label: `${c.level}${c.letter}` }))} value={exportFilters.classId} onChange={v => setExportFilters(f => ({ ...f, classId: v ? Number(v) : null }))} placeholder="Wybierz klasę" disabled={!exportFilters.yearId} className="w-full" />
-                        </div>
-                        {exportType === 'class' ? (
-                            <div>
-                                <label className="label-text block mb-1">Przedmiot *</label>
-                                <Select options={exportSubjects.map(s => ({ value: s.id, label: s.name }))} value={exportFilters.subjectId} onChange={v => setExportFilters(f => ({ ...f, subjectId: v ? Number(v) : null }))} placeholder="Wybierz przedmiot" disabled={!exportFilters.classId} className="w-full" />
-                            </div>
-                        ) : (
-                            <div>
-                                <label className="label-text block mb-1">Uczeń *</label>
-                                <Select options={exportStudents.map((s: any) => ({ value: s.studentId, label: `${s.orderNumber}. ${s.student?.lastName} ${s.student?.firstName}` }))} value={exportFilters.studentId} onChange={v => setExportFilters(f => ({ ...f, studentId: v ? Number(v) : null }))} placeholder="Wybierz ucznia" disabled={!exportFilters.classId} className="w-full" />
-                            </div>
-                        )}
-                    </div>
-                    <div>
-                        <label className="label-text block mb-1">Format</label>
-                        <div className="flex gap-4">
-                            {(['pdf', 'xlsx'] as const).map(fmt => (
-                                <label key={fmt} className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="exportFormat"
-                                        value={fmt}
-                                        checked={exportFormat === fmt}
-                                        onChange={() => setExportFormat(fmt)}
-                                        className="w-4 h-4"
-                                    />
-                                    <span className="text-sm font-medium uppercase">{fmt}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-2 pt-4 border-t">
-                        <Button variant="secondary" onClick={() => setExportOpen(false)}>Anuluj</Button>
-                        <Button
-                            onClick={handleExport}
-                            disabled={!exportFilters.yearId || !exportFilters.semesterId || !exportFilters.classId || (exportType === 'class' && !exportFilters.subjectId) || (exportType === 'student' && !exportFilters.studentId)}
-                        >
-                            <Download size={14} className="mr-1" /> Eksportuj
-                        </Button>
-                    </div>
-                </div>
             </Modal>
 
             <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Dodaj ocenę">

@@ -5,7 +5,7 @@ import { Input } from '../../components/ui/Input';
 import type { User, Role, PaginatedResponse } from '../../types';
 import { api } from '../../services/apiService';
 import { TrashButton } from '../../components/ui/TrashButton';
-import { Check, AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus, EyeIcon } from 'lucide-react';
+import { AlertCircle, Users as UsersIcon, Search, Link as LinkIcon, Plus, Shield, UserPlus, EyeIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import { FilterToolbar, FilterSelect } from '../../components/ui/FilterToolbar';
 import { ActionButtons } from '../../components/ui/ActionButtons';
@@ -287,17 +287,13 @@ export const Users = () => {
                     <Input value={relationSearch} onChange={e => setRelationSearch(e.target.value)} placeholder={'Szukaj...'} className="pl-10" />
                 </div>
 
-                <div className="border rounded-lg overflow-y-auto divide-y divide-neutral-100 max-h-[350px]">
+                <div className="border rounded-xs overflow-y-auto divide-y divide-neutral-100 max-h-[350px]">
                     {filteredCandidates.map(c => (
-                        <div key={c.id} onClick={() => setSelectedAssignmentIds(p => p.includes(c.id) ? p.filter(id => id !== c.id) : [...p, c.id])} className={clsx("p-4 flex justify-between items-center cursor-pointer hover:bg-neutral-50 transition-colors", selectedAssignmentIds.includes(c.id) && "bg-primary-light/30")}>
-                            <div>
-                                <div className={clsx("font-medium text-sm", selectedAssignmentIds.includes(c.id) ? "text-primary" : "text-neutral-700")}>{formatName(c)}</div>
-                                <div className="text-xs text-neutral-500">{c.email}</div>
-                            </div>
-                            {selectedAssignmentIds.includes(c.id) ? <Check size={20} className="text-primary" /> : <Plus size={18} className="text-neutral-300" />}
+                        <div key={c.id} onClick={() => setSelectedAssignmentIds(p => p.includes(c.id) ? p.filter(id => id !== c.id) : [...p, c.id])} className={clsx("px-3 py-1.5 cursor-pointer hover:bg-neutral-50 transition-colors text-sm", selectedAssignmentIds.includes(c.id) ? "bg-primary-light/30 text-primary font-medium" : "text-neutral-700")}>
+                            {formatName(c)} <span className="text-neutral-400 font-normal">{c.email}</span>
                         </div>
                     ))}
-                    {!filteredCandidates.length && <div className="p-12 text-center text-neutral-400 text-sm">Brak</div>}
+                    {!filteredCandidates.length && <div className="p-8 text-center text-neutral-400 text-sm">Brak</div>}
                 </div>
                 <div className="text-sm text-neutral-600 font-medium">Zaznaczono elementów: {selectedAssignmentIds.length}</div>
             </div>

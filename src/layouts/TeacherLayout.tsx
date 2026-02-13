@@ -73,8 +73,8 @@ export const TeacherLayout = () => {
         { label: getText('nav.registry'), path: '/teacher/registry', icon: BookOpen },
         ...(unreadCounts.isHomeroomTeacher ? [{ label: getText('nav.excuses'), path: '/teacher/excuses', icon: FileText, badge: unreadCounts.excuses }] : []),
         { label: getText('nav.announcements'), path: '/teacher/announcements', icon: Megaphone, badge: unreadCounts.announcements },
+        { label: getText('nav.templates'), path: '/teacher/templates', icon: FileText },
     ];
-
     const navSections = [
         {
             title: null,
