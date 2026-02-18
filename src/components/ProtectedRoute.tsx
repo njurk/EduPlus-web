@@ -5,7 +5,7 @@ interface JwtPayload {
   exp: number;
   iat: number;
   sub: string;
-  roleLevel?: string;
+  roleLevels?: string;
 }
 
 interface ProtectedRouteProps {
@@ -30,9 +30,12 @@ export const ProtectedRoute = ({ requiredLevel }: ProtectedRouteProps) => {
       return <Navigate to="/login" replace />;
     }
 
-    if (requiredLevel !== undefined && decoded.roleLevel !== undefined) {
-      const userLevel = parseInt(decoded.roleLevel, 10);
-      if (userLevel > requiredLevel) {
+    if (requiredLevel !== undefined) {
+      if (!decoded.roleLevels) {
+        return <Navigate to="/unauthorized" state={{ from: location }} replace />;
+      }
+      const minLevel = Math.min(...decoded.roleLevels.split(',').map(Number));
+      if (minLevel > requiredLevel) {
         return <Navigate to="/unauthorized" state={{ from: location }} replace />;
       }
     }
